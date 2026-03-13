@@ -13,8 +13,8 @@
 
 #define CHECK_CUDA(call)                                        \
     do {                                                        \
-        if (auto e = call; e != cudaSuccess) {                  \
-            LOG_ERROR("CUDA error: {}", cudaGetErrorString(e)); \
+        if (auto e = call; e != musaSuccess) {                  \
+            LOG_ERROR("CUDA error: {}", musaGetErrorString(e)); \
         }                                                       \
     } while (0)
 
@@ -434,7 +434,7 @@ namespace lfs::core {
             size_t total = flat.numel();
 
             // IMPORTANT: Use sequential execution to avoid TBB threading issues with CUDA
-            // TBB worker threads don't have CUDA device context, causing cudaErrorInvalidDevice
+            // TBB worker threads don't have CUDA device context, causing musaErrorInvalidDevice
             std::transform(std::execution::seq,
                            idx, idx + indices_same_device.numel(), dst,
                            [src, total](int pos) {
@@ -1004,8 +1004,8 @@ namespace lfs::core {
                 // Copy back preserving capacity
                 auto result = cpu_tensor.to(device_);
                 const size_t bytes = numel() * dtype_size(dtype_);
-                CHECK_CUDA(cudaMemcpyAsync(data_, result.ptr<void>(), bytes, cudaMemcpyDeviceToDevice, stream()));
-                CHECK_CUDA(cudaStreamSynchronize(stream()));
+                CHECK_CUDA(musaMemcpyAsync(data_, result.ptr<void>(), bytes, musaMemcpyDeviceToDevice, stream()));
+                CHECK_CUDA(musaStreamSynchronize(stream()));
             } else {
                 // CPU implementation
                 DataT* data = ptr<DataT>();
@@ -1034,17 +1034,14 @@ namespace lfs::core {
                 } else {
                     // Element-wise assignment
                     size_t num_elements = numel();
-                    std::for_each(std::execution::seq,
-                                  std::views::iota(size_t(0), idx.numel()).begin(),
-                                  std::views::iota(size_t(0), idx.numel()).end(),
-                                  [data, indices, values, num_elements](size_t i) {
-                                      IndexT pos = indices[i];
-                                      if (pos < 0)
-                                          pos += num_elements;
-                                      if (pos >= 0 && pos < static_cast<IndexT>(num_elements)) {
-                                          data[pos] = values[i];
-                                      }
-                                  });
+                    for (size_t i = 0; i < static_cast<size_t>(idx.numel()); ++i) {
+                        IndexT pos = indices[i];
+                        if (pos < 0)
+                            pos += num_elements;
+                        if (pos >= 0 && pos < static_cast<IndexT>(num_elements)) {
+                            data[pos] = values[i];
+                        }
+                    }
                 }
             }
         };
@@ -1164,11 +1161,11 @@ namespace lfs::core {
                         c >= 0 && c < col_bound) {
                         const size_t offset = static_cast<size_t>(r) * strides_[0] +
                                               static_cast<size_t>(c) * strides_[1];
-                        CHECK_CUDA(cudaMemcpyAsync(
+                        CHECK_CUDA(musaMemcpyAsync(
                             data_ptr + offset,
                             val_ptr + i,
                             sizeof(float),
-                            cudaMemcpyDeviceToDevice,
+                            musaMemcpyDeviceToDevice,
                             stream()));
                     }
                 }
@@ -1215,8 +1212,8 @@ namespace lfs::core {
             // Use CUDA kernel for counting
             size_t count = 0;
             size_t* d_count = nullptr;
-            CHECK_CUDA(cudaMalloc(&d_count, sizeof(size_t)));
-            CHECK_CUDA(cudaMemset(d_count, 0, sizeof(size_t)));
+            CHECK_CUDA(musaMalloc(&d_count, sizeof(size_t)));
+            CHECK_CUDA(musaMemset(d_count, 0, sizeof(size_t)));
 
             if (is_bool_like(dtype_)) {
                 tensor_ops::launch_count_nonzero_bool(ptr<unsigned char>(), d_count, numel(), stream());
@@ -1225,9 +1222,9 @@ namespace lfs::core {
             }
 
             // API BOUNDARY: Sync before reading result from GPU
-            cudaDeviceSynchronize();
-            CHECK_CUDA(cudaMemcpy(&count, d_count, sizeof(size_t), cudaMemcpyDeviceToHost));
-            CHECK_CUDA(cudaFree(d_count));
+            musaDeviceSynchronize();
+            CHECK_CUDA(musaMemcpy(&count, d_count, sizeof(size_t), musaMemcpyDeviceToHost));
+            CHECK_CUDA(musaFree(d_count));
 
             return count;
         } else {
@@ -1432,8 +1429,8 @@ namespace lfs::core {
     TensorIndexer Tensor::operator[](const std::vector<Tensor>& idx) {
         std::vector<Tensor> cloned;
         cloned.reserve(idx.size());
-        std::ranges::transform(idx, std::back_inserter(cloned),
-                               [](const auto& i) { return i.clone(); });
+        std::transform(idx.begin(), idx.end(), std::back_inserter(cloned),
+                       [](const auto& i) { return i.clone(); });
         return TensorIndexer(this, std::move(cloned));
     }
 
@@ -1494,9 +1491,9 @@ namespace lfs::core {
 
         if (device_ == Device::CUDA) {
             float value;
-            cudaError_t err = cudaMemcpy(&value, ptr<float>() + linear_idx, sizeof(float), cudaMemcpyDeviceToHost);
-            if (err != cudaSuccess) {
-                LOG_ERROR("CUDA memcpy failed in at() const: {}", cudaGetErrorString(err));
+            musaError_t err = musaMemcpy(&value, ptr<float>() + linear_idx, sizeof(float), musaMemcpyDeviceToHost);
+            if (err != musaSuccess) {
+                LOG_ERROR("CUDA memcpy failed in at() const: {}", musaGetErrorString(err));
                 return 0;
             }
             return value;
@@ -1516,7 +1513,7 @@ namespace lfs::core {
 
         if (t.numel() > 0 && data.data() != nullptr) {
             if (device == Device::CUDA) {
-                cudaMemcpy(t.data_ptr(), data.data(), t.bytes(), cudaMemcpyHostToDevice);
+                musaMemcpy(t.data_ptr(), data.data(), t.bytes(), musaMemcpyHostToDevice);
             } else {
                 std::memcpy(t.data_ptr(), data.data(), t.bytes());
             }
@@ -1537,8 +1534,8 @@ namespace lfs::core {
             return {};
 
         std::vector<unsigned char> bytes(data.size());
-        std::ranges::transform(data, bytes.begin(),
-                               [](bool b) { return b ? 1 : 0; });
+        std::transform(data.begin(), data.end(), bytes.begin(),
+                       [](bool b) { return b ? 1 : 0; });
 
         return from_vector_impl(bytes, shape, device, DataType::Bool);
     }
@@ -1557,7 +1554,7 @@ namespace lfs::core {
 
         unsigned char val = value ? 1 : 0;
         if (device_ == Device::CUDA) {
-            cudaMemcpy(ptr<unsigned char>() + idx, &val, 1, cudaMemcpyHostToDevice);
+            musaMemcpy(ptr<unsigned char>() + idx, &val, 1, musaMemcpyHostToDevice);
         } else {
             ptr<unsigned char>()[idx] = val;
         }
@@ -1577,7 +1574,7 @@ namespace lfs::core {
 
         if (device_ == Device::CUDA) {
             unsigned char val;
-            cudaMemcpy(&val, ptr<unsigned char>() + idx, 1, cudaMemcpyDeviceToHost);
+            musaMemcpy(&val, ptr<unsigned char>() + idx, 1, musaMemcpyDeviceToHost);
             return val != 0;
         }
         return ptr<unsigned char>()[idx] != 0;
@@ -1611,13 +1608,13 @@ namespace lfs::core {
         unsigned char val = value ? 1 : 0;
 
         if (device_ == Device::CUDA) {
-            cudaError_t err = cudaMemcpy(
+            musaError_t err = musaMemcpy(
                 ptr<unsigned char>() + linear_idx,
                 &val,
                 1,
-                cudaMemcpyHostToDevice);
-            if (err != cudaSuccess) {
-                LOG_ERROR("CUDA memcpy failed in set_bool: {}", cudaGetErrorString(err));
+                musaMemcpyHostToDevice);
+            if (err != musaSuccess) {
+                LOG_ERROR("CUDA memcpy failed in set_bool: {}", musaGetErrorString(err));
             }
         } else {
             ptr<unsigned char>()[linear_idx] = val;
@@ -1648,13 +1645,13 @@ namespace lfs::core {
 
         if (device_ == Device::CUDA) {
             unsigned char val;
-            cudaError_t err = cudaMemcpy(
+            musaError_t err = musaMemcpy(
                 &val,
                 ptr<unsigned char>() + linear_idx,
                 1,
-                cudaMemcpyDeviceToHost);
-            if (err != cudaSuccess) {
-                LOG_ERROR("CUDA memcpy failed in get_bool: {}", cudaGetErrorString(err));
+                musaMemcpyDeviceToHost);
+            if (err != musaSuccess) {
+                LOG_ERROR("CUDA memcpy failed in get_bool: {}", musaGetErrorString(err));
                 return false;
             }
             return val != 0;
@@ -1810,7 +1807,7 @@ namespace lfs::core {
                                                 0 /*BoundaryMode::Assert*/, stream());
 
                 // IMPORTANT: Synchronize to ensure kernel completes
-                CHECK_CUDA(cudaStreamSynchronize(stream()));
+                CHECK_CUDA(musaStreamSynchronize(stream()));
                 LOG_DEBUG("  index_select kernel completed");
             } else {
                 LOG_ERROR("append_gather: only Float32 dtype supported for now");
@@ -1894,8 +1891,8 @@ namespace lfs::core {
         // Zero out the appended region
         if (device_ == Device::CUDA) {
             void* write_ptr = static_cast<uint8_t*>(data_) + write_offset_elements * dtype_size(dtype_);
-            CHECK_CUDA(cudaMemsetAsync(write_ptr, 0, zero_bytes, stream()));
-            CHECK_CUDA(cudaStreamSynchronize(stream()));
+            CHECK_CUDA(musaMemsetAsync(write_ptr, 0, zero_bytes, stream()));
+            CHECK_CUDA(musaStreamSynchronize(stream()));
         } else {
             void* write_ptr = static_cast<uint8_t*>(data_) + write_offset_elements * dtype_size(dtype_);
             std::memset(write_ptr, 0, zero_bytes);

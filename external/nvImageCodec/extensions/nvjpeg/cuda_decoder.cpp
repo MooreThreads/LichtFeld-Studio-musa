@@ -128,7 +128,7 @@ namespace nvjpeg {
             };
             std::array<Page, 2> pages_;
             int current_page_idx = 0;
-            cudaEvent_t event_;
+            musaEvent_t event_;
             nvjpegBufferDevice_t device_buffer_;
         };
         std::vector<PerThreadResources> per_thread_;
@@ -244,7 +244,7 @@ namespace nvjpeg {
             auto& res = per_thread_.back();
             const int npages = res.pages_.size();
 
-            XM_CHECK_CUDA(cudaEventCreate(&res.event_));
+            XM_CHECK_CUDA(musaEventCreate(&res.event_));
 
             for (int page_idx = 0; page_idx < npages; page_idx++) {
                 auto& p = res.pages_[page_idx];
@@ -346,7 +346,7 @@ namespace nvjpeg {
                     XM_NVJPEG_LOG_DESTROY(nvjpegBufferDeviceDestroy(res.device_buffer_));
                 }
                 if (res.event_) {
-                    XM_CUDA_LOG_DESTROY(cudaEventDestroy(res.event_));
+                    XM_CUDA_LOG_DESTROY(musaEventDestroy(res.event_));
                 }
             }
             per_thread_.clear();
@@ -583,7 +583,7 @@ namespace nvjpeg {
             }
 
             // Waits for GPU stage from previous iteration (on this thread)
-            XM_CHECK_CUDA(cudaEventSynchronize(t.event_));
+            XM_CHECK_CUDA(musaEventSynchronize(t.event_));
 
             XM_CHECK_NVJPEG(nvjpegStateAttachDeviceBuffer(state, t.device_buffer_));
 
@@ -594,7 +594,7 @@ namespace nvjpeg {
                 XM_CHECK_NVJPEG(nvjpegDecodeJpegDevice(handle_, decoder, state, &nvjpeg_image, image_info.cuda_stream));
             }
             // this captures the state of image_info.cuda_stream in the cuda event t.event_
-            XM_CHECK_CUDA(cudaEventRecord(t.event_, image_info.cuda_stream));
+            XM_CHECK_CUDA(musaEventRecord(t.event_, image_info.cuda_stream));
 
             image->imageReady(image->instance, NVIMGCODEC_PROCESSING_STATUS_SUCCESS);
             return NVIMGCODEC_STATUS_SUCCESS;

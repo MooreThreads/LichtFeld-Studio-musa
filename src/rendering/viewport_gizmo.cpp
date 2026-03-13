@@ -77,7 +77,7 @@ namespace lfs::rendering {
         auto result = load_shader("viewport_gizmo", "viewport_gizmo.vert", "viewport_gizmo.frag", false);
         if (!result) {
             LOG_ERROR("Failed to load viewport gizmo shader: {}", result.error().what());
-            return std::unexpected(result.error().what());
+            return lfs_compat::unexpected(result.error().what());
         }
         shader_ = std::move(*result);
         LOG_DEBUG("ViewportGizmo shaders created successfully");
@@ -90,14 +90,14 @@ namespace lfs::rendering {
         auto vao_result = create_vao();
         if (!vao_result) {
             LOG_ERROR("Failed to create VAO: {}", vao_result.error());
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         }
         vao_ = std::move(*vao_result);
 
         auto vbo_result = create_vbo();
         if (!vbo_result) {
             LOG_ERROR("Failed to create VBO: {}", vbo_result.error());
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         }
         vbo_ = std::move(*vbo_result);
 
@@ -119,7 +119,7 @@ namespace lfs::rendering {
         // Generate cylinder (for axes)
         constexpr float two_pi = 2 * std::numbers::pi_v<float>;
 
-        for (const auto i : std::views::iota(0, segments)) {
+        for (int i = 0; i < segments; ++i) {
             float a1 = static_cast<float>(i) / segments * two_pi;
             float a2 = static_cast<float>(i + 1) / segments * two_pi;
             float c1 = cos(a1), s1 = sin(a1);
@@ -139,14 +139,14 @@ namespace lfs::rendering {
         sphere_vertex_start_ = vertices.size() / 6;
         constexpr int latBands = 16, longBands = 16;
 
-        for (const auto lat : std::views::iota(0, latBands)) {
+        for (int lat = 0; lat < latBands; ++lat) {
             float theta1 = static_cast<float>(lat) * std::numbers::pi_v<float> / latBands;
             float theta2 = static_cast<float>(lat + 1) * std::numbers::pi_v<float> / latBands;
 
             float sinTheta1 = sin(theta1), cosTheta1 = cos(theta1);
             float sinTheta2 = sin(theta2), cosTheta2 = cos(theta2);
 
-            for (const auto lon : std::views::iota(0, longBands)) {
+            for (int lon = 0; lon < longBands; ++lon) {
                 float phi1 = static_cast<float>(lon) * two_pi / longBands;
                 float phi2 = static_cast<float>(lon + 1) * two_pi / longBands;
 
@@ -175,7 +175,7 @@ namespace lfs::rendering {
         constexpr float OUTER_RADIUS = 1.0f;
         constexpr float INNER_RADIUS = 0.55f;
 
-        for (const auto i : std::views::iota(0, RING_SEGMENTS)) {
+        for (int i = 0; i < RING_SEGMENTS; ++i) {
             const float theta1 = static_cast<float>(i) * two_pi / RING_SEGMENTS;
             const float theta2 = static_cast<float>(i + 1) * two_pi / RING_SEGMENTS;
             const float cos_t1 = cos(theta1), sin_t1 = sin(theta1);
@@ -236,7 +236,7 @@ namespace lfs::rendering {
                                        const glm::vec2& viewport_size) {
         if (!initialized_) {
             LOG_ERROR("Viewport gizmo not initialized");
-            return std::unexpected("Viewport gizmo not initialized");
+            return lfs_compat::unexpected("Viewport gizmo not initialized");
         }
 
         LOG_TIMER_TRACE("ViewportGizmo::render");
@@ -406,7 +406,7 @@ namespace lfs::rendering {
             const float dot = glm::dot(RING_NORMAL, toCam);
             if (dot < 0.999f && dot > -0.999f) {
                 const glm::vec3 axis = glm::normalize(glm::cross(RING_NORMAL, toCam));
-                faceRotation = glm::rotate(glm::mat4(1.0f), std::acosf(dot), axis);
+                faceRotation = glm::rotate(glm::mat4(1.0f), std::acos(dot), axis);
             } else if (dot <= -0.999f) {
                 faceRotation = glm::rotate(glm::mat4(1.0f), std::numbers::pi_v<float>, glm::vec3(0, 1, 0));
             }

@@ -8,7 +8,12 @@
 #include <atomic>
 #include <chrono>
 #include <memory>
-#include <source_location>
+#include "core/source_location_compat.hpp"
+#ifdef __MUSACC__
+#include <fmt/format.h>
+#else
+#include <format>
+#endif
 #include <string>
 #include <string_view>
 
@@ -75,37 +80,13 @@ namespace lfs::core {
         // This reduces LOG_DEBUG overhead from ~1-5μs to <50ns when debug logging is disabled.
         template <typename... Args>
         void log_internal(LogLevel level, const std::source_location& loc,
-#ifdef __CUDACC__
-                          const char* fmt, Args&&... args) {
+#ifdef __MUSACC__
+                          fmt::format_string<Args...> fmt, Args&&... args) {
             // Fast path: skip formatting if level is disabled globally
-            // (Note: module-specific levels are checked in log(), but this catches most cases)
             if (static_cast<uint8_t>(level) < global_level_.load(std::memory_order_relaxed))
                 return;
 
-            // CUDA: use snprintf
-            char buffer[1024];
-
-            // Helper lambda to avoid problems with -Wformat-security warnings
-            auto safe_snprintf = [&](char* buf, size_t size) {
-                if constexpr (sizeof...(Args) == 0) {
-                    return std::snprintf(buf, size, "%s", fmt);
-                } else {
-                    return std::snprintf(buf, size, fmt, std::forward<Args>(args)...);
-                }
-            };
-
-            const int written = safe_snprintf(buffer, sizeof(buffer));
-            if (written < 0)
-                return;
-
-            std::string msg;
-            if (static_cast<size_t>(written) >= sizeof(buffer)) {
-                msg.resize(static_cast<size_t>(written) + 1);
-                safe_snprintf(msg.data(), msg.size());
-                msg.resize(static_cast<size_t>(written));
-            } else {
-                msg.assign(buffer, static_cast<size_t>(written));
-            }
+            std::string msg = fmt::format(fmt, std::forward<Args>(args)...);
             log(level, loc, msg);
         }
 #else

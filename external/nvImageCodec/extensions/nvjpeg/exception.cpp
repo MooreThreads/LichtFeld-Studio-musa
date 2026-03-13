@@ -84,7 +84,7 @@ NvJpegException NvJpegException::FromNvJpegError(nvjpegStatus_t status, const st
     return e;
 }
 
-NvJpegException NvJpegException::FromCUDAError(cudaError_t status, const std::string& where) {
+NvJpegException NvJpegException::FromCUDAError(musaError_t status, const std::string& where) {
     NvJpegException e;
     e.status_ = NVIMGCODEC_STATUS_EXTENSION_CUDA_CALL_ERROR;
     std::stringstream ss;

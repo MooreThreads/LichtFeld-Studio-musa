@@ -6,7 +6,7 @@
 
 #include "core/camera_types.h"
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::core {
 
@@ -29,8 +29,8 @@ namespace lfs::core {
     UndistortParams scale_undistort_params(
         const UndistortParams& params, const int actual_src_width, const int actual_src_height);
 
-    Tensor undistort_image(const Tensor& src, const UndistortParams& params, cudaStream_t stream);
+    Tensor undistort_image(const Tensor& src, const UndistortParams& params, musaStream_t stream);
 
-    Tensor undistort_mask(const Tensor& src, const UndistortParams& params, cudaStream_t stream);
+    Tensor undistort_mask(const Tensor& src, const UndistortParams& params, musaStream_t stream);
 
 } // namespace lfs::core

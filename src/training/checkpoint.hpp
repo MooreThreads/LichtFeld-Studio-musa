@@ -25,7 +25,7 @@ namespace lfs::training {
     class PPISPControllerPool;
 
     /// Save complete training checkpoint
-    std::expected<void, std::string> save_checkpoint(
+    lfs_compat::expected<void, std::string> save_checkpoint(
         const std::filesystem::path& path,
         int iteration,
         const IStrategy& strategy,
@@ -35,7 +35,7 @@ namespace lfs::training {
         const PPISPControllerPool* ppisp_controller_pool = nullptr);
 
     /// Load complete training checkpoint (strategy + optional appearance components)
-    std::expected<int, std::string> load_checkpoint(
+    lfs_compat::expected<int, std::string> load_checkpoint(
         const std::filesystem::path& path,
         IStrategy& strategy,
         lfs::core::param::TrainingParameters& params,

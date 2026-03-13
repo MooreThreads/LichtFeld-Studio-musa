@@ -8,7 +8,7 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <mutex>
 #include <vector>
 
@@ -109,7 +109,7 @@ namespace lfs::core {
                 buckets_[bucket_idx].cache.erase(buckets_[bucket_idx].cache.begin());
                 buckets_[bucket_idx].cached_bytes -= bucket_size;
                 stats_.bytes_cached.fetch_sub(bucket_size, std::memory_order_relaxed);
-                cudaFreeAsync(old_ptr, nullptr);
+                musaFree(old_ptr);
             }
             buckets_[bucket_idx].cache.push_back(ptr);
             buckets_[bucket_idx].cached_bytes += bucket_size;
@@ -118,19 +118,19 @@ namespace lfs::core {
             return true;
         }
 
-        void* allocate(size_t bytes, cudaStream_t stream = nullptr) {
+        void* allocate(size_t bytes, musaStream_t stream = nullptr) {
             void* ptr = try_allocate_cached(bytes);
             if (ptr)
                 return ptr;
 
             const size_t bucket_size = get_bucket_size(bytes);
-            cudaError_t err = cudaMallocAsync(&ptr, bucket_size, stream);
-            if (err != cudaSuccess) {
+            musaError_t err = musaMallocAsync(&ptr, bucket_size, stream);
+            if (err != musaSuccess) {
                 trim_cache();
-                err = cudaMallocAsync(&ptr, bucket_size, stream);
-                if (err != cudaSuccess) {
-                    LOG_ERROR("cudaMallocAsync failed for {} bytes: {}", bucket_size, cudaGetErrorString(err));
-                    cudaGetLastError(); // Clear sticky error state for clean recovery
+                err = musaMallocAsync(&ptr, bucket_size, stream);
+                if (err != musaSuccess) {
+                    LOG_ERROR("musaMallocAsync failed for {} bytes: {}", bucket_size, musaGetErrorString(err));
+                    musaGetLastError(); // Clear sticky error state for clean recovery
                     return nullptr;
                 }
             }
@@ -139,11 +139,11 @@ namespace lfs::core {
             return ptr;
         }
 
-        void deallocate(void* ptr, size_t bytes, cudaStream_t stream = nullptr) {
+        void deallocate(void* ptr, size_t bytes, musaStream_t stream = nullptr) {
             if (!ptr)
                 return;
             if (!cache_free(ptr, bytes)) {
-                cudaFreeAsync(ptr, stream);
+                musaFree(ptr);
             }
         }
 
@@ -151,7 +151,7 @@ namespace lfs::core {
             for (size_t i = 0; i < NUM_BUCKETS; ++i) {
                 std::lock_guard<std::mutex> lock(buckets_[i].mutex);
                 for (void* ptr : buckets_[i].cache) {
-                    cudaFree(ptr);
+                    musaFree(ptr);
                 }
                 buckets_[i].cache.clear();
                 buckets_[i].cached_bytes = 0;

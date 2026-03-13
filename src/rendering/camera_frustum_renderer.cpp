@@ -6,7 +6,9 @@
 #include "core/image_io.hpp"
 #include "core/logger.hpp"
 #include "gl_state_guard.hpp"
+#ifdef LFS_HAS_NVCODEC
 #include "io/nvcodec_image_loader.hpp"
+#endif
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace lfs::rendering {
@@ -55,14 +57,14 @@ namespace lfs::rendering {
         auto shader_result = load_shader_with_geometry("camera_frustum", "camera_frustum.vert",
                                                        "camera_frustum.geom", "camera_frustum.frag", false);
         if (!shader_result) {
-            return std::unexpected(shader_result.error().what());
+            return lfs_compat::unexpected(shader_result.error().what());
         }
         shader_ = std::move(*shader_result);
 
         auto lines_shader_result = load_shader_with_geometry("camera_frustum_lines", "camera_frustum.vert",
                                                              "camera_frustum_lines.geom", "camera_frustum.frag", false);
         if (!lines_shader_result) {
-            return std::unexpected(lines_shader_result.error().what());
+            return lfs_compat::unexpected(lines_shader_result.error().what());
         }
         shader_lines_ = std::move(*lines_shader_result);
 
@@ -76,7 +78,7 @@ namespace lfs::rendering {
 
         auto instance_vbo_result = create_vbo();
         if (!instance_vbo_result) {
-            return std::unexpected(instance_vbo_result.error());
+            return lfs_compat::unexpected(instance_vbo_result.error());
         }
         instance_vbo_ = std::move(*instance_vbo_result);
 
@@ -113,21 +115,21 @@ namespace lfs::rendering {
 
         auto vao_result = create_vao();
         if (!vao_result)
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
 
         auto vbo_result = create_vbo();
         if (!vbo_result)
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         vbo_ = std::move(*vbo_result);
 
         auto face_ebo_result = create_vbo();
         if (!face_ebo_result)
-            return std::unexpected(face_ebo_result.error());
+            return lfs_compat::unexpected(face_ebo_result.error());
         face_ebo_ = std::move(*face_ebo_result);
 
         auto edge_ebo_result = create_vbo();
         if (!edge_ebo_result)
-            return std::unexpected(edge_ebo_result.error());
+            return lfs_compat::unexpected(edge_ebo_result.error());
         edge_ebo_ = std::move(*edge_ebo_result);
 
         VAOBuilder builder(std::move(*vao_result));
@@ -204,21 +206,21 @@ namespace lfs::rendering {
 
         auto vao_result = create_vao();
         if (!vao_result)
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
 
         auto vbo_result = create_vbo();
         if (!vbo_result)
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         sphere_vbo_ = std::move(*vbo_result);
 
         auto face_ebo_result = create_vbo();
         if (!face_ebo_result)
-            return std::unexpected(face_ebo_result.error());
+            return lfs_compat::unexpected(face_ebo_result.error());
         sphere_face_ebo_ = std::move(*face_ebo_result);
 
         auto edge_ebo_result = create_vbo();
         if (!edge_ebo_result)
-            return std::unexpected(edge_ebo_result.error());
+            return lfs_compat::unexpected(edge_ebo_result.error());
         sphere_edge_ebo_ = std::move(*edge_ebo_result);
 
         VAOBuilder builder(std::move(*vao_result));
@@ -243,7 +245,7 @@ namespace lfs::rendering {
         GLuint fbo_id;
         glGenFramebuffers(1, &fbo_id);
         if (fbo_id == 0) {
-            return std::unexpected("Failed to create picking FBO");
+            return lfs_compat::unexpected("Failed to create picking FBO");
         }
         picking_fbo_ = FBO(fbo_id);
 
@@ -276,7 +278,7 @@ namespace lfs::rendering {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         if (status != GL_FRAMEBUFFER_COMPLETE) {
-            return std::unexpected("Picking FBO incomplete");
+            return lfs_compat::unexpected("Picking FBO incomplete");
         }
 
         glGenBuffers(2, picking_pbos_);
@@ -555,7 +557,7 @@ namespace lfs::rendering {
         if (render_textures) {
             ShaderScope shader(shader_);
             if (!shader.isBound())
-                return std::unexpected("Failed to bind camera frustum shader");
+                return lfs_compat::unexpected("Failed to bind camera frustum shader");
 
             shader->set("viewProj", view_proj);
             shader->set("view", view);
@@ -595,7 +597,7 @@ namespace lfs::rendering {
         {
             ShaderScope shader(shader_lines_);
             if (!shader.isBound())
-                return std::unexpected("Failed to bind camera frustum lines shader");
+                return lfs_compat::unexpected("Failed to bind camera frustum lines shader");
 
             shader->set("viewProj", view_proj);
             shader->set("view", view);
@@ -753,7 +755,7 @@ namespace lfs::rendering {
             if (!shader.isBound()) {
                 glBindFramebuffer(GL_FRAMEBUFFER, current_fbo);
                 glViewport(current_viewport[0], current_viewport[1], current_viewport[2], current_viewport[3]);
-                return std::unexpected("Failed to bind picking shader");
+                return lfs_compat::unexpected("Failed to bind picking shader");
             }
 
             const glm::mat4 view_proj = projection * view;
@@ -890,11 +892,16 @@ namespace lfs::rendering {
         constexpr auto IDLE_TIMEOUT = std::chrono::seconds(5);
         constexpr auto POLL_INTERVAL = std::chrono::milliseconds(500);
 
+#ifdef LFS_HAS_NVCODEC
         std::unique_ptr<lfs::io::NvCodecImageLoader> nvcodec;
         const bool nvcodec_supported = lfs::io::NvCodecImageLoader::is_available();
+#else
+        const bool nvcodec_supported = false;
+#endif
         auto last_activity = std::chrono::steady_clock::now();
 
         const auto create_nvcodec = [&]() -> bool {
+#ifdef LFS_HAS_NVCODEC
             if (nvcodec || !nvcodec_supported)
                 return nvcodec != nullptr;
             try {
@@ -907,6 +914,9 @@ namespace lfs::rendering {
                 LOG_WARN("nvImageCodec init failed: {}", e.what());
                 return false;
             }
+#else
+            return false;
+#endif
         };
 
         while (thumbnail_loader_running_) {
@@ -932,10 +942,12 @@ namespace lfs::rendering {
 
             // Release nvcodec after idle timeout to free CUDA resources for training
             if (!has_work) {
+#ifdef LFS_HAS_NVCODEC
                 if (nvcodec && (std::chrono::steady_clock::now() - last_activity) > IDLE_TIMEOUT) {
                     LOG_DEBUG("Releasing idle thumbnail nvcodec");
                     nvcodec.reset();
                 }
+#endif
                 continue;
             }
 
@@ -949,6 +961,7 @@ namespace lfs::rendering {
                 bool loaded_with_nvcodec = false;
                 const bool is_jpeg = (ext == ".jpg" || ext == ".jpeg");
 
+#ifdef LFS_HAS_NVCODEC
                 if (is_jpeg && create_nvcodec()) {
                     try {
                         const int max_dim = std::max(request.image_width, request.image_height);
@@ -992,6 +1005,7 @@ namespace lfs::rendering {
                         loaded_with_nvcodec = true;
                     } catch (...) {}
                 }
+#endif // LFS_HAS_NVCODEC
 
                 if (!loaded_with_nvcodec) {
                     auto [data, width, height, channels] = lfs::core::load_image(request.image_path, -1, THUMBNAIL_SIZE);

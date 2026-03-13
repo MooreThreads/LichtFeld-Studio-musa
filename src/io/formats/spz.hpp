@@ -14,7 +14,7 @@ namespace lfs::io {
     using lfs::core::SplatData;
 
     // Load SPZ (Niantic compressed gaussian splat format)
-    std::expected<SplatData, std::string> load_spz(const std::filesystem::path& filepath);
+    lfs_compat::expected<SplatData, std::string> load_spz(const std::filesystem::path& filepath);
 
     // Save SPZ format
     struct SpzSaveOptions {

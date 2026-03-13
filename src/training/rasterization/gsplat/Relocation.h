@@ -5,7 +5,7 @@
 #pragma once
 
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -16,7 +16,7 @@ namespace gsplat_lfs {
         const float* binoms,   // [n_max, n_max]
         int64_t N,
         int32_t n_max,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void launch_add_noise_kernel(
         float* raw_opacities, // [N] - modified in-place
@@ -26,6 +26,6 @@ namespace gsplat_lfs {
         float* means,         // [N, 3] - modified in-place
         int64_t N,
         float current_lr,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace gsplat_lfs

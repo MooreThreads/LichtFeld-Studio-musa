@@ -2,9 +2,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "video_encoder.hpp"
-#include "color_convert.cuh"
+#include "color_convert.muh"
 #include "core/logger.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -26,7 +26,7 @@ namespace lfs::io::video {
     public:
         ~VideoEncoderImpl() { cleanup(); }
 
-        std::expected<void, std::string> open(
+        lfs_compat::expected<void, std::string> open(
             const std::filesystem::path& path,
             const VideoExportOptions& opts) {
 
@@ -46,24 +46,24 @@ namespace lfs::io::video {
             return {};
         }
 
-        std::expected<void, std::string> writeFrameGpu(
+        lfs_compat::expected<void, std::string> writeFrameGpu(
             const void* const rgb_gpu_ptr,
             const int width,
             const int height,
-            const cudaStream_t stream) {
+            const musaStream_t stream) {
 
             if (!is_open_) {
-                return std::unexpected("Encoder not open");
+                return lfs_compat::unexpected("Encoder not open");
             }
             if (width != width_ || height != height_) {
-                return std::unexpected("Frame size mismatch");
+                return lfs_compat::unexpected("Frame size mismatch");
             }
 
             return use_nvenc_ ? writeFrameNvenc(rgb_gpu_ptr, stream)
                               : writeFrameX264Gpu(rgb_gpu_ptr, stream);
         }
 
-        std::expected<void, std::string> close() {
+        lfs_compat::expected<void, std::string> close() {
             if (!is_open_)
                 return {};
 
@@ -200,29 +200,29 @@ namespace lfs::io::video {
             return true;
         }
 
-        std::expected<void, std::string> initX264(
+        lfs_compat::expected<void, std::string> initX264(
             const std::filesystem::path& path,
             const VideoExportOptions& opts) {
 
             int ret = avformat_alloc_output_context2(&fmt_ctx_, nullptr, "mp4", path.string().c_str());
             if (ret < 0 || !fmt_ctx_) {
-                return std::unexpected("MP4 context creation failed");
+                return lfs_compat::unexpected("MP4 context creation failed");
             }
 
             const AVCodec* const codec = avcodec_find_encoder(AV_CODEC_ID_H264);
             if (!codec) {
-                return std::unexpected("H.264 encoder not found");
+                return lfs_compat::unexpected("H.264 encoder not found");
             }
 
             stream_ = avformat_new_stream(fmt_ctx_, nullptr);
             if (!stream_) {
-                return std::unexpected("Stream creation failed");
+                return lfs_compat::unexpected("Stream creation failed");
             }
             stream_->id = 0;
 
             codec_ctx_ = avcodec_alloc_context3(codec);
             if (!codec_ctx_) {
-                return std::unexpected("Codec context allocation failed");
+                return lfs_compat::unexpected("Codec context allocation failed");
             }
 
             codec_ctx_->width = width_;
@@ -245,12 +245,12 @@ namespace lfs::io::video {
             if (ret < 0) {
                 char err[AV_ERROR_MAX_STRING_SIZE];
                 av_strerror(ret, err, sizeof(err));
-                return std::unexpected(std::string("Codec open failed: ") + err);
+                return lfs_compat::unexpected(std::string("Codec open failed: ") + err);
             }
 
             ret = avcodec_parameters_from_context(stream_->codecpar, codec_ctx_);
             if (ret < 0) {
-                return std::unexpected("Codec parameters copy failed");
+                return lfs_compat::unexpected("Codec parameters copy failed");
             }
             stream_->time_base = codec_ctx_->time_base;
 
@@ -259,7 +259,7 @@ namespace lfs::io::video {
                 if (ret < 0) {
                     char err[AV_ERROR_MAX_STRING_SIZE];
                     av_strerror(ret, err, sizeof(err));
-                    return std::unexpected(std::string("File open failed: ") + err);
+                    return lfs_compat::unexpected(std::string("File open failed: ") + err);
                 }
             }
 
@@ -267,12 +267,12 @@ namespace lfs::io::video {
             if (ret < 0) {
                 char err[AV_ERROR_MAX_STRING_SIZE];
                 av_strerror(ret, err, sizeof(err));
-                return std::unexpected(std::string("Header write failed: ") + err);
+                return lfs_compat::unexpected(std::string("Header write failed: ") + err);
             }
 
             frame_ = av_frame_alloc();
             if (!frame_) {
-                return std::unexpected("Frame allocation failed");
+                return lfs_compat::unexpected("Frame allocation failed");
             }
             frame_->format = AV_PIX_FMT_YUV420P;
             frame_->width = width_;
@@ -280,12 +280,12 @@ namespace lfs::io::video {
 
             ret = av_frame_get_buffer(frame_, 0);
             if (ret < 0) {
-                return std::unexpected("Frame buffer allocation failed");
+                return lfs_compat::unexpected("Frame buffer allocation failed");
             }
 
             packet_ = av_packet_alloc();
             if (!packet_) {
-                return std::unexpected("Packet allocation failed");
+                return lfs_compat::unexpected("Packet allocation failed");
             }
 
             allocateGpuBuffers();
@@ -297,18 +297,18 @@ namespace lfs::io::video {
             const size_t y_size = static_cast<size_t>(width_ * height_);
             const size_t uv_size = static_cast<size_t>((width_ / 2) * (height_ / 2));
 
-            cudaMalloc(&y_gpu_, y_size);
-            cudaMalloc(&u_gpu_, uv_size);
-            cudaMalloc(&v_gpu_, uv_size);
+            musaMalloc(&y_gpu_, y_size);
+            musaMalloc(&u_gpu_, uv_size);
+            musaMalloc(&v_gpu_, uv_size);
 
-            cudaMallocHost(&y_pinned_, y_size);
-            cudaMallocHost(&u_pinned_, uv_size);
-            cudaMallocHost(&v_pinned_, uv_size);
+            musaMallocHost(&y_pinned_, y_size);
+            musaMallocHost(&u_pinned_, uv_size);
+            musaMallocHost(&v_pinned_, uv_size);
         }
 
-        std::expected<void, std::string> writeFrameNvenc(
+        lfs_compat::expected<void, std::string> writeFrameNvenc(
             const void* const rgb_gpu_ptr,
-            const cudaStream_t stream) {
+            const musaStream_t stream) {
 
             rgbToNv12Cuda(
                 static_cast<const float*>(rgb_gpu_ptr),
@@ -318,18 +318,18 @@ namespace lfs::io::video {
                 stream);
 
             if (stream) {
-                cudaStreamSynchronize(stream);
+                musaStreamSynchronize(stream);
             } else {
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
 
             frame_->pts = frame_count_++;
             return encodeFrame(frame_);
         }
 
-        std::expected<void, std::string> writeFrameX264Gpu(
+        lfs_compat::expected<void, std::string> writeFrameX264Gpu(
             const void* const rgb_gpu_ptr,
-            const cudaStream_t stream) {
+            const musaStream_t stream) {
 
             rgbToYuv420pCuda(
                 static_cast<const float*>(rgb_gpu_ptr),
@@ -339,19 +339,19 @@ namespace lfs::io::video {
             const size_t y_size = static_cast<size_t>(width_ * height_);
             const size_t uv_size = static_cast<size_t>((width_ / 2) * (height_ / 2));
 
-            cudaMemcpyAsync(y_pinned_, y_gpu_, y_size, cudaMemcpyDeviceToHost, stream);
-            cudaMemcpyAsync(u_pinned_, u_gpu_, uv_size, cudaMemcpyDeviceToHost, stream);
-            cudaMemcpyAsync(v_pinned_, v_gpu_, uv_size, cudaMemcpyDeviceToHost, stream);
+            musaMemcpyAsync(y_pinned_, y_gpu_, y_size, musaMemcpyDeviceToHost, stream);
+            musaMemcpyAsync(u_pinned_, u_gpu_, uv_size, musaMemcpyDeviceToHost, stream);
+            musaMemcpyAsync(v_pinned_, v_gpu_, uv_size, musaMemcpyDeviceToHost, stream);
 
             if (stream) {
-                cudaStreamSynchronize(stream);
+                musaStreamSynchronize(stream);
             } else {
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
 
             const int ret = av_frame_make_writable(frame_);
             if (ret < 0) {
-                return std::unexpected("Frame not writable");
+                return lfs_compat::unexpected("Frame not writable");
             }
 
             const int half_width = width_ / 2;
@@ -372,12 +372,12 @@ namespace lfs::io::video {
             return encodeFrame(frame_);
         }
 
-        std::expected<void, std::string> encodeFrame(AVFrame* const frame) {
+        lfs_compat::expected<void, std::string> encodeFrame(AVFrame* const frame) {
             int ret = avcodec_send_frame(codec_ctx_, frame);
             if (ret < 0) {
                 char err[AV_ERROR_MAX_STRING_SIZE];
                 av_strerror(ret, err, sizeof(err));
-                return std::unexpected(std::string("Send frame error: ") + err);
+                return lfs_compat::unexpected(std::string("Send frame error: ") + err);
             }
 
             while (ret >= 0) {
@@ -387,7 +387,7 @@ namespace lfs::io::video {
                 if (ret < 0) {
                     char err[AV_ERROR_MAX_STRING_SIZE];
                     av_strerror(ret, err, sizeof(err));
-                    return std::unexpected(std::string("Receive packet error: ") + err);
+                    return lfs_compat::unexpected(std::string("Receive packet error: ") + err);
                 }
 
                 av_packet_rescale_ts(packet_, codec_ctx_->time_base, stream_->time_base);
@@ -399,7 +399,7 @@ namespace lfs::io::video {
                 if (ret < 0) {
                     char err[AV_ERROR_MAX_STRING_SIZE];
                     av_strerror(ret, err, sizeof(err));
-                    return std::unexpected(std::string("Write frame error: ") + err);
+                    return lfs_compat::unexpected(std::string("Write frame error: ") + err);
                 }
             }
             return {};
@@ -431,28 +431,28 @@ namespace lfs::io::video {
 
         void cleanup() {
             if (y_gpu_) {
-                cudaFree(y_gpu_);
+                musaFree(y_gpu_);
                 y_gpu_ = nullptr;
             }
             if (u_gpu_) {
-                cudaFree(u_gpu_);
+                musaFree(u_gpu_);
                 u_gpu_ = nullptr;
             }
             if (v_gpu_) {
-                cudaFree(v_gpu_);
+                musaFree(v_gpu_);
                 v_gpu_ = nullptr;
             }
 
             if (y_pinned_) {
-                cudaFreeHost(y_pinned_);
+                musaFreeHost(y_pinned_);
                 y_pinned_ = nullptr;
             }
             if (u_pinned_) {
-                cudaFreeHost(u_pinned_);
+                musaFreeHost(u_pinned_);
                 u_pinned_ = nullptr;
             }
             if (v_pinned_) {
-                cudaFreeHost(v_pinned_);
+                musaFreeHost(v_pinned_);
                 v_pinned_ = nullptr;
             }
 
@@ -499,22 +499,22 @@ namespace lfs::io::video {
     VideoEncoder::VideoEncoder(VideoEncoder&&) noexcept = default;
     VideoEncoder& VideoEncoder::operator=(VideoEncoder&&) noexcept = default;
 
-    std::expected<void, std::string> VideoEncoder::open(
+    lfs_compat::expected<void, std::string> VideoEncoder::open(
         const std::filesystem::path& path, const VideoExportOptions& opts) {
         return impl_->open(path, opts);
     }
 
-    std::expected<void, std::string> VideoEncoder::writeFrame(
+    lfs_compat::expected<void, std::string> VideoEncoder::writeFrame(
         std::span<const uint8_t> /*rgba_data*/, const int /*width*/, const int /*height*/) {
-        return std::unexpected("CPU path not implemented - use writeFrameGpu");
+        return lfs_compat::unexpected("CPU path not implemented - use writeFrameGpu");
     }
 
-    std::expected<void, std::string> VideoEncoder::writeFrameGpu(
+    lfs_compat::expected<void, std::string> VideoEncoder::writeFrameGpu(
         const void* const rgb_gpu_ptr, const int width, const int height, void* const stream) {
-        return impl_->writeFrameGpu(rgb_gpu_ptr, width, height, static_cast<cudaStream_t>(stream));
+        return impl_->writeFrameGpu(rgb_gpu_ptr, width, height, static_cast<musaStream_t>(stream));
     }
 
-    std::expected<void, std::string> VideoEncoder::close() {
+    lfs_compat::expected<void, std::string> VideoEncoder::close() {
         return impl_->close();
     }
 

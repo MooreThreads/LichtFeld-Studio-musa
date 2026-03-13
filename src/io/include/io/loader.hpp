@@ -141,6 +141,6 @@ namespace lfs::io {
 
     /// Load PLY as simple point cloud (xyz + optional colors)
     /// Use this for PLY files that are NOT Gaussian splats
-    LFS_IO_API std::expected<PointCloud, std::string> load_ply_point_cloud(const std::filesystem::path& filepath);
+    LFS_IO_API lfs_compat::expected<PointCloud, std::string> load_ply_point_cloud(const std::filesystem::path& filepath);
 
 } // namespace lfs::io

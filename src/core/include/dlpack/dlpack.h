@@ -53,7 +53,7 @@ typedef enum {
     /*! \brief CUDA GPU device */
     kDLCUDA = 2,
     /*!
-     * \brief Pinned CUDA CPU memory by cudaMallocHost
+     * \brief Pinned CUDA CPU memory by musaMallocHost
      */
     kDLCUDAHost = 3,
     /*! \brief OpenCL devices. */
@@ -77,7 +77,7 @@ typedef enum {
      */
     kDLExtDev = 12,
     /*!
-     * \brief CUDA managed/unified memory allocated by cudaMallocManaged
+     * \brief CUDA managed/unified memory allocated by musaMallocManaged
      */
     kDLCUDAManaged = 13,
     /*!

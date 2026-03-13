@@ -3,7 +3,7 @@
 
 #pragma once
 #include "core/tensor.hpp"
-#include "lfs/kernels/ppisp.cuh"
+#include "lfs/kernels/ppisp.muh"
 #include <cassert>
 #include <cmath>
 #include <istream>

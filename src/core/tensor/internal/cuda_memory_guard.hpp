@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <memory>
 
 namespace lfs::core {
@@ -20,8 +20,8 @@ namespace lfs::core {
 
         explicit CudaDeviceMemory(size_t count) : size_(count) {
             if (count > 0) {
-                cudaError_t err = cudaMalloc(&ptr_, count * sizeof(T));
-                if (err != cudaSuccess) {
+                musaError_t err = musaMalloc(&ptr_, count * sizeof(T));
+                if (err != musaSuccess) {
                     ptr_ = nullptr;
                     size_ = 0;
                 }
@@ -30,7 +30,7 @@ namespace lfs::core {
 
         ~CudaDeviceMemory() {
             if (ptr_) {
-                cudaFree(ptr_);
+                musaFree(ptr_);
             }
         }
 
@@ -50,7 +50,7 @@ namespace lfs::core {
         CudaDeviceMemory& operator=(CudaDeviceMemory&& other) noexcept {
             if (this != &other) {
                 if (ptr_) {
-                    cudaFree(ptr_);
+                    musaFree(ptr_);
                 }
                 ptr_ = other.ptr_;
                 size_ = other.size_;
@@ -74,26 +74,26 @@ namespace lfs::core {
 
         void reset(T* ptr = nullptr, size_t size = 0) {
             if (ptr_ && ptr_ != ptr) {
-                cudaFree(ptr_);
+                musaFree(ptr_);
             }
             ptr_ = ptr;
             size_ = size;
         }
 
         // Copy data from host
-        cudaError_t copy_from_host(const T* host_ptr, size_t count) {
+        musaError_t copy_from_host(const T* host_ptr, size_t count) {
             if (!ptr_ || count > size_) {
-                return cudaErrorInvalidValue;
+                return musaErrorInvalidValue;
             }
-            return cudaMemcpy(ptr_, host_ptr, count * sizeof(T), cudaMemcpyHostToDevice);
+            return musaMemcpy(ptr_, host_ptr, count * sizeof(T), musaMemcpyHostToDevice);
         }
 
         // Copy data to host
-        cudaError_t copy_to_host(T* host_ptr, size_t count) const {
+        musaError_t copy_to_host(T* host_ptr, size_t count) const {
             if (!ptr_ || count > size_) {
-                return cudaErrorInvalidValue;
+                return musaErrorInvalidValue;
             }
-            return cudaMemcpy(host_ptr, ptr_, count * sizeof(T), cudaMemcpyDeviceToHost);
+            return musaMemcpy(host_ptr, ptr_, count * sizeof(T), musaMemcpyDeviceToHost);
         }
     };
 

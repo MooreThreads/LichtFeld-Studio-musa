@@ -92,7 +92,7 @@ namespace nvjpeg {
             const nvimgcodecFrameworkDesc_t* framework_;
 
             nvjpegJpegState_t state_;
-            cudaEvent_t event_;
+            musaEvent_t event_;
             std::vector<nvjpegJpegStream_t> nvjpeg_streams_;
             const nvimgcodecExecutionParams_t* exec_params_;
         };
@@ -251,7 +251,7 @@ namespace nvjpeg {
         int num_threads = executor->getNumThreads(executor->instance);
 
         XM_CHECK_NVJPEG(nvjpegJpegStateCreate(handle_, &state_));
-        XM_CHECK_CUDA(cudaEventCreate(&event_));
+        XM_CHECK_CUDA(musaEventCreate(&event_));
 
         nvjpeg_streams_.resize(num_threads + 1);
         for (auto& nvjpeg_stream : nvjpeg_streams_) {
@@ -300,7 +300,7 @@ namespace nvjpeg {
                 XM_NVJPEG_LOG_DESTROY(nvjpegJpegStreamDestroy(nvjpeg_stream));
 
             if (event_)
-                XM_CUDA_LOG_DESTROY(cudaEventDestroy(event_));
+                XM_CUDA_LOG_DESTROY(musaEventDestroy(event_));
             if (state_)
                 XM_NVJPEG_LOG_DESTROY(nvjpegJpegStateDestroy(state_));
 
@@ -344,7 +344,7 @@ namespace nvjpeg {
             std::vector<const nvimgcodecImageDesc_t*> batched_images;
 
             nvjpegOutputFormat_t nvjpeg_format{NVJPEG_OUTPUT_UNCHANGED};
-            cudaStream_t stream{0};
+            musaStream_t stream{0};
 
             for (int sample_idx = 0; sample_idx < batch_size; sample_idx++) {
                 auto* image = images[sample_idx];
@@ -412,14 +412,14 @@ namespace nvjpeg {
 
             if (batched_bitstreams.size() > 0) {
                 // Synchronize with previous iteration
-                XM_CHECK_CUDA(cudaEventSynchronize(event_));
+                XM_CHECK_CUDA(musaEventSynchronize(event_));
 
                 XM_CHECK_NVJPEG(nvjpegDecodeBatchedInitialize(handle_, state_, batched_bitstreams.size(), 1, nvjpeg_format));
 
                 XM_CHECK_NVJPEG(nvjpegDecodeBatched(handle_, state_, batched_bitstreams.data(), batched_bitstreams_size.data(),
                                                     batched_output.data(), stream));
 
-                XM_CHECK_CUDA(cudaEventRecord(event_, stream));
+                XM_CHECK_CUDA(musaEventRecord(event_, stream));
             }
 
             for (auto* image : batched_images) {

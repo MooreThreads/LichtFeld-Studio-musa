@@ -36,49 +36,49 @@ namespace lfs::rendering {
         if (auto result = split_view_renderer_->initialize(); !result) {
             LOG_ERROR("Failed to initialize split view renderer: {}", result.error());
             shutdown();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
         LOG_DEBUG("Split view renderer initialized");
 
         if (auto result = grid_renderer_.init(); !result) {
             LOG_ERROR("Failed to initialize grid renderer: {}", result.error());
             shutdown();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
         LOG_DEBUG("Grid renderer initialized");
 
         if (auto result = bbox_renderer_.init(); !result) {
             LOG_ERROR("Failed to initialize bounding box renderer: {}", result.error());
             shutdown();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
         LOG_DEBUG("Bounding box renderer initialized");
 
         if (auto result = ellipsoid_renderer_.init(); !result) {
             LOG_ERROR("Failed to initialize ellipsoid renderer: {}", result.error());
             shutdown();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
         LOG_DEBUG("Ellipsoid renderer initialized");
 
         if (auto result = axes_renderer_.init(); !result) {
             LOG_ERROR("Failed to initialize axes renderer: {}", result.error());
             shutdown();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
         LOG_DEBUG("Axes renderer initialized");
 
         if (auto result = pivot_renderer_.init(); !result) {
             LOG_ERROR("Failed to initialize pivot renderer: {}", result.error());
             shutdown();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
         LOG_DEBUG("Pivot renderer initialized");
 
         if (auto result = viewport_gizmo_.initialize(); !result) {
             LOG_ERROR("Failed to initialize viewport gizmo: {}", result.error());
             shutdown();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
         LOG_DEBUG("Viewport gizmo initialized");
 
@@ -104,7 +104,7 @@ namespace lfs::rendering {
         if (!shader_result) {
             LOG_ERROR("Failed to initialize shaders: {}", shader_result.error());
             shutdown();
-            return std::unexpected(shader_result.error());
+            return lfs_compat::unexpected(shader_result.error());
         }
 
         LOG_INFO("Rendering engine initialized successfully");
@@ -137,7 +137,7 @@ namespace lfs::rendering {
         auto result = load_shader("screen_quad", "screen_quad.vert", "screen_quad.frag", true);
         if (!result) {
             LOG_ERROR("Failed to create screen quad shader: {}", result.error().what());
-            return std::unexpected(std::string("Failed to create shaders: ") + result.error().what());
+            return lfs_compat::unexpected(std::string("Failed to create shaders: ") + result.error().what());
         }
         quad_shader_ = std::move(*result);
         LOG_DEBUG("Screen quad shader loaded successfully");
@@ -150,13 +150,13 @@ namespace lfs::rendering {
 
         if (!isInitialized()) {
             LOG_ERROR("Rendering engine not initialized");
-            return std::unexpected("Rendering engine not initialized");
+            return lfs_compat::unexpected("Rendering engine not initialized");
         }
 
         if (request.viewport.size.x <= 0 || request.viewport.size.y <= 0 ||
             request.viewport.size.x > MAX_VIEWPORT_SIZE || request.viewport.size.y > MAX_VIEWPORT_SIZE) {
             LOG_ERROR("Invalid viewport dimensions: {}x{}", request.viewport.size.x, request.viewport.size.y);
-            return std::unexpected("Invalid viewport dimensions");
+            return lfs_compat::unexpected("Invalid viewport dimensions");
         }
 
         LOG_TRACE("Rendering gaussians with viewport {}x{}", request.viewport.size.x, request.viewport.size.y);
@@ -284,7 +284,7 @@ namespace lfs::rendering {
 
         if (!pipeline_result) {
             LOG_ERROR("Pipeline render failed: {}", pipeline_result.error());
-            return std::unexpected(pipeline_result.error());
+            return lfs_compat::unexpected(pipeline_result.error());
         }
 
         RenderResult result{
@@ -309,13 +309,13 @@ namespace lfs::rendering {
 
         if (!isInitialized()) {
             LOG_ERROR("Rendering engine not initialized");
-            return std::unexpected("Rendering engine not initialized");
+            return lfs_compat::unexpected("Rendering engine not initialized");
         }
 
         if (request.viewport.size.x <= 0 || request.viewport.size.y <= 0 ||
             request.viewport.size.x > MAX_VIEWPORT_SIZE || request.viewport.size.y > MAX_VIEWPORT_SIZE) {
             LOG_ERROR("Invalid viewport dimensions: {}x{}", request.viewport.size.x, request.viewport.size.y);
-            return std::unexpected("Invalid viewport dimensions");
+            return lfs_compat::unexpected("Invalid viewport dimensions");
         }
 
         LOG_TRACE("Rendering point cloud with viewport {}x{}", request.viewport.size.x, request.viewport.size.y);
@@ -374,7 +374,7 @@ namespace lfs::rendering {
 
         if (!pipeline_result) {
             LOG_ERROR("Pipeline render failed: {}", pipeline_result.error());
-            return std::unexpected(pipeline_result.error());
+            return lfs_compat::unexpected(pipeline_result.error());
         }
 
         RenderResult result{
@@ -396,12 +396,12 @@ namespace lfs::rendering {
 
         if (!isInitialized()) {
             LOG_ERROR("Rendering engine not initialized");
-            return std::unexpected("Rendering engine not initialized");
+            return lfs_compat::unexpected("Rendering engine not initialized");
         }
 
         if (!split_view_renderer_) {
             LOG_ERROR("Split view renderer not initialized");
-            return std::unexpected("Split view renderer not initialized");
+            return lfs_compat::unexpected("Split view renderer not initialized");
         }
 
         LOG_TRACE("Rendering split view with {} panels", request.panels.size());
@@ -417,12 +417,12 @@ namespace lfs::rendering {
 
         if (!isInitialized()) {
             LOG_ERROR("Rendering engine not initialized");
-            return std::unexpected("Rendering engine not initialized");
+            return lfs_compat::unexpected("Rendering engine not initialized");
         }
 
         if (!result.image) {
             LOG_ERROR("Invalid render result - image is null");
-            return std::unexpected("Invalid render result");
+            return lfs_compat::unexpected("Invalid render result");
         }
 
         LOG_TRACE("Presenting to screen at ({}, {}) size {}x{}",
@@ -488,7 +488,7 @@ namespace lfs::rendering {
 
         if (!isInitialized() || !grid_renderer_.isInitialized()) {
             LOG_ERROR("Grid renderer not initialized");
-            return std::unexpected("Grid renderer not initialized");
+            return lfs_compat::unexpected("Grid renderer not initialized");
         }
 
         auto view = createViewMatrix(viewport);
@@ -508,7 +508,7 @@ namespace lfs::rendering {
 
         if (!isInitialized() || !bbox_renderer_.isInitialized()) {
             LOG_ERROR("Bounding box renderer not initialized");
-            return std::unexpected("Bounding box renderer not initialized");
+            return lfs_compat::unexpected("Bounding box renderer not initialized");
         }
 
         bbox_renderer_.setBounds(box.min, box.max);
@@ -531,7 +531,7 @@ namespace lfs::rendering {
 
         if (!isInitialized() || !ellipsoid_renderer_.isInitialized()) {
             LOG_ERROR("Ellipsoid renderer not initialized");
-            return std::unexpected("Ellipsoid renderer not initialized");
+            return lfs_compat::unexpected("Ellipsoid renderer not initialized");
         }
 
         ellipsoid_renderer_.setRadii(ellipsoid.radii);
@@ -553,7 +553,7 @@ namespace lfs::rendering {
 
         if (!isInitialized() || !axes_renderer_.isInitialized()) {
             LOG_ERROR("Axes renderer not initialized");
-            return std::unexpected("Axes renderer not initialized");
+            return lfs_compat::unexpected("Axes renderer not initialized");
         }
 
         axes_renderer_.setSize(size);
@@ -574,7 +574,7 @@ namespace lfs::rendering {
         float opacity) {
 
         if (!isInitialized() || !pivot_renderer_.isInitialized()) {
-            return std::unexpected("Pivot renderer not initialized");
+            return lfs_compat::unexpected("Pivot renderer not initialized");
         }
 
         pivot_renderer_.setPosition(pivot_position);
@@ -594,7 +594,7 @@ namespace lfs::rendering {
 
         if (!isInitialized()) {
             LOG_ERROR("Viewport gizmo not initialized");
-            return std::unexpected("Viewport gizmo not initialized");
+            return lfs_compat::unexpected("Viewport gizmo not initialized");
         }
 
         return viewport_gizmo_.render(camera_rotation, viewport_pos, viewport_size);
@@ -701,7 +701,7 @@ namespace lfs::rendering {
         bool use_fbo) {
 
         if (!mesh_renderer_.isInitialized())
-            return std::unexpected("Mesh renderer not initialized");
+            return lfs_compat::unexpected("Mesh renderer not initialized");
 
         mesh_renderer_.resize(viewport.size.x, viewport.size.y);
 
@@ -738,7 +738,7 @@ namespace lfs::rendering {
         const glm::ivec2& viewport_size) {
 
         if (!depth_compositor_.isInitialized())
-            return std::unexpected("Depth compositor not initialized");
+            return lfs_compat::unexpected("Depth compositor not initialized");
 
         if (!mesh_rendered_this_frame_)
             return {};
@@ -764,7 +764,7 @@ namespace lfs::rendering {
 
     Result<void> RenderingEngineImpl::presentMeshOnly() {
         if (!depth_compositor_.isInitialized())
-            return std::unexpected("Depth compositor not initialized");
+            return lfs_compat::unexpected("Depth compositor not initialized");
 
         if (!mesh_rendered_this_frame_)
             return {};

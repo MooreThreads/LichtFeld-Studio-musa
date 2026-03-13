@@ -1,0 +1,18 @@
+/* SPDX-FileCopyrightText: 2025 LichtFeld Studio Authors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Compatibility shim: provides std::print / std::println via fmt library.
+ * GCC 11 / Clang 14 (mcc) do not have <print> (C++23).
+ */
+
+#ifndef LFS_PRINT_COMPAT_H_
+#define LFS_PRINT_COMPAT_H_
+
+#include <fmt/base.h>
+
+namespace std {
+    using fmt::print;
+    using fmt::println;
+}
+
+#endif // LFS_PRINT_COMPAT_H_

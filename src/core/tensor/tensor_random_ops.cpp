@@ -5,25 +5,27 @@
 #include "internal/tensor_impl.hpp"
 #include "internal/tensor_ops.hpp"
 #include <atomic>
-#include <curand.h>
-#include <curand_kernel.h>
+#include <murand.h>
+// murand_kernel.h contains device-only code (threadIdx, __syncthreads)
+// and can only be included in .mu files compiled with -x musa
+// #include <murand_kernel.h>
 #include <random>
 
 #define CHECK_CUDA(call)                              \
     do {                                              \
-        cudaError_t error = call;                     \
-        if (error != cudaSuccess) {                   \
+        musaError_t error = call;                     \
+        if (error != musaSuccess) {                   \
             LOG_ERROR("CUDA error at {}:{} - {}: {}", \
                       __FILE__, __LINE__,             \
-                      cudaGetErrorName(error),        \
-                      cudaGetErrorString(error));     \
+                      musaGetErrorName(error),        \
+                      musaGetErrorString(error));     \
         }                                             \
     } while (0)
 
 #define CHECK_CURAND(call)                             \
     do {                                               \
-        curandStatus_t error = call;                   \
-        if (error != CURAND_STATUS_SUCCESS) {          \
+        murandStatus_t error = call;                   \
+        if (error != MURAND_STATUS_SUCCESS) {          \
             LOG_ERROR("CURAND error at {}:{} - {}",    \
                       __FILE__, __LINE__, (int)error); \
         }                                              \
@@ -44,16 +46,16 @@ namespace lfs::core {
         RandomGeneratorImpl() : seed_(42),
                                 cpu_generator_(seed_) {
             // Initialize CUDA random generator with Philox (same as PyTorch - much faster!)
-            curandGenerator_t* gen = new curandGenerator_t;
-            CHECK_CURAND(curandCreateGenerator(gen, CURAND_RNG_PSEUDO_PHILOX4_32_10));
-            CHECK_CURAND(curandSetPseudoRandomGeneratorSeed(*gen, seed_));
+            murandGenerator_t* gen = new murandGenerator_t;
+            CHECK_CURAND(murandCreateGenerator(gen, MURAND_RNG_PSEUDO_PHILOX4_32_10));
+            CHECK_CURAND(murandSetPseudoRandomGeneratorSeed(*gen, seed_));
             cuda_generator_ = gen;
         }
 
         ~RandomGeneratorImpl() {
             if (cuda_generator_) {
-                curandGenerator_t* gen = static_cast<curandGenerator_t*>(cuda_generator_);
-                curandDestroyGenerator(*gen);
+                murandGenerator_t* gen = static_cast<murandGenerator_t*>(cuda_generator_);
+                murandDestroyGenerator(*gen);
                 delete gen;
             }
         }
@@ -86,10 +88,10 @@ namespace lfs::core {
         impl->call_counter_.store(0); // Reset call counter when seed is set
 
         if (impl->cuda_generator_) {
-            curandGenerator_t* gen = static_cast<curandGenerator_t*>(impl->cuda_generator_);
-            CHECK_CURAND(curandSetPseudoRandomGeneratorSeed(*gen, seed));
+            murandGenerator_t* gen = static_cast<murandGenerator_t*>(impl->cuda_generator_);
+            CHECK_CURAND(murandSetPseudoRandomGeneratorSeed(*gen, seed));
             // IMPORTANT: Reset the offset to ensure reproducibility
-            CHECK_CURAND(curandSetGeneratorOffset(*gen, 0));
+            CHECK_CURAND(murandSetGeneratorOffset(*gen, 0));
         }
     }
 
@@ -162,23 +164,23 @@ namespace lfs::core {
         size_t n = numel();
 
         if (device_ == Device::CUDA) {
-            // OPTIMIZATION: Use curandGenerateNormal for bulk generation (much faster!)
-            // This avoids the slow per-element curand_init in the kernel
-            curandGenerator_t* gen = static_cast<curandGenerator_t*>(
+            // OPTIMIZATION: Use murandGenerateNormal for bulk generation (much faster!)
+            // This avoids the slow per-element murand_init in the kernel
+            murandGenerator_t* gen = static_cast<murandGenerator_t*>(
                 RandomGenerator::instance().get_generator(Device::CUDA));
 
             // Advance the generator offset (not the seed!) for reproducibility
             uint64_t offset = RandomGenerator::instance().get_next_cuda_offset();
-            CHECK_CURAND(curandSetGeneratorOffset(*gen, offset));
+            CHECK_CURAND(murandSetGeneratorOffset(*gen, offset));
 
-            // curandGenerateNormal requires even number of elements
+            // murandGenerateNormal requires even number of elements
             if (n % 2 == 1) {
                 // For odd sizes, generate n+1 and ignore the last element
-                CHECK_CURAND(curandGenerateNormal(*gen, ptr<float>(), n + 1, mean, std));
+                CHECK_CURAND(murandGenerateNormal(*gen, ptr<float>(), n + 1, mean, std));
             } else {
-                CHECK_CURAND(curandGenerateNormal(*gen, ptr<float>(), n, mean, std));
+                CHECK_CURAND(murandGenerateNormal(*gen, ptr<float>(), n, mean, std));
             }
-            // Note: No need for cudaDeviceSynchronize() - curandGenerateNormal is blocking
+            // Note: No need for musaDeviceSynchronize() - murandGenerateNormal is blocking
         } else {
             // CPU uses stateful generator
             auto* impl = static_cast<RandomGeneratorImpl*>(

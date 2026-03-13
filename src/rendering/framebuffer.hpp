@@ -18,7 +18,7 @@ namespace lfs::rendering {
 
     // Consistent error handling
     template <typename T>
-    using Result = std::expected<T, std::string>;
+    using Result = lfs_compat::expected<T, std::string>;
 
     class FrameBuffer {
 
@@ -89,7 +89,7 @@ namespace lfs::rendering {
 
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
                 LOG_ERROR("Framebuffer is not complete");
-                return std::unexpected("Framebuffer is not complete");
+                return lfs_compat::unexpected("Framebuffer is not complete");
             }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);

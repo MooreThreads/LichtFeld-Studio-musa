@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <stdexcept>
 #include <string>
 
@@ -13,13 +13,13 @@
         throw std::runtime_error("Null pointer for " + std::string(name));                \
     }                                                                                     \
     {                                                                                     \
-        cudaPointerAttributes attrs;                                                      \
-        cudaError_t err = cudaPointerGetAttributes(&attrs, ptr);                          \
-        if (err != cudaSuccess) {                                                         \
-            cudaGetLastError(); /* Clear error */                                         \
+        musaPointerAttributes attrs;                                                      \
+        musaError_t err = musaPointerGetAttributes(&attrs, ptr);                          \
+        if (err != musaSuccess) {                                                         \
+            musaGetLastError(); /* Clear error */                                         \
             throw std::runtime_error(std::string(name) + " is not a valid CUDA pointer"); \
         }                                                                                 \
-        if (attrs.type != cudaMemoryTypeDevice) {                                         \
+        if (attrs.type != musaMemoryTypeDevice) {                                         \
             throw std::runtime_error(std::string(name) + " is not a device pointer");     \
         }                                                                                 \
     }
@@ -34,14 +34,14 @@ inline bool is_valid_cuda_ptr(const void* ptr) {
     if (!ptr)
         return false;
 
-    cudaPointerAttributes attrs;
-    cudaError_t err = cudaPointerGetAttributes(&attrs, ptr);
-    if (err != cudaSuccess) {
-        cudaGetLastError(); // Clear error
+    musaPointerAttributes attrs;
+    musaError_t err = musaPointerGetAttributes(&attrs, ptr);
+    if (err != musaSuccess) {
+        musaGetLastError(); // Clear error
         return false;
     }
 
-    return attrs.type == cudaMemoryTypeDevice;
+    return attrs.type == musaMemoryTypeDevice;
 }
 
 // Validate that a pointer is accessible from device (more lenient check)
@@ -51,9 +51,9 @@ inline bool is_device_accessible(const void* ptr) {
 
     // Try a simple test read
     float test_value;
-    cudaError_t err = cudaMemcpy(&test_value, ptr, sizeof(float), cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess) {
-        cudaGetLastError(); // Clear error
+    musaError_t err = musaMemcpy(&test_value, ptr, sizeof(float), musaMemcpyDeviceToHost);
+    if (err != musaSuccess) {
+        musaGetLastError(); // Clear error
         return false;
     }
 

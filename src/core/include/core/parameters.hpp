@@ -9,6 +9,7 @@
 #include <array>
 #include <expected>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -211,10 +212,10 @@ namespace lfs::core {
         };
 
         // Modern C++23 functions returning expected values
-        LFS_CORE_API std::expected<OptimizationParameters, std::string> read_optim_params_from_json(const std::filesystem::path& path);
+        LFS_CORE_API lfs_compat::expected<OptimizationParameters, std::string> read_optim_params_from_json(const std::filesystem::path& path);
 
         // Save training parameters to JSON
-        LFS_CORE_API std::expected<void, std::string> save_training_parameters_to_json(
+        LFS_CORE_API lfs_compat::expected<void, std::string> save_training_parameters_to_json(
             const TrainingParameters& params,
             const std::filesystem::path& output_path);
 

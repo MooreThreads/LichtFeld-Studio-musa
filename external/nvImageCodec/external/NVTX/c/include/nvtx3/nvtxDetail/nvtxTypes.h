@@ -27,8 +27,8 @@ typedef void* nvtx_CUcontext;
 typedef void* nvtx_CUstream;
 typedef void* nvtx_CUevent;
 
-typedef void* nvtx_cudaStream_t;
-typedef void* nvtx_cudaEvent_t;
+typedef void* nvtx_musaStream_t;
+typedef void* nvtx_musaEvent_t;
 
 typedef void* nvtx_cl_platform_id;
 typedef void* nvtx_cl_device_id;
@@ -91,10 +91,10 @@ typedef void(NVTX_API* nvtxNameClEventW_fakeimpl_fntype)(nvtx_cl_event evnt, con
 /* Real impl types are defined in nvtxImplCudaRt_v3.h, where CUDART headers are included */
 typedef void(NVTX_API* nvtxNameCudaDeviceA_impl_fntype)(int device, const char* name);
 typedef void(NVTX_API* nvtxNameCudaDeviceW_impl_fntype)(int device, const wchar_t* name);
-typedef void(NVTX_API* nvtxNameCudaStreamA_fakeimpl_fntype)(nvtx_cudaStream_t stream, const char* name);
-typedef void(NVTX_API* nvtxNameCudaStreamW_fakeimpl_fntype)(nvtx_cudaStream_t stream, const wchar_t* name);
-typedef void(NVTX_API* nvtxNameCudaEventA_fakeimpl_fntype)(nvtx_cudaEvent_t event, const char* name);
-typedef void(NVTX_API* nvtxNameCudaEventW_fakeimpl_fntype)(nvtx_cudaEvent_t event, const wchar_t* name);
+typedef void(NVTX_API* nvtxNameCudaStreamA_fakeimpl_fntype)(nvtx_musaStream_t stream, const char* name);
+typedef void(NVTX_API* nvtxNameCudaStreamW_fakeimpl_fntype)(nvtx_musaStream_t stream, const wchar_t* name);
+typedef void(NVTX_API* nvtxNameCudaEventA_fakeimpl_fntype)(nvtx_musaEvent_t event, const char* name);
+typedef void(NVTX_API* nvtxNameCudaEventW_fakeimpl_fntype)(nvtx_musaEvent_t event, const wchar_t* name);
 
 typedef void(NVTX_API* nvtxDomainMarkEx_impl_fntype)(nvtxDomainHandle_t domain, const nvtxEventAttributes_t* eventAttrib);
 typedef nvtxRangeId_t(NVTX_API* nvtxDomainRangeStartEx_impl_fntype)(nvtxDomainHandle_t domain, const nvtxEventAttributes_t* eventAttrib);

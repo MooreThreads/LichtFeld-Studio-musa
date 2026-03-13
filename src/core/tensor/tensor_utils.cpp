@@ -11,12 +11,12 @@
 
 #define CHECK_CUDA(call)                              \
     do {                                              \
-        cudaError_t error = call;                     \
-        if (error != cudaSuccess) {                   \
+        musaError_t error = call;                     \
+        if (error != musaSuccess) {                   \
             LOG_ERROR("CUDA error at {}:{} - {}: {}", \
                       __FILE__, __LINE__,             \
-                      cudaGetErrorName(error),        \
-                      cudaGetErrorString(error));     \
+                      musaGetErrorName(error),        \
+                      musaGetErrorString(error));     \
         }                                             \
     } while (0)
 
@@ -44,8 +44,8 @@ namespace lfs::core {
         }
 
         if (device == Device::CUDA) {
-            CHECK_CUDA(cudaMemcpy(t.ptr<float>(), data.data(), steps * sizeof(float),
-                                  cudaMemcpyHostToDevice));
+            CHECK_CUDA(musaMemcpy(t.ptr<float>(), data.data(), steps * sizeof(float),
+                                  musaMemcpyHostToDevice));
         } else {
             std::memcpy(t.ptr<float>(), data.data(), steps * sizeof(float));
         }
@@ -85,7 +85,7 @@ namespace lfs::core {
         MemoryInfo info;
 
         size_t free_bytes, total_bytes;
-        cudaMemGetInfo(&free_bytes, &total_bytes);
+        musaMemGetInfo(&free_bytes, &total_bytes);
 
         info.free_bytes = free_bytes;
         info.total_bytes = total_bytes;
@@ -129,8 +129,8 @@ namespace lfs::core::functional {
                 dst_data[i] = func(src[i]);
             }
 
-            cudaMemcpy(result.ptr<float>(), dst_data.data(),
-                       dst_data.size() * sizeof(float), cudaMemcpyHostToDevice);
+            musaMemcpy(result.ptr<float>(), dst_data.data(),
+                       dst_data.size() * sizeof(float), musaMemcpyHostToDevice);
         } else {
             const float* src = input.ptr<float>();
             float* dst = result.ptr<float>();
@@ -166,8 +166,8 @@ namespace lfs::core::functional {
                 dst_data[i] = predicate(src[i]) ? 1.0f : 0.0f;
             }
 
-            cudaMemcpy(result.ptr<float>(), dst_data.data(),
-                       dst_data.size() * sizeof(float), cudaMemcpyHostToDevice);
+            musaMemcpy(result.ptr<float>(), dst_data.data(),
+                       dst_data.size() * sizeof(float), musaMemcpyHostToDevice);
         } else {
             const float* src = input.ptr<float>();
             float* dst = result.ptr<float>();

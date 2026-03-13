@@ -240,10 +240,10 @@ namespace nvimgcodec {
             auto& pinned_buffer = pinned_buffers[pinned_buffer_idx];
             pinned_buffer_idx = (pinned_buffer_idx + 1) % pinned_buffers.size();
             assert(pinned_buffer.size == 0 || pinned_buffer.stream == t.stream); // sanity check
-            CHECK_CUDA(cudaEventSynchronize(t.event));                           // wait for the previous work to complete
+            CHECK_CUDA(musaEventSynchronize(t.event));                           // wait for the previous work to complete
             pinned_buffer.resize(info.buffer_size, t.stream);
-            CHECK_CUDA(cudaEventRecord(t.event, t.stream));
-            CHECK_CUDA(cudaEventSynchronize(t.event)); // wait for the allocation to complete
+            CHECK_CUDA(musaEventRecord(t.event, t.stream));
+            CHECK_CUDA(musaEventSynchronize(t.event)); // wait for the allocation to complete
             info.buffer_kind = NVIMGCODEC_IMAGE_BUFFER_KIND_STRIDED_HOST;
             info.buffer = pinned_buffer.data;
             assert(info.buffer_size == pinned_buffer.size);
@@ -273,13 +273,13 @@ namespace nvimgcodec {
         assert((static_cast<int>(d2h) + static_cast<int>(h2d)) == 1);
         (void)h2d;
         assert(info.buffer_size == output_info.buffer_size);
-        auto copy_direction = d2h ? cudaMemcpyDeviceToHost : cudaMemcpyHostToDevice;
+        auto copy_direction = d2h ? musaMemcpyDeviceToHost : musaMemcpyHostToDevice;
         auto& t = per_thread_[tid];
-        NVIMGCODEC_LOG_DEBUG(logger_, "cudaMemcpyAsync " << (d2h ? "D2H" : "H2D") << " stream=" << t.stream);
-        CHECK_CUDA(cudaMemcpyAsync(output_info.buffer, info.buffer, info.buffer_size, copy_direction, t.stream));
-        CHECK_CUDA(cudaEventRecord(t.event, t.stream)); // record event for the next iteration to wait for
+        NVIMGCODEC_LOG_DEBUG(logger_, "musaMemcpyAsync " << (d2h ? "D2H" : "H2D") << " stream=" << t.stream);
+        CHECK_CUDA(musaMemcpyAsync(output_info.buffer, info.buffer, info.buffer_size, copy_direction, t.stream));
+        CHECK_CUDA(musaEventRecord(t.event, t.stream)); // record event for the next iteration to wait for
         if (d2h)
-            CHECK_CUDA(cudaStreamSynchronize(t.stream));
+            CHECK_CUDA(musaStreamSynchronize(t.stream));
     }
 
 } // namespace nvimgcodec

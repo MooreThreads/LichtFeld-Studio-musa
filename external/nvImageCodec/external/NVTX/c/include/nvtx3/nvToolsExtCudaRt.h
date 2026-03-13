@@ -43,8 +43,8 @@ extern "C" {
  */
 typedef enum nvtxResourceCUDARTType_t {
     NVTX_RESOURCE_TYPE_CUDART_DEVICE = NVTX_RESOURCE_MAKE_TYPE(CUDART, 0), /* int device */
-    NVTX_RESOURCE_TYPE_CUDART_STREAM = NVTX_RESOURCE_MAKE_TYPE(CUDART, 1), /* cudaStream_t */
-    NVTX_RESOURCE_TYPE_CUDART_EVENT = NVTX_RESOURCE_MAKE_TYPE(CUDART, 2),  /* cudaEvent_t */
+    NVTX_RESOURCE_TYPE_CUDART_STREAM = NVTX_RESOURCE_MAKE_TYPE(CUDART, 1), /* musaStream_t */
+    NVTX_RESOURCE_TYPE_CUDART_EVENT = NVTX_RESOURCE_MAKE_TYPE(CUDART, 2),  /* musaEvent_t */
 } nvtxResourceCUDARTType_t;
 
 /* ------------------------------------------------------------------------- */
@@ -71,8 +71,8 @@ NVTX_DECLSPEC void NVTX_API nvtxNameCudaDeviceW(int device, const wchar_t* name)
  *
  * \version \NVTX_VERSION_1
  * @{ */
-NVTX_DECLSPEC void NVTX_API nvtxNameCudaStreamA(cudaStream_t stream, const char* name);
-NVTX_DECLSPEC void NVTX_API nvtxNameCudaStreamW(cudaStream_t stream, const wchar_t* name);
+NVTX_DECLSPEC void NVTX_API nvtxNameCudaStreamA(musaStream_t stream, const char* name);
+NVTX_DECLSPEC void NVTX_API nvtxNameCudaStreamW(musaStream_t stream, const wchar_t* name);
 /** @} */
 
 /* ------------------------------------------------------------------------- */
@@ -85,8 +85,8 @@ NVTX_DECLSPEC void NVTX_API nvtxNameCudaStreamW(cudaStream_t stream, const wchar
  *
  * \version \NVTX_VERSION_1
  * @{ */
-NVTX_DECLSPEC void NVTX_API nvtxNameCudaEventA(cudaEvent_t event, const char* name);
-NVTX_DECLSPEC void NVTX_API nvtxNameCudaEventW(cudaEvent_t event, const wchar_t* name);
+NVTX_DECLSPEC void NVTX_API nvtxNameCudaEventA(musaEvent_t event, const char* name);
+NVTX_DECLSPEC void NVTX_API nvtxNameCudaEventW(musaEvent_t event, const wchar_t* name);
 /** @} */
 
 /** @} */ /* END RESOURCE_NAMING */

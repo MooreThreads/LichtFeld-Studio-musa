@@ -8,7 +8,9 @@
 #include "dirty_flags.hpp"
 #include "framerate_controller.hpp"
 #include "internal/viewport.hpp"
+#ifdef LFS_HAS_NVCODEC
 #include "io/nvcodec_image_loader.hpp"
+#endif
 #include "rendering/cuda_gl_interop.hpp"
 #include "rendering/rendering.hpp"
 #include "rendering_types.hpp"
@@ -59,7 +61,9 @@ namespace lfs::vis {
         };
 
         std::unordered_map<int, CacheEntry> texture_cache_;
+#ifdef LFS_HAS_NVCODEC
         std::unique_ptr<lfs::io::NvCodecImageLoader> nvcodec_loader_;
+#endif
         static constexpr size_t MAX_CACHE_SIZE = 20;
 
         void evictOldest();

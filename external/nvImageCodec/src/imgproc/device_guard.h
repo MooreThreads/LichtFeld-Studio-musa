@@ -65,7 +65,7 @@ namespace nvimgcodec {
                     if (cuCtxGetCurrent(&old_context_) != CUDA_SUCCESS) {
                         throw std::runtime_error("Unable to get current CUDA context");
                     }
-                    if (cudaSetDevice(new_device) != cudaSuccess) {
+                    if (musaSetDevice(new_device) != musaSuccess) {
                         throw std::runtime_error("Unable to set device");
                     }
                 }

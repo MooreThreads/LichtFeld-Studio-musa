@@ -36,10 +36,10 @@ namespace lfs::core::args {
 
     using ParsedArgs = std::variant<TrainingMode, ConvertMode, HelpMode, VersionMode, WarmupMode, McpMode, PluginMode>;
 
-    LFS_CORE_API std::expected<ParsedArgs, std::string> parse_args(int argc, const char* const argv[]);
+    LFS_CORE_API lfs_compat::expected<ParsedArgs, std::string> parse_args(int argc, const char* const argv[]);
 
     // Legacy interface - prefer parse_args()
-    LFS_CORE_API std::expected<std::unique_ptr<param::TrainingParameters>, std::string>
+    LFS_CORE_API lfs_compat::expected<std::unique_ptr<param::TrainingParameters>, std::string>
     parse_args_and_params(int argc, const char* const argv[]);
 
 } // namespace lfs::core::args

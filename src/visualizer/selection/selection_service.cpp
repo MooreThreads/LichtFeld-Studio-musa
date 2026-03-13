@@ -19,7 +19,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <glm/geometric.hpp>
 #include <glm/trigonometric.hpp>
 #include <limits>
@@ -226,11 +226,11 @@ namespace lfs::vis {
 
     SelectionService::~SelectionService() {
         if (hovered_depth_id_device_) {
-            cudaFree(hovered_depth_id_device_);
+            musaFree(hovered_depth_id_device_);
             hovered_depth_id_device_ = nullptr;
         }
         if (hovered_depth_id_host_) {
-            cudaFreeHost(hovered_depth_id_host_);
+            musaFreeHost(hovered_depth_id_host_);
             hovered_depth_id_host_ = nullptr;
         }
     }
@@ -936,7 +936,7 @@ namespace lfs::vis {
 
     bool SelectionService::ensureHoveredDepthBuffersAllocated() {
         if (!hovered_depth_id_device_) {
-            if (cudaMalloc(&hovered_depth_id_device_, sizeof(unsigned long long)) != cudaSuccess) {
+            if (musaMalloc(&hovered_depth_id_device_, sizeof(unsigned long long)) != musaSuccess) {
                 LOG_WARN("SelectionService: failed to allocate hovered depth device buffer");
                 hovered_depth_id_device_ = nullptr;
                 return false;
@@ -944,9 +944,9 @@ namespace lfs::vis {
         }
 
         if (!hovered_depth_id_host_) {
-            if (cudaMallocHost(&hovered_depth_id_host_, sizeof(unsigned long long)) != cudaSuccess) {
+            if (musaMallocHost(&hovered_depth_id_host_, sizeof(unsigned long long)) != musaSuccess) {
                 LOG_WARN("SelectionService: failed to allocate hovered depth host buffer");
-                cudaFree(hovered_depth_id_device_);
+                musaFree(hovered_depth_id_device_);
                 hovered_depth_id_device_ = nullptr;
                 hovered_depth_id_host_ = nullptr;
                 return false;
@@ -1049,7 +1049,7 @@ namespace lfs::vis {
         }
 
         constexpr auto NO_HOVERED_RESULT = std::numeric_limits<unsigned long long>::max();
-        if (cudaMemset(hovered_depth_id_device_, 0xFF, sizeof(unsigned long long)) != cudaSuccess) {
+        if (musaMemset(hovered_depth_id_device_, 0xFF, sizeof(unsigned long long)) != musaSuccess) {
             LOG_WARN("SelectionService: failed to reset hovered depth buffer");
             return std::nullopt;
         }
@@ -1060,8 +1060,8 @@ namespace lfs::vis {
             return std::nullopt;
         }
 
-        if (cudaMemcpy(hovered_depth_id_host_, hovered_depth_id_device_,
-                       sizeof(unsigned long long), cudaMemcpyDeviceToHost) != cudaSuccess) {
+        if (musaMemcpy(hovered_depth_id_host_, hovered_depth_id_device_,
+                       sizeof(unsigned long long), musaMemcpyDeviceToHost) != musaSuccess) {
             LOG_WARN("SelectionService: failed to read back hovered gaussian id");
             return std::nullopt;
         }

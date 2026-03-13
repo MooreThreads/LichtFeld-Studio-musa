@@ -462,7 +462,7 @@ namespace lfs::core {
 
     // ========== FREE FUNCTION: FACTORY ==========
 
-    std::expected<SplatData, std::string> init_model_from_pointcloud(
+    lfs_compat::expected<SplatData, std::string> init_model_from_pointcloud(
         const param::TrainingParameters& params,
         Tensor scene_center,
         const PointCloud& pcd,
@@ -505,7 +505,7 @@ namespace lfs::core {
                 if (!pcd.means.is_valid() || !pcd.colors.is_valid()) {
                     LOG_ERROR("Point cloud has invalid means or colors: means.is_valid()={}, colors.is_valid()={}",
                               pcd.means.is_valid(), pcd.colors.is_valid());
-                    return std::unexpected("Point cloud has invalid means or colors");
+                    return lfs_compat::unexpected("Point cloud has invalid means or colors");
                 }
 
                 LOG_DEBUG("  Converting pcd.means to CUDA...");
@@ -702,24 +702,24 @@ namespace lfs::core {
 
                 // Copy CPU data to direct CUDA tensors
                 LOG_DEBUG("Copying CPU values to direct CUDA tensors");
-                cudaError_t err;
+                musaError_t err;
 
                 // Means copy
                 LOG_DEBUG("  Copying means: src_ptr={}, dst_ptr={}, bytes={}",
                           static_cast<const void*>(means_cpu.ptr<float>()),
                           static_cast<void*>(means_.ptr<float>()),
                           means_cpu.numel() * sizeof(float));
-                err = cudaMemcpy(means_.ptr<float>(), means_cpu.ptr<float>(),
-                                 means_cpu.numel() * sizeof(float), cudaMemcpyHostToDevice);
-                if (err != cudaSuccess) {
-                    LOG_ERROR("cudaMemcpy failed for means:");
+                err = musaMemcpy(means_.ptr<float>(), means_cpu.ptr<float>(),
+                                 means_cpu.numel() * sizeof(float), musaMemcpyHostToDevice);
+                if (err != musaSuccess) {
+                    LOG_ERROR("musaMemcpy failed for means:");
                     LOG_ERROR("  src (CPU): is_valid={}, ptr={}, device={}, numel={}",
                               means_cpu.is_valid(), static_cast<const void*>(means_cpu.ptr<float>()),
                               means_cpu.device() == Device::CPU ? "CPU" : "CUDA", means_cpu.numel());
                     LOG_ERROR("  dst (CUDA): is_valid={}, ptr={}, device={}, numel={}",
                               means_.is_valid(), static_cast<void*>(means_.ptr<float>()),
                               means_.device() == Device::CPU ? "CPU" : "CUDA", means_.numel());
-                    throw TensorError("cudaMemcpy failed for means: " + std::string(cudaGetErrorString(err)));
+                    throw TensorError("musaMemcpy failed for means: " + std::string(musaGetErrorString(err)));
                 }
                 LOG_DEBUG("  Means copy successful");
 
@@ -728,15 +728,15 @@ namespace lfs::core {
                           static_cast<const void*>(scaling_cpu.ptr<float>()),
                           static_cast<void*>(scaling_.ptr<float>()),
                           scaling_cpu.numel() * sizeof(float));
-                err = cudaMemcpy(scaling_.ptr<float>(), scaling_cpu.ptr<float>(),
-                                 scaling_cpu.numel() * sizeof(float), cudaMemcpyHostToDevice);
-                if (err != cudaSuccess) {
-                    LOG_ERROR("cudaMemcpy failed for scaling:");
+                err = musaMemcpy(scaling_.ptr<float>(), scaling_cpu.ptr<float>(),
+                                 scaling_cpu.numel() * sizeof(float), musaMemcpyHostToDevice);
+                if (err != musaSuccess) {
+                    LOG_ERROR("musaMemcpy failed for scaling:");
                     LOG_ERROR("  src (CPU): is_valid={}, ptr={}, numel={}",
                               scaling_cpu.is_valid(), static_cast<const void*>(scaling_cpu.ptr<float>()), scaling_cpu.numel());
                     LOG_ERROR("  dst (CUDA): is_valid={}, ptr={}, numel={}",
                               scaling_.is_valid(), static_cast<void*>(scaling_.ptr<float>()), scaling_.numel());
-                    throw TensorError("cudaMemcpy failed for scaling: " + std::string(cudaGetErrorString(err)));
+                    throw TensorError("musaMemcpy failed for scaling: " + std::string(musaGetErrorString(err)));
                 }
                 LOG_DEBUG("  Scaling copy successful");
 
@@ -745,15 +745,15 @@ namespace lfs::core {
                           static_cast<const void*>(rotation_cpu.ptr<float>()),
                           static_cast<void*>(rotation_.ptr<float>()),
                           rotation_cpu.numel() * sizeof(float));
-                err = cudaMemcpy(rotation_.ptr<float>(), rotation_cpu.ptr<float>(),
-                                 rotation_cpu.numel() * sizeof(float), cudaMemcpyHostToDevice);
-                if (err != cudaSuccess) {
-                    LOG_ERROR("cudaMemcpy failed for rotation:");
+                err = musaMemcpy(rotation_.ptr<float>(), rotation_cpu.ptr<float>(),
+                                 rotation_cpu.numel() * sizeof(float), musaMemcpyHostToDevice);
+                if (err != musaSuccess) {
+                    LOG_ERROR("musaMemcpy failed for rotation:");
                     LOG_ERROR("  src (CPU): is_valid={}, ptr={}, numel={}",
                               rotation_cpu.is_valid(), static_cast<const void*>(rotation_cpu.ptr<float>()), rotation_cpu.numel());
                     LOG_ERROR("  dst (CUDA): is_valid={}, ptr={}, numel={}",
                               rotation_.is_valid(), static_cast<void*>(rotation_.ptr<float>()), rotation_.numel());
-                    throw TensorError("cudaMemcpy failed for rotation: " + std::string(cudaGetErrorString(err)));
+                    throw TensorError("musaMemcpy failed for rotation: " + std::string(musaGetErrorString(err)));
                 }
                 LOG_DEBUG("  Rotation copy successful");
 
@@ -762,15 +762,15 @@ namespace lfs::core {
                           static_cast<const void*>(opacity_cpu.ptr<float>()),
                           static_cast<void*>(opacity_.ptr<float>()),
                           opacity_cpu.numel() * sizeof(float));
-                err = cudaMemcpy(opacity_.ptr<float>(), opacity_cpu.ptr<float>(),
-                                 opacity_cpu.numel() * sizeof(float), cudaMemcpyHostToDevice);
-                if (err != cudaSuccess) {
-                    LOG_ERROR("cudaMemcpy failed for opacity:");
+                err = musaMemcpy(opacity_.ptr<float>(), opacity_cpu.ptr<float>(),
+                                 opacity_cpu.numel() * sizeof(float), musaMemcpyHostToDevice);
+                if (err != musaSuccess) {
+                    LOG_ERROR("musaMemcpy failed for opacity:");
                     LOG_ERROR("  src (CPU): is_valid={}, ptr={}, numel={}",
                               opacity_cpu.is_valid(), static_cast<const void*>(opacity_cpu.ptr<float>()), opacity_cpu.numel());
                     LOG_ERROR("  dst (CUDA): is_valid={}, ptr={}, numel={}",
                               opacity_.is_valid(), static_cast<void*>(opacity_.ptr<float>()), opacity_.numel());
-                    throw TensorError("cudaMemcpy failed for opacity: " + std::string(cudaGetErrorString(err)));
+                    throw TensorError("musaMemcpy failed for opacity: " + std::string(musaGetErrorString(err)));
                 }
                 LOG_DEBUG("  Opacity copy successful");
 
@@ -779,15 +779,15 @@ namespace lfs::core {
                           static_cast<const void*>(sh0_cpu.ptr<float>()),
                           static_cast<void*>(sh0_.ptr<float>()),
                           sh0_cpu.numel() * sizeof(float));
-                err = cudaMemcpy(sh0_.ptr<float>(), sh0_cpu.ptr<float>(),
-                                 sh0_cpu.numel() * sizeof(float), cudaMemcpyHostToDevice);
-                if (err != cudaSuccess) {
-                    LOG_ERROR("cudaMemcpy failed for sh0:");
+                err = musaMemcpy(sh0_.ptr<float>(), sh0_cpu.ptr<float>(),
+                                 sh0_cpu.numel() * sizeof(float), musaMemcpyHostToDevice);
+                if (err != musaSuccess) {
+                    LOG_ERROR("musaMemcpy failed for sh0:");
                     LOG_ERROR("  src (CPU): is_valid={}, ptr={}, numel={}",
                               sh0_cpu.is_valid(), static_cast<const void*>(sh0_cpu.ptr<float>()), sh0_cpu.numel());
                     LOG_ERROR("  dst (CUDA): is_valid={}, ptr={}, numel={}",
                               sh0_.is_valid(), static_cast<void*>(sh0_.ptr<float>()), sh0_.numel());
-                    throw TensorError("cudaMemcpy failed for sh0: " + std::string(cudaGetErrorString(err)));
+                    throw TensorError("musaMemcpy failed for sh0: " + std::string(musaGetErrorString(err)));
                 }
                 LOG_DEBUG("  SH0 copy successful");
 
@@ -796,15 +796,15 @@ namespace lfs::core {
                           static_cast<const void*>(shN_cpu.ptr<float>()),
                           static_cast<void*>(shN_.ptr<float>()),
                           shN_cpu.numel() * sizeof(float));
-                err = cudaMemcpy(shN_.ptr<float>(), shN_cpu.ptr<float>(),
-                                 shN_cpu.numel() * sizeof(float), cudaMemcpyHostToDevice);
-                if (err != cudaSuccess) {
-                    LOG_ERROR("cudaMemcpy failed for shN:");
+                err = musaMemcpy(shN_.ptr<float>(), shN_cpu.ptr<float>(),
+                                 shN_cpu.numel() * sizeof(float), musaMemcpyHostToDevice);
+                if (err != musaSuccess) {
+                    LOG_ERROR("musaMemcpy failed for shN:");
                     LOG_ERROR("  src (CPU): is_valid={}, ptr={}, numel={}",
                               shN_cpu.is_valid(), static_cast<const void*>(shN_cpu.ptr<float>()), shN_cpu.numel());
                     LOG_ERROR("  dst (CUDA): is_valid={}, ptr={}, numel={}",
                               shN_.is_valid(), static_cast<void*>(shN_.ptr<float>()), shN_.numel());
-                    throw TensorError("cudaMemcpy failed for shN: " + std::string(cudaGetErrorString(err)));
+                    throw TensorError("musaMemcpy failed for shN: " + std::string(musaGetErrorString(err)));
                 }
                 LOG_DEBUG("  SHN copy successful");
 
@@ -884,7 +884,7 @@ namespace lfs::core {
             return result;
 
         } catch (const std::exception& e) {
-            return std::unexpected(
+            return lfs_compat::unexpected(
                 std::format("Failed to initialize SplatData: {}", e.what()));
         }
     }

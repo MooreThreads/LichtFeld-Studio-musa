@@ -8,7 +8,7 @@
 
 #include <cassert>
 #include <cstdio>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -46,7 +46,7 @@ namespace gsplat_lfs {
         float* renders,
         float* alphas,
         int32_t* last_ids,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         GSPLAT_CHECK_CUDA_PTR(means, "means");
         GSPLAT_CHECK_CUDA_PTR(quats, "quats");
         GSPLAT_CHECK_CUDA_PTR(scales, "scales");
@@ -138,64 +138,21 @@ namespace gsplat_lfs {
         float* v_opacities,
         float* densification_info,
         const float* densification_error_map,
-        cudaStream_t stream) {
-        GSPLAT_CHECK_CUDA_PTR(means, "means");
-        GSPLAT_CHECK_CUDA_PTR(quats, "quats");
-        GSPLAT_CHECK_CUDA_PTR(scales, "scales");
-        GSPLAT_CHECK_CUDA_PTR(colors, "colors");
-        GSPLAT_CHECK_CUDA_PTR(opacities, "opacities");
-        GSPLAT_CHECK_CUDA_PTR(v_means, "v_means");
-        GSPLAT_CHECK_CUDA_PTR(v_quats, "v_quats");
-        GSPLAT_CHECK_CUDA_PTR(v_scales, "v_scales");
-        GSPLAT_CHECK_CUDA_PTR(v_colors, "v_colors");
-        GSPLAT_CHECK_CUDA_PTR(v_opacities, "v_opacities");
-
-        if (n_isects == 0) {
-            // Skip kernel launch if no intersections
-            return;
-        }
-
-#define __LAUNCH_KERNEL__(CDIM)                                      \
-    case CDIM:                                                       \
-        launch_rasterize_to_pixels_from_world_3dgs_bwd_kernel<CDIM>( \
-            means, quats, scales, colors, opacities,                 \
-            backgrounds, bg_images, masks, C, N, n_isects,           \
-            image_width, image_height, tile_size,                    \
-            viewmats0, viewmats1, Ks, camera_model,                  \
-            ut_params, rs_type,                                      \
-            radial_coeffs, tangential_coeffs, thin_prism_coeffs,     \
-            tile_offsets, flatten_ids,                               \
-            render_alphas, last_ids,                                 \
-            v_render_colors, v_render_alphas,                        \
-            v_means, v_quats, v_scales, v_colors, v_opacities,       \
-            densification_info, densification_error_map, stream);    \
-        break;
-
-        switch (channels) {
-            __LAUNCH_KERNEL__(1)
-            __LAUNCH_KERNEL__(2)
-            __LAUNCH_KERNEL__(3)
-            __LAUNCH_KERNEL__(4)
-            __LAUNCH_KERNEL__(5)
-            __LAUNCH_KERNEL__(8)
-            __LAUNCH_KERNEL__(9)
-            __LAUNCH_KERNEL__(16)
-            __LAUNCH_KERNEL__(17)
-            __LAUNCH_KERNEL__(32)
-            __LAUNCH_KERNEL__(33)
-            __LAUNCH_KERNEL__(64)
-            __LAUNCH_KERNEL__(65)
-            __LAUNCH_KERNEL__(128)
-            __LAUNCH_KERNEL__(129)
-            __LAUNCH_KERNEL__(256)
-            __LAUNCH_KERNEL__(257)
-            __LAUNCH_KERNEL__(512)
-            __LAUNCH_KERNEL__(513)
-        default:
-            fprintf(stderr, "GSPLAT ERROR: Unsupported number of channels: %u\n", channels);
-            assert(false && "Unsupported number of channels");
-        }
-#undef __LAUNCH_KERNEL__
+        musaStream_t stream) {
+        // MUSA TODO: Backward rasterization kernel excluded due to mcc regalloc crash
+        // (Fatal regalloc, no free temp for large reg type B2048/B4096).
+        // Training backward pass is not available on MUSA; forward rendering works.
+        (void)means; (void)quats; (void)scales; (void)colors; (void)opacities;
+        (void)backgrounds; (void)bg_images; (void)masks; (void)C; (void)N;
+        (void)n_isects; (void)channels; (void)image_width; (void)image_height;
+        (void)tile_size; (void)viewmats0; (void)viewmats1; (void)Ks;
+        (void)camera_model; (void)ut_params; (void)rs_type;
+        (void)radial_coeffs; (void)tangential_coeffs; (void)thin_prism_coeffs;
+        (void)tile_offsets; (void)flatten_ids; (void)render_alphas; (void)last_ids;
+        (void)v_render_colors; (void)v_render_alphas;
+        (void)v_means; (void)v_quats; (void)v_scales; (void)v_colors; (void)v_opacities;
+        (void)densification_info; (void)densification_error_map; (void)stream;
+        fprintf(stderr, "GSPLAT WARNING: rasterize_to_pixels_from_world_3dgs_bwd not available on MUSA\n");
     }
 
     //=========================================================================
@@ -235,7 +192,7 @@ namespace gsplat_lfs {
         const float* tangential_coeffs,
         const float* thin_prism_coeffs,
         RasterizeWithSHResult& result,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         GSPLAT_CHECK_CUDA_PTR(means, "means");
         GSPLAT_CHECK_CUDA_PTR(quats, "quats");
         GSPLAT_CHECK_CUDA_PTR(scales, "scales");
@@ -365,7 +322,7 @@ namespace gsplat_lfs {
         float* v_sh_coeffs,
         float* densification_info,
         const float* densification_error_map,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         // Determine output channels
         uint32_t channels = 3;
         if (render_mode == 1 || render_mode == 2) {
@@ -376,8 +333,8 @@ namespace gsplat_lfs {
 
         // Temporary buffers for gradients
         float* v_colors = nullptr;
-        cudaMalloc(&v_colors, C * N * channels * sizeof(float));
-        cudaMemsetAsync(v_colors, 0, C * N * channels * sizeof(float), stream);
+        musaMalloc(&v_colors, C * N * channels * sizeof(float));
+        musaMemsetAsync(v_colors, 0, C * N * channels * sizeof(float), stream);
 
         // Backward through rasterization
         rasterize_to_pixels_from_world_3dgs_bwd(
@@ -415,7 +372,7 @@ namespace gsplat_lfs {
             // TODO: Scale v_scales by scaling_modifier
         }
 
-        cudaFree(v_colors);
+        musaFree(v_colors);
     }
 
 } // namespace gsplat_lfs

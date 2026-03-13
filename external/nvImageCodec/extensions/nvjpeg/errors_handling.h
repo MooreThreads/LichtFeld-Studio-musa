@@ -29,9 +29,9 @@
 
 #define XM_CHECK_CUDA(call)                                                  \
     {                                                                        \
-        cudaError_t _e = (call);                                             \
-        if (_e != cudaSuccess) {                                             \
-            cudaGetLastError(); /* clean that error for any further calls */ \
+        musaError_t _e = (call);                                             \
+        if (_e != musaSuccess) {                                             \
+            musaGetLastError(); /* clean that error for any further calls */ \
             throw NvJpegException::FromCUDAError(_e, WHERE(#call));          \
         }                                                                    \
     }
@@ -56,9 +56,9 @@
 
 #define XM_CUDA_LOG_DESTROY(call)                                            \
     {                                                                        \
-        cudaError_t _e = (call);                                             \
-        if (_e != cudaSuccess) {                                             \
-            cudaGetLastError(); /* clean that error for any further calls */ \
+        musaError_t _e = (call);                                             \
+        if (_e != musaSuccess) {                                             \
+            musaGetLastError(); /* clean that error for any further calls */ \
             auto err = NvJpegException::FromCUDAError(_e, WHERE(#call));     \
             NVIMGCODEC_LOG_ERROR(framework_, plugin_id_, err.what());        \
         }                                                                    \

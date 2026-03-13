@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <exception>
 #include <functional>
 #include <glm/gtc/quaternion.hpp>
@@ -315,7 +315,7 @@ namespace lfs::core {
         point_cloud_modified_ = false;
         training_model_node_.clear();
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         lfs::core::Tensor::trim_memory_pool();
         lfs::core::GlobalArenaManager::instance().get_arena().full_reset();
 

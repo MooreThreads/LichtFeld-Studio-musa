@@ -5,7 +5,7 @@
 #pragma once
 
 #include "core/tensor.hpp"
-#include "lfs/kernels/ssim.cuh"
+#include "lfs/kernels/ssim.muh"
 #include <expected>
 #include <string>
 
@@ -36,7 +36,7 @@ namespace lfs::training::losses {
          * @param params Loss parameters
          * @return (loss_tensor, context) or error - loss stays on GPU!
          */
-        std::expected<std::pair<lfs::core::Tensor, Context>, std::string> forward(
+        lfs_compat::expected<std::pair<lfs::core::Tensor, Context>, std::string> forward(
             const lfs::core::Tensor& rendered,
             const lfs::core::Tensor& gt_image,
             const Params& params);

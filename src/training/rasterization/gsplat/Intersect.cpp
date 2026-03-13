@@ -9,7 +9,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -24,9 +24,9 @@ namespace gsplat_lfs {
             void ensure_cum_tiles(size_t n_elements) {
                 if (n_elements > cum_tiles_capacity) {
                     if (cum_tiles)
-                        cudaFree(cum_tiles);
+                        musaFree(cum_tiles);
                     size_t new_cap = n_elements + n_elements / 4; // 25% headroom
-                    cudaMalloc(&cum_tiles, new_cap * sizeof(int64_t));
+                    musaMalloc(&cum_tiles, new_cap * sizeof(int64_t));
                     cum_tiles_capacity = new_cap;
                 }
             }
@@ -34,23 +34,23 @@ namespace gsplat_lfs {
             void ensure_sort_buffers(size_t n_isects) {
                 if (n_isects > sort_capacity) {
                     if (isect_ids_sort)
-                        cudaFree(isect_ids_sort);
+                        musaFree(isect_ids_sort);
                     if (flatten_ids_sort)
-                        cudaFree(flatten_ids_sort);
+                        musaFree(flatten_ids_sort);
                     size_t new_cap = n_isects + n_isects / 4; // 25% headroom
-                    cudaMalloc(&isect_ids_sort, new_cap * sizeof(int64_t));
-                    cudaMalloc(&flatten_ids_sort, new_cap * sizeof(int32_t));
+                    musaMalloc(&isect_ids_sort, new_cap * sizeof(int64_t));
+                    musaMalloc(&flatten_ids_sort, new_cap * sizeof(int32_t));
                     sort_capacity = new_cap;
                 }
             }
 
             ~IntersectBufferCache() {
                 if (cum_tiles)
-                    cudaFree(cum_tiles);
+                    musaFree(cum_tiles);
                 if (isect_ids_sort)
-                    cudaFree(isect_ids_sort);
+                    musaFree(isect_ids_sort);
                 if (flatten_ids_sort)
-                    cudaFree(flatten_ids_sort);
+                    musaFree(flatten_ids_sort);
             }
         };
 
@@ -73,7 +73,7 @@ namespace gsplat_lfs {
         uint32_t tile_height,
         bool sort,
         int32_t* tiles_per_gauss_out,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         bool packed = (camera_ids != nullptr && gaussian_ids != nullptr);
         uint32_t n_elements = packed ? 0 : C * N; // For non-packed only
         uint32_t nnz = packed ? 0 : 0;            // TODO: For packed mode
@@ -113,9 +113,9 @@ namespace gsplat_lfs {
 
         // Get total intersection count (single 8-byte copy instead of full array)
         int64_t n_isects;
-        cudaMemcpyAsync(&n_isects, d_cum_tiles + n_elements - 1, sizeof(int64_t),
-                        cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
+        musaMemcpyAsync(&n_isects, d_cum_tiles + n_elements - 1, sizeof(int64_t),
+                        musaMemcpyDeviceToHost, stream);
+        musaStreamSynchronize(stream);
         result.n_isects = static_cast<int32_t>(n_isects);
 
         if (n_isects == 0) {
@@ -123,8 +123,8 @@ namespace gsplat_lfs {
         }
 
         // Allocate outputs
-        cudaMalloc(&result.isect_ids, n_isects * sizeof(int64_t));
-        cudaMalloc(&result.flatten_ids, n_isects * sizeof(int32_t));
+        musaMalloc(&result.isect_ids, n_isects * sizeof(int64_t));
+        musaMalloc(&result.flatten_ids, n_isects * sizeof(int32_t));
 
         // Second pass: compute isect_ids and flatten_ids
         launch_intersect_tile_kernel(
@@ -148,10 +148,10 @@ namespace gsplat_lfs {
                 stream);
 
             // Copy sorted results back (sort may have used either buffer)
-            cudaMemcpyAsync(result.isect_ids, cache.isect_ids_sort,
-                            n_isects * sizeof(int64_t), cudaMemcpyDeviceToDevice, stream);
-            cudaMemcpyAsync(result.flatten_ids, cache.flatten_ids_sort,
-                            n_isects * sizeof(int32_t), cudaMemcpyDeviceToDevice, stream);
+            musaMemcpyAsync(result.isect_ids, cache.isect_ids_sort,
+                            n_isects * sizeof(int64_t), musaMemcpyDeviceToDevice, stream);
+            musaMemcpyAsync(result.flatten_ids, cache.flatten_ids_sort,
+                            n_isects * sizeof(int32_t), musaMemcpyDeviceToDevice, stream);
         }
 
         return result;
@@ -164,9 +164,9 @@ namespace gsplat_lfs {
         uint32_t tile_width,
         uint32_t tile_height,
         int32_t* isect_offsets,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         if (n_isects == 0) {
-            cudaMemsetAsync(isect_offsets, 0,
+            musaMemsetAsync(isect_offsets, 0,
                             C * tile_height * tile_width * sizeof(int32_t), stream);
             return;
         }

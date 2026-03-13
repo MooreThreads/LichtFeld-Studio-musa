@@ -7,7 +7,7 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <mutex>
 #include <vector>
 
@@ -157,8 +157,8 @@ namespace lfs::core {
 
         GPUSlabAllocator() {
             int device_count = 0;
-            cudaError_t err = cudaGetDeviceCount(&device_count);
-            if (err != cudaSuccess || device_count == 0) {
+            musaError_t err = musaGetDeviceCount(&device_count);
+            if (err != musaSuccess || device_count == 0) {
                 LOG_DEBUG("GPUSlabAllocator: No CUDA devices available");
                 enabled_.store(false, std::memory_order_release);
                 return;
@@ -195,7 +195,7 @@ namespace lfs::core {
             const size_t block_size = get_block_size(size_class);
 
             void* slab_base = nullptr;
-            if (cudaMalloc(&slab_base, SLAB_SIZE) != cudaSuccess) {
+            if (musaMalloc(&slab_base, SLAB_SIZE) != musaSuccess) {
                 return false;
             }
 
@@ -232,7 +232,7 @@ namespace lfs::core {
         void cleanup() {
             std::lock_guard<std::mutex> lock(slabs_mutex_);
             for (const auto& slab : slabs_) {
-                cudaFree(slab.base);
+                musaFree(slab.base);
             }
             slabs_.clear();
             stats_.total_slab_memory = 0;

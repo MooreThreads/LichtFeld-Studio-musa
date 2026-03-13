@@ -1,6 +1,6 @@
 include (VCICommon)
 
-set ( headers  
+set ( headers 
 Decimater/BaseDecimaterT.hh
 Decimater/BaseDecimaterT_impl.hh
 Decimater/CollapseInfoT.hh
@@ -96,121 +96,121 @@ VDPM/ViewingParameters.cc
 
 
 IF(WIN32 AND NOT MINGW)
-  list(APPEND sources "Utils/getopt.c")
+ list(APPEND sources "Utils/getopt.c")
 ENDIF(WIN32 AND NOT MINGW)
 
 # Disable Library installation when not building OpenMesh on its own but as part of another project!
 if ( NOT ${CMAKE_PROJECT_NAME} MATCHES "OpenMesh")
-  set(VCI_NO_LIBRARY_INSTALL true)
+ set(VCI_NO_LIBRARY_INSTALL true)
 endif()
 
 
 if (WIN32)
 
-  if ( OPENMESH_BUILD_SHARED )
-    add_definitions( -DOPENMESHDLL -DBUILDOPENMESHDLL)
-    vci_add_library (OpenMeshTools SHARED ${sources} ${headers})
-  else()
-    # OpenMesh has no dll exports so we have to build a static library on windows
-    vci_add_library (OpenMeshTools STATIC ${sources} ${headers})
-  endif()
+ if ( OPENMESH_BUILD_SHARED )
+ add_definitions( -DOPENMESHDLL -DBUILDOPENMESHDLL)
+ vci_add_library (OpenMeshTools SHARED ${sources} ${headers})
+ else()
+ # OpenMesh has no dll exports so we have to build a static library on windows
+ vci_add_library (OpenMeshTools STATIC ${sources} ${headers})
+ endif()
 
-  target_include_directories(OpenMeshTools PUBLIC
-                                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
-                                        $<INSTALL_INTERFACE:include>)
+ target_include_directories(OpenMeshTools PUBLIC
+ $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
+ $<INSTALL_INTERFACE:include>)
 
 else ()
-  vci_add_library (OpenMeshTools SHAREDANDSTATIC ${sources} ${headers})
+ vci_add_library (OpenMeshTools SHAREDANDSTATIC ${sources} ${headers})
 
-  target_include_directories(OpenMeshTools PUBLIC
-                                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
-                                          $<INSTALL_INTERFACE:include>)
+ target_include_directories(OpenMeshTools PUBLIC
+ $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
+ $<INSTALL_INTERFACE:include>)
 
-  target_include_directories(OpenMeshToolsStatic PUBLIC
-                                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
-                                          $<INSTALL_INTERFACE:include>)
+ target_include_directories(OpenMeshToolsStatic PUBLIC
+ $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
+ $<INSTALL_INTERFACE:include>)
 
-  set_target_properties (OpenMeshTools PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-                                                SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR} )
+ set_target_properties (OpenMeshTools PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+ SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR} )
 endif ()
 
 target_link_libraries (OpenMeshTools OpenMeshCore)
 
 IF( NOT WIN32 )
-  target_link_libraries (OpenMeshToolsStatic OpenMeshCoreStatic)
+ target_link_libraries (OpenMeshToolsStatic OpenMeshCoreStatic)
 ENDIF(NOT WIN32)
 
 if ( (${CMAKE_PROJECT_NAME} MATCHES "OpenMesh") AND BUILD_APPS )
 
-  if ( WIN32 )
-    if ( NOT "${CMAKE_GENERATOR}" MATCHES "MinGW Makefiles" )
-      # let bundle generation depend on target
-      add_dependencies (fixbundle OpenMeshTools)
-    endif()
-  endif()
+ if ( WIN32 )
+ if ( NOT "${CMAKE_GENERATOR}" MATCHES "MinGW Makefiles" )
+ # let bundle generation depend on target
+ add_dependencies (fixbundle OpenMeshTools)
+ endif()
+ endif()
 
-  # Add tools as dependency before fixbundle 
-  if (APPLE)
-    # let bundle generation depend on target
-    add_dependencies (fixbundle OpenMeshTools)
-    add_dependencies (fixbundle OpenMeshToolsStatic)
-  endif()
+ # Add tools as dependency before fixbundle 
+ if (APPLE)
+ # let bundle generation depend on target
+ add_dependencies (fixbundle OpenMeshTools)
+ add_dependencies (fixbundle OpenMeshToolsStatic)
+ endif()
 
 endif()
 
 
 # Install Header Files (Apple)
 if ( NOT VCI_PROJECT_MACOS_BUNDLE AND APPLE )
- FILE(GLOB files_install_Decimater                       "${CMAKE_CURRENT_SOURCE_DIR}/Decimater/*.hh" )
- FILE(GLOB files_install_Dualizer                        "${CMAKE_CURRENT_SOURCE_DIR}/Dualizer/*.hh" )
- FILE(GLOB files_install_HoleFiller                      "${CMAKE_CURRENT_SOURCE_DIR}/HoleFiller/*.hh" )
- FILE(GLOB files_install_KERNEL_OSG                      "${CMAKE_CURRENT_SOURCE_DIR}/Kernel_OSG/*.hh" )
- FILE(GLOB files_install_Smoother                        "${CMAKE_CURRENT_SOURCE_DIR}/Smoother/*.hh" )
- FILE(GLOB files_install_SmartTagger                     "${CMAKE_CURRENT_SOURCE_DIR}/SmartTagger/*.hh" )
- FILE(GLOB files_install_Subdivider_Adaptive             "${CMAKE_CURRENT_SOURCE_DIR}/Subdivider/Adaptive/Composite/*.hh" )
- FILE(GLOB files_install_Subdivider_Uniform              "${CMAKE_CURRENT_SOURCE_DIR}/Subdivider/Uniform/*.hh" )
- FILE(GLOB files_install_Subdivider_Uniform_Composite    "${CMAKE_CURRENT_SOURCE_DIR}/Subdivider/Uniform/Composite/*.hh" )
- FILE(GLOB files_install_Utils                           "${CMAKE_CURRENT_SOURCE_DIR}/Utils/*.hh" "${CMAKE_CURRENT_SOURCE_DIR}/Utils/getopt.h" )
- FILE(GLOB files_install_VDPM                            "${CMAKE_CURRENT_SOURCE_DIR}/VDPM/*.hh" )
- INSTALL(FILES ${files_install_Decimater}                       DESTINATION include/OpenMesh/Tools/Decimater )
- INSTALL(FILES ${files_install_Dualizer}                        DESTINATION include/OpenMesh/Tools/Dualizer )
- INSTALL(FILES ${files_install_HoleFiller}                      DESTINATION include/OpenMesh/Tools/HoleFiller )
- INSTALL(FILES ${files_install_KERNEL_OSG}                      DESTINATION include/OpenMesh/Tools/Kernel_OSG )
- INSTALL(FILES ${files_install_Smoother}                        DESTINATION include/OpenMesh/Tools/Smoother )
- INSTALL(FILES ${files_install_SmartTagger}                     DESTINATION include/OpenMesh/Tools/SmartTagger )
- INSTALL(FILES ${files_install_Subdivider_Adaptive}             DESTINATION include/OpenMesh/Tools/Subdivider/Adaptive/Composite )
- INSTALL(FILES ${files_install_Subdivider_Uniform}              DESTINATION include/OpenMesh/Tools/Subdivider/Uniform )
- INSTALL(FILES ${files_install_Subdivider_Uniform_Composite}    DESTINATION include/OpenMesh/Tools/Subdivider/Uniform/Composite )
- INSTALL(FILES ${files_install_Utils}                           DESTINATION include/OpenMesh/Tools/Utils )
- INSTALL(FILES ${files_install_VDPM}                            DESTINATION include/OpenMesh/Tools/VDPM )
+ FILE(GLOB files_install_Decimater "${CMAKE_CURRENT_SOURCE_DIR}/Decimater/*.hh" )
+ FILE(GLOB files_install_Dualizer "${CMAKE_CURRENT_SOURCE_DIR}/Dualizer/*.hh" )
+ FILE(GLOB files_install_HoleFiller "${CMAKE_CURRENT_SOURCE_DIR}/HoleFiller/*.hh" )
+ FILE(GLOB files_install_KERNEL_OSG "${CMAKE_CURRENT_SOURCE_DIR}/Kernel_OSG/*.hh" )
+ FILE(GLOB files_install_Smoother "${CMAKE_CURRENT_SOURCE_DIR}/Smoother/*.hh" )
+ FILE(GLOB files_install_SmartTagger "${CMAKE_CURRENT_SOURCE_DIR}/SmartTagger/*.hh" )
+ FILE(GLOB files_install_Subdivider_Adaptive "${CMAKE_CURRENT_SOURCE_DIR}/Subdivider/Adaptive/Composite/*.hh" )
+ FILE(GLOB files_install_Subdivider_Uniform "${CMAKE_CURRENT_SOURCE_DIR}/Subdivider/Uniform/*.hh" )
+ FILE(GLOB files_install_Subdivider_Uniform_Composite "${CMAKE_CURRENT_SOURCE_DIR}/Subdivider/Uniform/Composite/*.hh" )
+ FILE(GLOB files_install_Utils "${CMAKE_CURRENT_SOURCE_DIR}/Utils/*.hh" "${CMAKE_CURRENT_SOURCE_DIR}/Utils/getopt.h" )
+ FILE(GLOB files_install_VDPM "${CMAKE_CURRENT_SOURCE_DIR}/VDPM/*.hh" )
+ INSTALL(FILES ${files_install_Decimater} DESTINATION include/OpenMesh/Tools/Decimater )
+ INSTALL(FILES ${files_install_Dualizer} DESTINATION include/OpenMesh/Tools/Dualizer )
+ INSTALL(FILES ${files_install_HoleFiller} DESTINATION include/OpenMesh/Tools/HoleFiller )
+ INSTALL(FILES ${files_install_KERNEL_OSG} DESTINATION include/OpenMesh/Tools/Kernel_OSG )
+ INSTALL(FILES ${files_install_Smoother} DESTINATION include/OpenMesh/Tools/Smoother )
+ INSTALL(FILES ${files_install_SmartTagger} DESTINATION include/OpenMesh/Tools/SmartTagger )
+ INSTALL(FILES ${files_install_Subdivider_Adaptive} DESTINATION include/OpenMesh/Tools/Subdivider/Adaptive/Composite )
+ INSTALL(FILES ${files_install_Subdivider_Uniform} DESTINATION include/OpenMesh/Tools/Subdivider/Uniform )
+ INSTALL(FILES ${files_install_Subdivider_Uniform_Composite} DESTINATION include/OpenMesh/Tools/Subdivider/Uniform/Composite )
+ INSTALL(FILES ${files_install_Utils} DESTINATION include/OpenMesh/Tools/Utils )
+ INSTALL(FILES ${files_install_VDPM} DESTINATION include/OpenMesh/Tools/VDPM )
 endif()
 
 
 # Only install if the project name matches OpenMesh.
 if (${CMAKE_PROJECT_NAME} MATCHES "OpenMesh")
-  set (OPENMESH_NO_INSTALL_HEADERS FALSE CACHE BOOL "Should OpenMesh skip installing headers?")
+ set (OPENMESH_NO_INSTALL_HEADERS FALSE CACHE BOOL "Should OpenMesh skip installing headers?")
 else()
-  set (OPENMESH_NO_INSTALL_HEADERS TRUE CACHE BOOL "Should OpenMesh skip installing headers?")
+ set (OPENMESH_NO_INSTALL_HEADERS TRUE CACHE BOOL "Should OpenMesh skip installing headers?")
 endif()
 
 if (NOT APPLE AND NOT ${OPENMESH_NO_INSTALL_HEADERS})
-  # Install Header Files
-  install(DIRECTORY .
-        DESTINATION include/OpenMesh/Tools
-        FILES_MATCHING
-        PATTERN "*.hh"
-        PATTERN "CVS" EXCLUDE
-        PATTERN ".svn" EXCLUDE
-        PATTERN "tmp" EXCLUDE
-        PATTERN "Templates" EXCLUDE
-        PATTERN "Debian*" EXCLUDE)
+ # Install Header Files
+ install(DIRECTORY .
+ DESTINATION include/OpenMesh/Tools
+ FILES_MATCHING
+ PATTERN "*.hh"
+ PATTERN "CVS" EXCLUDE
+ PATTERN ".svn" EXCLUDE
+ PATTERN "tmp" EXCLUDE
+ PATTERN "Templates" EXCLUDE
+ PATTERN "Debian*" EXCLUDE)
 
-  #install the config file
-  install(FILES Utils/getopt.h DESTINATION include/OpenMesh/Tools/Utils)
+ #install the config file
+ install(FILES Utils/getopt.h DESTINATION include/OpenMesh/Tools/Utils)
 endif ()
 
 install(TARGETS OpenMeshTools EXPORT OpenMeshConfig
-  ARCHIVE DESTINATION ${VCI_PROJECT_LIBDIR}
-  LIBRARY DESTINATION ${VCI_PROJECT_LIBDIR}
-  RUNTIME DESTINATION ${VCI_PROJECT_BINDIR})
+ ARCHIVE DESTINATION ${VCI_PROJECT_LIBDIR}
+ LIBRARY DESTINATION ${VCI_PROJECT_LIBDIR}
+ RUNTIME DESTINATION ${VCI_PROJECT_BINDIR})
 

@@ -58,27 +58,27 @@ namespace lfs::rendering {
         auto result = load_shader("ellipsoid", "ellipsoid.vert", "ellipsoid.frag", false);
         if (!result) {
             LOG_ERROR("Failed to load ellipsoid shader: {}", result.error().what());
-            return std::unexpected(result.error().what());
+            return lfs_compat::unexpected(result.error().what());
         }
         shader_ = std::move(*result);
 
         auto vao_result = create_vao();
         if (!vao_result) {
             LOG_ERROR("Failed to create VAO: {}", vao_result.error());
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         }
 
         auto vbo_result = create_vbo();
         if (!vbo_result) {
             LOG_ERROR("Failed to create VBO: {}", vbo_result.error());
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         }
         vbo_ = std::move(*vbo_result);
 
         auto ebo_result = create_vbo();
         if (!ebo_result) {
             LOG_ERROR("Failed to create EBO: {}", ebo_result.error());
-            return std::unexpected(ebo_result.error());
+            return lfs_compat::unexpected(ebo_result.error());
         }
         ebo_ = std::move(*ebo_result);
 
@@ -107,7 +107,7 @@ namespace lfs::rendering {
 
     Result<void> EllipsoidRenderer::setupVertexData() {
         if (!initialized_ || !vao_)
-            return std::unexpected("Ellipsoid renderer not initialized");
+            return lfs_compat::unexpected("Ellipsoid renderer not initialized");
 
         BufferBinder<GL_ARRAY_BUFFER> vbo_bind(vbo_);
         upload_buffer(GL_ARRAY_BUFFER, std::span(vertices_), GL_STATIC_DRAW);
@@ -120,7 +120,7 @@ namespace lfs::rendering {
 
     Result<void> EllipsoidRenderer::render(const glm::mat4& view, const glm::mat4& projection) {
         if (!initialized_ || !shader_.valid() || !vao_)
-            return std::unexpected("Ellipsoid renderer not initialized");
+            return lfs_compat::unexpected("Ellipsoid renderer not initialized");
 
         GLStateGuard state_guard;
 

@@ -177,9 +177,9 @@ namespace lfs::mcp {
             return resp;
         }
 
-        std::expected<LLMResponse, std::string> do_request(const LLMRequest& req) {
+        lfs_compat::expected<LLMResponse, std::string> do_request(const LLMRequest& req) {
             if (api_key.empty()) {
-                return std::unexpected("API key not set");
+                return lfs_compat::unexpected("API key not set");
             }
 
             std::string url = get_base_url();
@@ -214,11 +214,11 @@ namespace lfs::mcp {
             auto result = client.Post(path, headers, body_str, "application/json");
 
             if (!result) {
-                return std::unexpected("HTTP request failed: " + httplib::to_string(result.error()));
+                return lfs_compat::unexpected("HTTP request failed: " + httplib::to_string(result.error()));
             }
 
             if (result->status != 200) {
-                return std::unexpected("HTTP " + std::to_string(result->status) + ": " + result->body);
+                return lfs_compat::unexpected("HTTP " + std::to_string(result->status) + ": " + result->body);
             }
 
             switch (provider) {
@@ -228,7 +228,7 @@ namespace lfs::mcp {
                 return parse_openai_response(result->body);
             }
 
-            return std::unexpected("Unknown provider");
+            return lfs_compat::unexpected("Unknown provider");
         }
     };
 
@@ -252,7 +252,7 @@ namespace lfs::mcp {
 
     void LLMClient::set_base_url(const std::string& url) { impl_->base_url = url; }
 
-    std::expected<LLMResponse, std::string> LLMClient::complete(const LLMRequest& request) {
+    lfs_compat::expected<LLMResponse, std::string> LLMClient::complete(const LLMRequest& request) {
         return impl_->do_request(request);
     }
 
@@ -271,17 +271,17 @@ namespace lfs::mcp {
 
     bool LLMClient::is_configured() const { return !impl_->api_key.empty(); }
 
-    std::expected<std::string, std::string> LLMClient::load_api_key_from_env() {
+    lfs_compat::expected<std::string, std::string> LLMClient::load_api_key_from_env() {
         if (const char* key = std::getenv("ANTHROPIC_API_KEY")) {
             return std::string(key);
         }
         if (const char* key = std::getenv("OPENAI_API_KEY")) {
             return std::string(key);
         }
-        return std::unexpected("No API key found in environment (ANTHROPIC_API_KEY or OPENAI_API_KEY)");
+        return lfs_compat::unexpected("No API key found in environment (ANTHROPIC_API_KEY or OPENAI_API_KEY)");
     }
 
-    std::expected<LLMResponse, std::string> ask_training_advisor(
+    lfs_compat::expected<LLMResponse, std::string> ask_training_advisor(
         LLMClient& client,
         int iteration,
         float loss,

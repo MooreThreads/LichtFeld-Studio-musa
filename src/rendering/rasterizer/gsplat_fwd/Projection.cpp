@@ -6,7 +6,7 @@
 #include "Common.h"
 #include "Ops.h"
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_fwd {
 
@@ -43,7 +43,7 @@ namespace gsplat_fwd {
         float* depths,
         float* conics,
         float* compensations,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         GSPLAT_CHECK_CUDA_PTR(means, "means");
         GSPLAT_CHECK_CUDA_PTR(quats, "quats");
         GSPLAT_CHECK_CUDA_PTR(scales, "scales");

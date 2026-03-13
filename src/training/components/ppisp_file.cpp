@@ -10,7 +10,7 @@
 
 namespace lfs::training {
 
-    std::expected<void, std::string> save_ppisp_file(
+    lfs_compat::expected<void, std::string> save_ppisp_file(
         const std::filesystem::path& path,
         const PPISP& ppisp,
         const PPISPControllerPool* controller_pool) {
@@ -18,7 +18,7 @@ namespace lfs::training {
         try {
             std::ofstream file;
             if (!lfs::core::open_file_for_write(path, std::ios::binary, file)) {
-                return std::unexpected("Failed to open file for writing: " + lfs::core::path_to_utf8(path));
+                return lfs_compat::unexpected("Failed to open file for writing: " + lfs::core::path_to_utf8(path));
             }
 
             PPISPFileHeader header{};
@@ -49,11 +49,11 @@ namespace lfs::training {
             return {};
 
         } catch (const std::exception& e) {
-            return std::unexpected(std::string("Failed to save PPISP file: ") + e.what());
+            return lfs_compat::unexpected(std::string("Failed to save PPISP file: ") + e.what());
         }
     }
 
-    std::expected<void, std::string> load_ppisp_file(
+    lfs_compat::expected<void, std::string> load_ppisp_file(
         const std::filesystem::path& path,
         PPISP& ppisp,
         PPISPControllerPool* controller_pool) {
@@ -61,25 +61,25 @@ namespace lfs::training {
         try {
             std::ifstream file;
             if (!lfs::core::open_file_for_read(path, std::ios::binary, file)) {
-                return std::unexpected("Failed to open file for reading: " + lfs::core::path_to_utf8(path));
+                return lfs_compat::unexpected("Failed to open file for reading: " + lfs::core::path_to_utf8(path));
             }
 
             PPISPFileHeader header{};
             file.read(reinterpret_cast<char*>(&header), sizeof(header));
 
             if (header.magic != PPISP_FILE_MAGIC) {
-                return std::unexpected("Invalid PPISP file: wrong magic number");
+                return lfs_compat::unexpected("Invalid PPISP file: wrong magic number");
             }
 
             if (header.version > PPISP_FILE_VERSION) {
-                return std::unexpected("Unsupported PPISP file version: " + std::to_string(header.version));
+                return lfs_compat::unexpected("Unsupported PPISP file version: " + std::to_string(header.version));
             }
 
             const bool is_inference_load = ppisp.num_cameras() == 0 && ppisp.num_frames() == 0;
             if (!is_inference_load &&
                 (static_cast<int>(header.num_cameras) != ppisp.num_cameras() ||
                  static_cast<int>(header.num_frames) != ppisp.num_frames())) {
-                return std::unexpected(
+                return lfs_compat::unexpected(
                     "PPISP dimension mismatch: file has " +
                     std::to_string(header.num_cameras) + " cameras, " +
                     std::to_string(header.num_frames) + " frames; expected " +
@@ -123,7 +123,7 @@ namespace lfs::training {
             return {};
 
         } catch (const std::exception& e) {
-            return std::unexpected(std::string("Failed to load PPISP file: ") + e.what());
+            return lfs_compat::unexpected(std::string("Failed to load PPISP file: ") + e.what());
         }
     }
 

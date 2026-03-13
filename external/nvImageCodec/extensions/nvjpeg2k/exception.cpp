@@ -76,7 +76,7 @@ NvJpeg2kException NvJpeg2kException::FromNvJpeg2kError(nvjpeg2kStatus_t status, 
     return e;
 }
 
-NvJpeg2kException NvJpeg2kException::FromCUDAError(cudaError_t status, const std::string& where) {
+NvJpeg2kException NvJpeg2kException::FromCUDAError(musaError_t status, const std::string& where) {
     NvJpeg2kException e;
     e.status_ = NVIMGCODEC_STATUS_EXTENSION_CUDA_CALL_ERROR;
     std::stringstream ss;

@@ -10,8 +10,8 @@
 #include "internal/tensor_impl.hpp"
 #include "internal/tensor_ops.hpp"
 #include <cstring>
-#include <cuda_fp16.h>
-#include <cuda_runtime.h>
+#include "core/musa_fp16_host.hpp"
+#include <musa_runtime.h>
 #include <format>
 #include <fstream>
 #include <iomanip>
@@ -30,12 +30,12 @@
 
 #define CHECK_CUDA(call)                              \
     do {                                              \
-        cudaError_t error = call;                     \
-        if (error != cudaSuccess) {                   \
+        musaError_t error = call;                     \
+        if (error != musaSuccess) {                   \
             LOG_ERROR("CUDA error at {}:{} - {}: {}", \
                       __FILE__, __LINE__,             \
-                      cudaGetErrorName(error),        \
-                      cudaGetErrorString(error));     \
+                      musaGetErrorName(error),        \
+                      musaGetErrorString(error));     \
         }                                             \
     } while (0)
 
@@ -146,7 +146,7 @@ namespace lfs::core {
         const size_t preserved_id = id_;
         const bool preserved_tracked = state_->tracked;
         const std::string preserved_name = state_->name;
-        const cudaStream_t preserved_stream = state_->stream;
+        const musaStream_t preserved_stream = state_->stream;
 
         data_ = materialized.data_;
         data_owner_ = std::move(materialized.data_owner_);
@@ -276,22 +276,22 @@ namespace lfs::core {
                 const void* src_ptr = other.data_ptr();
 
                 if (device_ == Device::CUDA && other.device_ == Device::CUDA) {
-                    CHECK_CUDA(cudaMemcpyAsync(dst_ptr, src_ptr, bytes(), cudaMemcpyDeviceToDevice, stream()));
+                    CHECK_CUDA(musaMemcpyAsync(dst_ptr, src_ptr, bytes(), musaMemcpyDeviceToDevice, stream()));
                 } else if (device_ == Device::CUDA && other.device_ == Device::CPU) {
-                    CHECK_CUDA(cudaMemcpyAsync(dst_ptr, src_ptr, bytes(), cudaMemcpyHostToDevice, stream()));
+                    CHECK_CUDA(musaMemcpyAsync(dst_ptr, src_ptr, bytes(), musaMemcpyHostToDevice, stream()));
                 } else if (device_ == Device::CPU && other.device_ == Device::CUDA) {
                     // GPU→CPU requires sync before copy to ensure data is ready
                     if (other.stream()) {
-                        cudaStreamSynchronize(other.stream());
+                        musaStreamSynchronize(other.stream());
                     } else {
-                        cudaDeviceSynchronize();
+                        musaDeviceSynchronize();
                     }
-                    CHECK_CUDA(cudaMemcpyAsync(dst_ptr, src_ptr, bytes(), cudaMemcpyDeviceToHost, stream()));
+                    CHECK_CUDA(musaMemcpyAsync(dst_ptr, src_ptr, bytes(), musaMemcpyDeviceToHost, stream()));
                 } else {
                     std::memcpy(dst_ptr, src_ptr, bytes());
                 }
                 // No sync after copy - operations are async like LibTorch
-                // User can sync explicitly if needed via cudaDeviceSynchronize()
+                // User can sync explicitly if needed via musaDeviceSynchronize()
             }
 
             if (profiling_enabled_) {
@@ -380,17 +380,17 @@ namespace lfs::core {
                     const void* src_ptr = other.data_ptr();
 
                     if (device_ == Device::CUDA && other.device_ == Device::CUDA) {
-                        CHECK_CUDA(cudaMemcpyAsync(dst_ptr, src_ptr, bytes(), cudaMemcpyDeviceToDevice, stream()));
+                        CHECK_CUDA(musaMemcpyAsync(dst_ptr, src_ptr, bytes(), musaMemcpyDeviceToDevice, stream()));
                     } else if (device_ == Device::CUDA && other.device_ == Device::CPU) {
-                        CHECK_CUDA(cudaMemcpyAsync(dst_ptr, src_ptr, bytes(), cudaMemcpyHostToDevice, stream()));
+                        CHECK_CUDA(musaMemcpyAsync(dst_ptr, src_ptr, bytes(), musaMemcpyHostToDevice, stream()));
                     } else if (device_ == Device::CPU && other.device_ == Device::CUDA) {
                         // GPU→CPU requires sync before copy to ensure data is ready
                         if (other.stream()) {
-                            cudaStreamSynchronize(other.stream());
+                            musaStreamSynchronize(other.stream());
                         } else {
-                            cudaDeviceSynchronize();
+                            musaDeviceSynchronize();
                         }
-                        CHECK_CUDA(cudaMemcpyAsync(dst_ptr, src_ptr, bytes(), cudaMemcpyDeviceToHost, stream()));
+                        CHECK_CUDA(musaMemcpyAsync(dst_ptr, src_ptr, bytes(), musaMemcpyDeviceToHost, stream()));
                     } else {
                         std::memcpy(dst_ptr, src_ptr, bytes());
                     }
@@ -490,9 +490,9 @@ namespace lfs::core {
         size_t num_bytes = this->bytes();
 
         if (device_ == Device::CUDA) {
-            cudaError_t err = cudaMemcpy(result.data_ptr(), data_ptr(), num_bytes, cudaMemcpyDeviceToDevice);
-            if (err != cudaSuccess) {
-                LOG_ERROR("CUDA memcpy failed in clone(): {}", cudaGetErrorString(err));
+            musaError_t err = musaMemcpy(result.data_ptr(), data_ptr(), num_bytes, musaMemcpyDeviceToDevice);
+            if (err != musaSuccess) {
+                LOG_ERROR("CUDA memcpy failed in clone(): {}", musaGetErrorString(err));
                 return Tensor();
             }
         } else {
@@ -537,14 +537,14 @@ namespace lfs::core {
             } else {
                 size_t* d_shape = nullptr;
                 size_t* d_strides = nullptr;
-                cudaMalloc(&d_shape, rank * sizeof(size_t));
-                cudaMalloc(&d_strides, rank * sizeof(size_t));
-                cudaMemcpy(d_shape, shape_.dims().data(), rank * sizeof(size_t), cudaMemcpyHostToDevice);
-                cudaMemcpy(d_strides, strides_.data(), rank * sizeof(size_t), cudaMemcpyHostToDevice);
+                musaMalloc(&d_shape, rank * sizeof(size_t));
+                musaMalloc(&d_strides, rank * sizeof(size_t));
+                musaMemcpy(d_shape, shape_.dims().data(), rank * sizeof(size_t), musaMemcpyHostToDevice);
+                musaMemcpy(d_strides, strides_.data(), rank * sizeof(size_t), musaMemcpyHostToDevice);
                 tensor_ops::launch_strided_copy(
                     src_base, result.data_, d_shape, d_strides, rank, numel(), dtype_, result.stream());
-                cudaFree(d_shape);
-                cudaFree(d_strides);
+                musaFree(d_shape);
+                musaFree(d_strides);
             }
         } else {
             // CPU strided copy - optimized for common cases with SIMD + multi-threading
@@ -709,7 +709,7 @@ namespace lfs::core {
     }
 
     // ============= Device Transfer =============
-    Tensor Tensor::to(Device device, cudaStream_t stream) const {
+    Tensor Tensor::to(Device device, musaStream_t stream) const {
         materialize_if_deferred();
         const char* op_name = (device == Device::CUDA) ? "to_cuda" : "to_cpu";
         debug::OpTraceGuard trace(op_name, *this);
@@ -743,7 +743,7 @@ namespace lfs::core {
                 LOG_DEBUG("CPU→GPU non-contiguous: using fused strided upload kernel (rank={})", shape_.rank());
 
                 auto t = empty(shape_, Device::CUDA, dtype_);
-                const cudaStream_t transfer_stream = stream ? stream : t.stream();
+                const musaStream_t transfer_stream = stream ? stream : t.stream();
                 if (t.stream() != transfer_stream) {
                     t.set_stream(transfer_stream);
                 }
@@ -755,7 +755,7 @@ namespace lfs::core {
                 const char* src = static_cast<const char*>(data_) + storage_offset_ * dtype_size(dtype_);
 
                 // FAST PATHS: Use optimized kernels with immediate parameters (no device memory allocation!)
-                // This eliminates 2x cudaMalloc + 2x cudaMemcpy overhead (~0.5-1ms saved per upload)
+                // This eliminates 2x musaMalloc + 2x musaMemcpy overhead (~0.5-1ms saved per upload)
                 // ASYNC: Kernel launches asynchronously - CUDA runtime handles synchronization automatically
                 if (shape_.rank() == 3) {
                     LOG_DEBUG("Using optimized rank-{} strided upload (no metadata allocation)", shape_.rank());
@@ -786,15 +786,15 @@ namespace lfs::core {
 
                 size_t* d_shape;
                 size_t* d_strides;
-                CHECK_CUDA(cudaMalloc(&d_shape, shape_.rank() * sizeof(size_t)));
-                CHECK_CUDA(cudaMalloc(&d_strides, shape_.rank() * sizeof(size_t)));
+                CHECK_CUDA(musaMalloc(&d_shape, shape_.rank() * sizeof(size_t)));
+                CHECK_CUDA(musaMalloc(&d_strides, shape_.rank() * sizeof(size_t)));
 
-                CHECK_CUDA(cudaMemcpy(d_shape, shape_.dims().data(),
+                CHECK_CUDA(musaMemcpy(d_shape, shape_.dims().data(),
                                       shape_.rank() * sizeof(size_t),
-                                      cudaMemcpyHostToDevice));
-                CHECK_CUDA(cudaMemcpy(d_strides, strides_.data(),
+                                      musaMemcpyHostToDevice));
+                CHECK_CUDA(musaMemcpy(d_strides, strides_.data(),
                                       shape_.rank() * sizeof(size_t),
-                                      cudaMemcpyHostToDevice));
+                                      musaMemcpyHostToDevice));
 
                 // Launch generic strided upload kernel
                 tensor_ops::launch_strided_upload(
@@ -809,8 +809,8 @@ namespace lfs::core {
 
                 // Free metadata immediately (kernel has already captured the data)
                 // NO SYNC: Kernel launches asynchronously for better PCIe overlap
-                CHECK_CUDA(cudaFree(d_shape));
-                CHECK_CUDA(cudaFree(d_strides));
+                CHECK_CUDA(musaFree(d_shape));
+                CHECK_CUDA(musaFree(d_strides));
 
                 // CRITICAL: Update source tensor's stream for deallocator
                 const_cast<Tensor*>(this)->set_stream(transfer_stream);
@@ -832,7 +832,7 @@ namespace lfs::core {
         //           storage_offset_, dtype_size(dtype_), storage_offset_ * dtype_size(dtype_), bytes());
 
         if (device_ == Device::CPU && device == Device::CUDA) {
-            // Use cudaMemcpyAsync with pinned memory for maximum PCIe bandwidth (~7-11 GB/s)
+            // Use musaMemcpyAsync with pinned memory for maximum PCIe bandwidth (~7-11 GB/s)
             // CPU tensor now uses pinned memory (allocated via PinnedMemoryAllocator)
 
             // PROFILING: Track H2D uploads to identify bottlenecks
@@ -904,11 +904,11 @@ namespace lfs::core {
             }
             */
 
-            cudaStream_t transfer_stream = stream ? stream : t.stream();
+            musaStream_t transfer_stream = stream ? stream : t.stream();
             if (t.stream() != transfer_stream) {
                 t.set_stream(transfer_stream);
             }
-            CHECK_CUDA(cudaMemcpyAsync(t.data_, src, bytes(), cudaMemcpyHostToDevice, transfer_stream));
+            CHECK_CUDA(musaMemcpyAsync(t.data_, src, bytes(), musaMemcpyHostToDevice, transfer_stream));
 
             // CRITICAL: Update source tensor's stream so deallocator knows which stream used this memory
             // This is needed for the stream-aware pinned memory allocator
@@ -916,24 +916,24 @@ namespace lfs::core {
 
             // If stream is provided, caller is responsible for sync
             if (!stream) {
-                CHECK_CUDA(cudaDeviceSynchronize()); // Ensure transfer completes before returning
+                CHECK_CUDA(musaDeviceSynchronize()); // Ensure transfer completes before returning
             }
         } else if (device_ == Device::CUDA && device == Device::CPU) {
             // API BOUNDARY: Sync before GPU→CPU transfer
             if (stream) {
-                cudaStreamSynchronize(stream);
+                musaStreamSynchronize(stream);
             } else {
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
             // Async transfer for GPU→CPU as well (destination is pinned)
-            cudaStream_t transfer_stream = stream ? stream : 0;
+            musaStream_t transfer_stream = stream ? stream : 0;
             if (stream) {
                 t.set_stream(transfer_stream);
             }
-            CHECK_CUDA(cudaMemcpyAsync(t.data_, src, bytes(), cudaMemcpyDeviceToHost, transfer_stream));
+            CHECK_CUDA(musaMemcpyAsync(t.data_, src, bytes(), musaMemcpyDeviceToHost, transfer_stream));
 
             if (!stream) {
-                CHECK_CUDA(cudaDeviceSynchronize()); // Ensure transfer completes before returning
+                CHECK_CUDA(musaDeviceSynchronize()); // Ensure transfer completes before returning
             }
         }
 
@@ -1016,14 +1016,14 @@ namespace lfs::core {
                 // Can't use launch_convert_type - need custom != 0 logic
                 auto result_cpu = empty(shape_, Device::CPU, DataType::Bool);
                 std::vector<float> temp(numel());
-                CHECK_CUDA(cudaMemcpy(temp.data(), ptr<float>(), bytes(), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(temp.data(), ptr<float>(), bytes(), musaMemcpyDeviceToHost));
 
                 unsigned char* dst_cpu = result_cpu.ptr<unsigned char>();
                 for (size_t i = 0; i < numel(); ++i) {
                     dst_cpu[i] = (temp[i] != 0.0f) ? 1 : 0;
                 }
 
-                CHECK_CUDA(cudaMemcpy(result.ptr<unsigned char>(), dst_cpu, numel(), cudaMemcpyHostToDevice));
+                CHECK_CUDA(musaMemcpy(result.ptr<unsigned char>(), dst_cpu, numel(), musaMemcpyHostToDevice));
             } else {
                 const float* src = ptr<float>();
                 unsigned char* dst = result.ptr<unsigned char>();
@@ -1044,7 +1044,7 @@ namespace lfs::core {
             // Read source value before conversion (for debugging)
             if (numel() == 1 && device_ == Device::CUDA) {
                 float src_val;
-                cudaMemcpy(&src_val, ptr<float>(), sizeof(float), cudaMemcpyDeviceToHost);
+                musaMemcpy(&src_val, ptr<float>(), sizeof(float), musaMemcpyDeviceToHost);
                 printf("[to Float32->Int32] Source value: %f\n", src_val);
             }
 
@@ -1075,7 +1075,7 @@ namespace lfs::core {
             auto result = empty(shape_, device_, dtype);
             if (numel() > 0) {
                 if (device_ == Device::CUDA) {
-                    CHECK_CUDA(cudaMemcpy(const_cast<void*>(result.data_ptr()), data_ptr(), bytes(), cudaMemcpyDeviceToDevice));
+                    CHECK_CUDA(musaMemcpy(const_cast<void*>(result.data_ptr()), data_ptr(), bytes(), musaMemcpyDeviceToDevice));
                 } else {
                     std::memcpy(const_cast<void*>(result.data_ptr()), data_ptr(), bytes());
                 }
@@ -1093,15 +1093,15 @@ namespace lfs::core {
                 // Copy to CPU, convert, copy back
                 auto result_cpu = empty(shape_, Device::CPU, DataType::Bool);
                 std::vector<int> temp(numel());
-                CHECK_CUDA(cudaMemcpy(temp.data(), ptr<int>(), bytes(), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(temp.data(), ptr<int>(), bytes(), musaMemcpyDeviceToHost));
 
                 unsigned char* dst_cpu = result_cpu.ptr<unsigned char>();
                 for (size_t i = 0; i < numel(); ++i) {
                     dst_cpu[i] = (temp[i] != 0) ? 1 : 0;
                 }
 
-                CHECK_CUDA(cudaMemcpy(result.ptr<unsigned char>(), result_cpu.ptr<unsigned char>(),
-                                      numel() * sizeof(unsigned char), cudaMemcpyHostToDevice));
+                CHECK_CUDA(musaMemcpy(result.ptr<unsigned char>(), result_cpu.ptr<unsigned char>(),
+                                      numel() * sizeof(unsigned char), musaMemcpyHostToDevice));
             } else {
                 const int* src = ptr<int>();
                 unsigned char* dst = result.ptr<unsigned char>();
@@ -1163,15 +1163,15 @@ namespace lfs::core {
                 // Copy to CPU, convert, copy back
                 auto result_cpu = empty(shape_, Device::CPU, DataType::Bool);
                 std::vector<int64_t> temp(numel());
-                CHECK_CUDA(cudaMemcpy(temp.data(), ptr<int64_t>(), bytes(), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(temp.data(), ptr<int64_t>(), bytes(), musaMemcpyDeviceToHost));
 
                 unsigned char* dst_cpu = result_cpu.ptr<unsigned char>();
                 for (size_t i = 0; i < numel(); ++i) {
                     dst_cpu[i] = (temp[i] != 0) ? 1 : 0;
                 }
 
-                CHECK_CUDA(cudaMemcpy(result.ptr<unsigned char>(), result_cpu.ptr<unsigned char>(),
-                                      numel() * sizeof(unsigned char), cudaMemcpyHostToDevice));
+                CHECK_CUDA(musaMemcpy(result.ptr<unsigned char>(), result_cpu.ptr<unsigned char>(),
+                                      numel() * sizeof(unsigned char), musaMemcpyHostToDevice));
             } else {
                 const int64_t* src = ptr<int64_t>();
                 unsigned char* dst = result.ptr<unsigned char>();
@@ -1216,17 +1216,17 @@ namespace lfs::core {
                 // Copy to CPU, convert, copy back
                 auto result_cpu = empty(shape_, Device::CPU, DataType::Bool);
                 std::vector<__half> temp(numel());
-                CHECK_CUDA(cudaMemcpy(temp.data(), ptr<__half>(), bytes(), cudaMemcpyDeviceToHost));
-                CHECK_CUDA(cudaDeviceSynchronize()); // Ensure copy completes
+                CHECK_CUDA(musaMemcpy(temp.data(), ptr<__half>(), bytes(), musaMemcpyDeviceToHost));
+                CHECK_CUDA(musaDeviceSynchronize()); // Ensure copy completes
 
                 unsigned char* dst_cpu = result_cpu.ptr<unsigned char>();
                 for (size_t i = 0; i < numel(); ++i) {
                     dst_cpu[i] = (__half2float(temp[i]) != 0.0f) ? 1 : 0;
                 }
 
-                CHECK_CUDA(cudaMemcpy(result.ptr<unsigned char>(), result_cpu.ptr<unsigned char>(),
-                                      numel() * sizeof(unsigned char), cudaMemcpyHostToDevice));
-                CHECK_CUDA(cudaDeviceSynchronize()); // Ensure copy completes
+                CHECK_CUDA(musaMemcpy(result.ptr<unsigned char>(), result_cpu.ptr<unsigned char>(),
+                                      numel() * sizeof(unsigned char), musaMemcpyHostToDevice));
+                CHECK_CUDA(musaDeviceSynchronize()); // Ensure copy completes
             } else {
                 const __half* src = ptr<__half>();
                 unsigned char* dst = result.ptr<unsigned char>();
@@ -1253,7 +1253,7 @@ namespace lfs::core {
                 tensor_ops::launch_convert_type<int64_t, int>(
                     ptr<int64_t>(), result.ptr<int>(), numel(), result.stream());
                 // CRITICAL: Sync to ensure conversion completes before item() reads
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             } else {
                 const int64_t* src = ptr<int64_t>();
                 int* dst = result.ptr<int>();
@@ -1293,7 +1293,7 @@ namespace lfs::core {
         char* dest = static_cast<char*>(data_) + storage_offset_ * dtype_size(dtype_);
 
         if (device_ == Device::CUDA) {
-            CHECK_CUDA(cudaMemset(dest, 0, bytes()));
+            CHECK_CUDA(musaMemset(dest, 0, bytes()));
         } else {
             std::memset(dest, 0, bytes());
         }
@@ -1315,7 +1315,7 @@ namespace lfs::core {
 
             // For CUDA non-contiguous tensors: use CUDA kernel that respects strides
             if (device_ == Device::CUDA) {
-                // Use CUDA kernel for strided fill (much faster than element-by-element cudaMemcpy)
+                // Use CUDA kernel for strided fill (much faster than element-by-element musaMemcpy)
                 if (dtype_ == DataType::Float32) {
                     tensor_ops::launch_fill_strided<float>(
                         static_cast<float*>(data_), value, shape_.dims(), strides_, storage_offset_, n, stream());
@@ -1329,7 +1329,7 @@ namespace lfs::core {
                         static_cast<unsigned char*>(data_), bool_val, shape_.dims(), strides_, storage_offset_, n, stream());
                 }
                 // Sync for the no-stream overload (maintains original behavior)
-                CHECK_CUDA(cudaDeviceSynchronize());
+                CHECK_CUDA(musaDeviceSynchronize());
                 return *this;
             }
 
@@ -1369,7 +1369,7 @@ namespace lfs::core {
             unsigned char bool_val = (value != 0.0f) ? 1 : 0;
             if (device_ == Device::CUDA) {
                 std::vector<unsigned char> temp(numel(), bool_val);
-                CHECK_CUDA(cudaMemcpy(dest, temp.data(), bytes(), cudaMemcpyHostToDevice));
+                CHECK_CUDA(musaMemcpy(dest, temp.data(), bytes(), musaMemcpyHostToDevice));
             } else {
                 unsigned char* data = static_cast<unsigned char*>(dest);
                 std::fill(data, data + numel(), bool_val);
@@ -1382,7 +1382,7 @@ namespace lfs::core {
             int int_val = static_cast<int>(value);
             if (device_ == Device::CUDA) {
                 std::vector<int> temp(numel(), int_val);
-                CHECK_CUDA(cudaMemcpy(dest, temp.data(), bytes(), cudaMemcpyHostToDevice));
+                CHECK_CUDA(musaMemcpy(dest, temp.data(), bytes(), musaMemcpyHostToDevice));
             } else {
                 int* data = static_cast<int*>(dest);
                 std::fill(data, data + numel(), int_val);
@@ -1393,7 +1393,7 @@ namespace lfs::core {
         // Handle Float32 dtype (original code)
         if (device_ == Device::CUDA) {
             std::vector<float> temp(numel(), value);
-            CHECK_CUDA(cudaMemcpy(dest, temp.data(), bytes(), cudaMemcpyHostToDevice));
+            CHECK_CUDA(musaMemcpy(dest, temp.data(), bytes(), musaMemcpyHostToDevice));
         } else {
             float* data = static_cast<float*>(dest);
             std::fill(data, data + numel(), value);
@@ -1402,7 +1402,7 @@ namespace lfs::core {
         return *this;
     }
 
-    Tensor& Tensor::fill_(float value, cudaStream_t stream) {
+    Tensor& Tensor::fill_(float value, musaStream_t stream) {
         materialize_if_deferred();
         if (!is_valid() || numel() == 0) {
             return *this;
@@ -1432,12 +1432,12 @@ namespace lfs::core {
             return *this;
         }
 
-        // Contiguous tensors: use cudaMemsetAsync for zeros, or strided kernel for non-zero
+        // Contiguous tensors: use musaMemsetAsync for zeros, or strided kernel for non-zero
         void* dest = static_cast<char*>(data_) + storage_offset_ * dtype_size(dtype_);
 
         if (value == 0.0f) {
-            // Fast path: use cudaMemsetAsync for zeros
-            CHECK_CUDA(cudaMemsetAsync(dest, 0, bytes(), stream));
+            // Fast path: use musaMemsetAsync for zeros
+            CHECK_CUDA(musaMemsetAsync(dest, 0, bytes(), stream));
         } else {
             // Non-zero fill: use kernel (treat as 1D strided with stride=1)
             std::vector<size_t> shape_1d = {n};
@@ -1495,11 +1495,11 @@ namespace lfs::core {
         // Both contiguous: direct memcpy
         if (dst_contig && src_contig) {
             if (device_ == Device::CUDA && other.device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(data_ptr(), other.data_ptr(), bytes(), cudaMemcpyDeviceToDevice));
+                CHECK_CUDA(musaMemcpy(data_ptr(), other.data_ptr(), bytes(), musaMemcpyDeviceToDevice));
             } else if (device_ == Device::CUDA && other.device_ == Device::CPU) {
-                CHECK_CUDA(cudaMemcpy(data_ptr(), other.data_ptr(), bytes(), cudaMemcpyHostToDevice));
+                CHECK_CUDA(musaMemcpy(data_ptr(), other.data_ptr(), bytes(), musaMemcpyHostToDevice));
             } else if (device_ == Device::CPU && other.device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(data_ptr(), other.data_ptr(), bytes(), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(data_ptr(), other.data_ptr(), bytes(), musaMemcpyDeviceToHost));
             } else {
                 std::memcpy(data_ptr(), other.data_ptr(), bytes());
             }
@@ -1519,14 +1519,14 @@ namespace lfs::core {
             } else {
                 size_t* d_shape = nullptr;
                 size_t* d_strides = nullptr;
-                CHECK_CUDA(cudaMalloc(&d_shape, rank * sizeof(size_t)));
-                CHECK_CUDA(cudaMalloc(&d_strides, rank * sizeof(size_t)));
-                CHECK_CUDA(cudaMemcpy(d_shape, shape_vec.data(), rank * sizeof(size_t), cudaMemcpyHostToDevice));
-                CHECK_CUDA(cudaMemcpy(d_strides, strides_.data(), rank * sizeof(size_t), cudaMemcpyHostToDevice));
+                CHECK_CUDA(musaMalloc(&d_shape, rank * sizeof(size_t)));
+                CHECK_CUDA(musaMalloc(&d_strides, rank * sizeof(size_t)));
+                CHECK_CUDA(musaMemcpy(d_shape, shape_vec.data(), rank * sizeof(size_t), musaMemcpyHostToDevice));
+                CHECK_CUDA(musaMemcpy(d_strides, strides_.data(), rank * sizeof(size_t), musaMemcpyHostToDevice));
                 tensor_ops::launch_strided_scatter(
                     other.data_ptr(), data_ptr(), d_shape, d_strides, rank, numel(), dtype_, stream());
-                CHECK_CUDA(cudaFree(d_shape));
-                CHECK_CUDA(cudaFree(d_strides));
+                CHECK_CUDA(musaFree(d_shape));
+                CHECK_CUDA(musaFree(d_strides));
             }
             return *this;
         }
@@ -1939,7 +1939,7 @@ namespace lfs::core {
         // Sync before reading from GPU
         if (device_ == Device::CUDA) {
             // API BOUNDARY: Sync before reading value from GPU
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Handle different dtypes
@@ -1947,7 +1947,7 @@ namespace lfs::core {
         case DataType::Float32: {
             float temp;
             if (device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(&temp, raw_ptr, sizeof(float), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(&temp, raw_ptr, sizeof(float), musaMemcpyDeviceToHost));
             } else {
                 temp = *static_cast<const float*>(raw_ptr);
             }
@@ -1957,7 +1957,7 @@ namespace lfs::core {
         case DataType::Int64: {
             int64_t temp;
             if (device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(&temp, raw_ptr, sizeof(int64_t), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(&temp, raw_ptr, sizeof(int64_t), musaMemcpyDeviceToHost));
             } else {
                 temp = *static_cast<const int64_t*>(raw_ptr);
             }
@@ -1967,7 +1967,7 @@ namespace lfs::core {
         case DataType::Int32: {
             int32_t temp;
             if (device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(&temp, raw_ptr, sizeof(int32_t), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(&temp, raw_ptr, sizeof(int32_t), musaMemcpyDeviceToHost));
             } else {
                 temp = *static_cast<const int32_t*>(raw_ptr);
             }
@@ -1977,7 +1977,7 @@ namespace lfs::core {
         case DataType::Bool: {
             unsigned char temp;
             if (device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(&temp, raw_ptr, sizeof(unsigned char), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(&temp, raw_ptr, sizeof(unsigned char), musaMemcpyDeviceToHost));
             } else {
                 temp = *static_cast<const unsigned char*>(raw_ptr);
             }
@@ -1987,7 +1987,7 @@ namespace lfs::core {
         case DataType::UInt8: {
             uint8_t temp;
             if (device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(&temp, raw_ptr, sizeof(uint8_t), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(&temp, raw_ptr, sizeof(uint8_t), musaMemcpyDeviceToHost));
             } else {
                 temp = *static_cast<const uint8_t*>(raw_ptr);
             }
@@ -2018,9 +2018,9 @@ namespace lfs::core {
 
         if (device_ == Device::CUDA) {
             // API BOUNDARY: Sync before reading from GPU
-            cudaDeviceSynchronize();
-            CHECK_CUDA(cudaMemcpy(values.data(), data_ptr(), n * sizeof(float),
-                                  cudaMemcpyDeviceToHost));
+            musaDeviceSynchronize();
+            CHECK_CUDA(musaMemcpy(values.data(), data_ptr(), n * sizeof(float),
+                                  musaMemcpyDeviceToHost));
         } else {
             const float* data = ptr<float>();
             for (size_t i = 0; i < n; ++i) {
@@ -2084,8 +2084,8 @@ namespace lfs::core {
 
         if (device_ == Device::CUDA) {
             // API BOUNDARY: Sync before reading from GPU
-            cudaDeviceSynchronize();
-            CHECK_CUDA(cudaMemcpy(result.data(), src, bytes(), cudaMemcpyDeviceToHost));
+            musaDeviceSynchronize();
+            CHECK_CUDA(musaMemcpy(result.data(), src, bytes(), musaMemcpyDeviceToHost));
         } else {
             std::memcpy(result.data(), src, bytes());
         }
@@ -2121,7 +2121,7 @@ namespace lfs::core {
 
         if (device_ == Device::CUDA) {
             LOG_DEBUG("Copying from CUDA to CPU, bytes: {}", bytes());
-            CHECK_CUDA(cudaMemcpy(result.data(), data_ptr(), bytes(), cudaMemcpyDeviceToHost));
+            CHECK_CUDA(musaMemcpy(result.data(), data_ptr(), bytes(), musaMemcpyDeviceToHost));
             LOG_DEBUG("CUDA copy complete");
         } else {
             LOG_DEBUG("Copying from CPU memory, bytes: {}", bytes());
@@ -2165,7 +2165,7 @@ namespace lfs::core {
         std::vector<int> result(numel());
 
         if (device_ == Device::CUDA) {
-            CHECK_CUDA(cudaMemcpy(result.data(), data_ptr(), bytes(), cudaMemcpyDeviceToHost));
+            CHECK_CUDA(musaMemcpy(result.data(), data_ptr(), bytes(), musaMemcpyDeviceToHost));
         } else {
             std::memcpy(result.data(), data_ptr(), bytes());
         }
@@ -2195,7 +2195,7 @@ namespace lfs::core {
 
         if (device_ == Device::CUDA) {
             std::vector<unsigned char> temp(numel());
-            CHECK_CUDA(cudaMemcpy(temp.data(), data_ptr(), bytes(), cudaMemcpyDeviceToHost));
+            CHECK_CUDA(musaMemcpy(temp.data(), data_ptr(), bytes(), musaMemcpyDeviceToHost));
             for (size_t i = 0; i < numel(); ++i) {
                 result[i] = temp[i] != 0;
             }
@@ -2225,7 +2225,7 @@ namespace lfs::core {
             std::vector<uint8_t> result(numel());
 
             if (device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(result.data(), data_ptr(), bytes(), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(result.data(), data_ptr(), bytes(), musaMemcpyDeviceToHost));
             } else {
                 std::memcpy(result.data(), data_ptr(), bytes());
             }
@@ -2238,7 +2238,7 @@ namespace lfs::core {
             std::vector<uint8_t> result(numel());
 
             if (device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(result.data(), data_ptr(), bytes(), cudaMemcpyDeviceToHost));
+                CHECK_CUDA(musaMemcpy(result.data(), data_ptr(), bytes(), musaMemcpyDeviceToHost));
             } else {
                 const unsigned char* src = ptr<unsigned char>();
                 for (size_t i = 0; i < numel(); ++i) {
@@ -2479,7 +2479,7 @@ namespace lfs::core {
         void* new_data = nullptr;
         try {
             if (device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMalloc(&new_data, new_bytes));
+                CHECK_CUDA(musaMalloc(&new_data, new_bytes));
                 LOG_DEBUG("  ✓ CUDA allocation succeeded: {} MB at {}", new_bytes / (1024.0 * 1024.0), new_data);
             } else {
                 new_data = std::malloc(new_bytes);
@@ -2497,7 +2497,7 @@ namespace lfs::core {
         if (old_data && numel() > 0) {
             const size_t copy_bytes = numel() * element_size;
             if (device_ == Device::CUDA) {
-                CHECK_CUDA(cudaMemcpy(new_data, old_data, copy_bytes, cudaMemcpyDeviceToDevice));
+                CHECK_CUDA(musaMemcpy(new_data, old_data, copy_bytes, musaMemcpyDeviceToDevice));
             } else {
                 std::memcpy(new_data, old_data, copy_bytes);
             }
@@ -2508,7 +2508,7 @@ namespace lfs::core {
         data_ = new_data;
         data_owner_ = std::shared_ptr<void>(new_data, [device = device_](void* ptr) {
             if (device == Device::CUDA) {
-                cudaFree(ptr);
+                musaFree(ptr);
             } else {
                 std::free(ptr);
             }
@@ -2578,12 +2578,12 @@ namespace lfs::core {
             return t;
         }
 
-        // Direct cudaMalloc bypassing pool
+        // Direct musaMalloc bypassing pool
         void* data_ptr = nullptr;
-        cudaError_t err = cudaMalloc(&data_ptr, total_bytes);
-        if (err != cudaSuccess) {
-            std::string error_str = cudaGetErrorString(err);
-            cudaGetLastError(); // Clear sticky error state
+        musaError_t err = musaMalloc(&data_ptr, total_bytes);
+        if (err != musaSuccess) {
+            std::string error_str = musaGetErrorString(err);
+            musaGetLastError(); // Clear sticky error state
             throw TensorError(std::format(
                 "CUDA allocation failed ({}): {} bytes ({:.2f} GB). "
                 "Try reducing max_cap, sh_degree, or image resolution.",
@@ -2591,10 +2591,10 @@ namespace lfs::core {
         }
 
         // Zero full capacity
-        err = cudaMemset(data_ptr, 0, total_bytes);
-        if (err != cudaSuccess) {
-            cudaFree(data_ptr);
-            throw TensorError("cudaMemset failed in zeros_direct: " + std::string(cudaGetErrorString(err)));
+        err = musaMemset(data_ptr, 0, total_bytes);
+        if (err != musaSuccess) {
+            musaFree(data_ptr);
+            throw TensorError("musaMemset failed in zeros_direct: " + std::string(musaGetErrorString(err)));
         }
 
         // Create tensor with custom deleter
@@ -2602,7 +2602,7 @@ namespace lfs::core {
         t.data_ = data_ptr;
         t.data_owner_ = std::shared_ptr<void>(data_ptr, [](void* ptr) {
             if (ptr)
-                cudaFree(ptr);
+                musaFree(ptr);
         });
         t.shape_ = shape;
         t.strides_ = shape.strides();

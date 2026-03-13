@@ -92,7 +92,7 @@ namespace lfs::training {
 
         // CRITICAL: Ensure CUDA device is set for this thread
         // Some operations might spawn TBB threads, and those need CUDA context
-        cudaSetDevice(0);
+        musaSetDevice(0);
 
         // Map param index to ParamType
         auto index_to_param_type = [](size_t idx) -> ParamType {
@@ -124,9 +124,9 @@ namespace lfs::training {
         // First pass: Compute new parameters and update optimizer state
         for (auto i : param_idxs) {
             auto param = params[i];
-            cudaError_t err_before = cudaGetLastError();
-            if (err_before != cudaSuccess) {
-                LOG_ERROR("CUDA error before param_fn: {}", cudaGetErrorString(err_before));
+            musaError_t err_before = musaGetLastError();
+            if (err_before != musaSuccess) {
+                LOG_ERROR("CUDA error before param_fn: {}", musaGetErrorString(err_before));
             }
 
             auto param_type = index_to_param_type(i);
@@ -134,10 +134,10 @@ namespace lfs::training {
 
             auto new_param = param_fn(i, *param);
 
-            cudaError_t err_after = cudaGetLastError();
-            if (err_after != cudaSuccess) {
-                LOG_ERROR("CUDA error after param_fn({}) [param_type={}]: {}", i, static_cast<int>(param_type), cudaGetErrorString(err_after));
-                throw std::runtime_error(std::string("CUDA error in param_fn (param ") + std::to_string(i) + "): " + cudaGetErrorString(err_after));
+            musaError_t err_after = musaGetLastError();
+            if (err_after != musaSuccess) {
+                LOG_ERROR("CUDA error after param_fn({}) [param_type={}]: {}", i, static_cast<int>(param_type), musaGetErrorString(err_after));
+                throw std::runtime_error(std::string("CUDA error in param_fn (param ") + std::to_string(i) + "): " + musaGetErrorString(err_after));
             }
             new_params[i] = new_param;
 

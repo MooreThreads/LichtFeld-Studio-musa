@@ -27,7 +27,7 @@ namespace nvimgcodec {
         : allocator(exec_params ? exec_params->pinned_allocator : nullptr) {
     }
 
-    void PinnedBuffer::resize(size_t new_size, cudaStream_t new_stream) {
+    void PinnedBuffer::resize(size_t new_size, musaStream_t new_stream) {
         if (new_size <= capacity && stream == new_stream) {
             stream = new_stream;
             size = new_size;
@@ -36,7 +36,7 @@ namespace nvimgcodec {
         }
     }
 
-    void PinnedBuffer::alloc_impl(size_t new_size, cudaStream_t new_stream) {
+    void PinnedBuffer::alloc_impl(size_t new_size, musaStream_t new_stream) {
         if (allocator && allocator->pinned_malloc) {
             d_ptr.reset(static_cast<void*>(nullptr), [](void*) {}); // trigger async free on the previous stream
             allocator->pinned_malloc(allocator->pinned_ctx, &data, new_size, new_stream);
@@ -48,11 +48,11 @@ namespace nvimgcodec {
             });
         } else {
             nvimgcodec::DeviceGuard device_guard(nvimgcodec::get_stream_device_id(new_stream));
-            CHECK_CUDA(cudaMallocHost(&data, new_size));
+            CHECK_CUDA(musaMallocHost(&data, new_size));
             size = new_size;
             capacity = new_size;
             stream = new_stream;
-            d_ptr.reset(data, cudaFreeHost);
+            d_ptr.reset(data, musaFreeHost);
         }
     }
 

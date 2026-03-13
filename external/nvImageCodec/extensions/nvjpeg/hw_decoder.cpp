@@ -105,7 +105,7 @@ namespace nvjpeg {
             const nvimgcodecFrameworkDesc_t* framework_;
 
             nvjpegJpegState_t state_;
-            cudaEvent_t event_;
+            musaEvent_t event_;
             std::vector<nvjpegJpegStream_t> nvjpeg_streams_;
 
             const nvimgcodecExecutionParams_t* exec_params_;
@@ -132,7 +132,7 @@ namespace nvjpeg {
                 nvjpegDecodeParams_t decode_params_;
                 void* pinned_buffer_ = nullptr;
                 size_t pinned_buffer_sz_ = 0;
-                cudaStream_t pinned_buffer_stream_ = 0;
+                musaStream_t pinned_buffer_stream_ = 0;
 
                 explicit PerThreadResources(const nvimgcodecFrameworkDesc_t* framework, const char* plugin_id, nvjpegHandle_t handle)
                     : framework_(framework),
@@ -143,8 +143,8 @@ namespace nvjpeg {
 
                 ~PerThreadResources() {
                     if (pinned_buffer_sz_ > 0) {
-                        XM_CUDA_LOG_DESTROY(cudaStreamSynchronize(pinned_buffer_stream_));
-                        XM_CUDA_LOG_DESTROY(cudaFreeHost(pinned_buffer_));
+                        XM_CUDA_LOG_DESTROY(musaStreamSynchronize(pinned_buffer_stream_));
+                        XM_CUDA_LOG_DESTROY(musaFreeHost(pinned_buffer_));
                     }
                     nvjpegDecodeParamsDestroy(decode_params_);
                     nvjpegJpegStreamDestroy(nvjpeg_stream_);
@@ -438,7 +438,7 @@ namespace nvjpeg {
         }
 
         XM_CHECK_NVJPEG(nvjpegJpegStateCreate(handle_, &state_));
-        XM_CHECK_CUDA(cudaEventCreate(&event_));
+        XM_CHECK_CUDA(musaEventCreate(&event_));
 
         has_batched_ex_api_ = nvjpegIsSymbolAvailable("nvjpegDecodeBatchedEx") && nvjpegIsSymbolAvailable("nvjpegDecodeBatchedSupportedEx");
 
@@ -495,7 +495,7 @@ namespace nvjpeg {
             for (auto& nvjpeg_param : batched_nvjpeg_params_)
                 XM_NVJPEG_LOG_DESTROY(nvjpegDecodeParamsDestroy(nvjpeg_param));
             if (event_)
-                XM_CUDA_LOG_DESTROY(cudaEventDestroy(event_));
+                XM_CUDA_LOG_DESTROY(musaEventDestroy(event_));
             if (state_)
                 XM_NVJPEG_LOG_DESTROY(nvjpegJpegStateDestroy(state_));
 
@@ -554,7 +554,7 @@ namespace nvjpeg {
             }
 
             // bool pageable = false;
-            cudaStream_t stream{0};
+            musaStream_t stream{0};
             for (int sample_idx = 0, i = 0; sample_idx < batch_size; sample_idx++) {
                 auto* image = images[sample_idx];
                 XM_CHECK_NULL(image);
@@ -627,7 +627,7 @@ namespace nvjpeg {
             }
             if (batched_bitstreams_.size() > 0) {
                 // Synchronize with previous iteration
-                XM_CHECK_CUDA(cudaEventSynchronize(event_));
+                XM_CHECK_CUDA(musaEventSynchronize(event_));
                 XM_CHECK_NVJPEG(nvjpegDecodeBatchedInitialize(handle_, state_, batched_bitstreams_.size(), 1, nvjpeg_format));
 
                 if (has_batched_ex_api_) {
@@ -641,7 +641,7 @@ namespace nvjpeg {
                     XM_CHECK_NVJPEG(nvjpegDecodeBatched(
                         handle_, state_, batched_bitstreams_.data(), batched_bitstreams_size_.data(), batched_output_.data(), stream));
                 }
-                XM_CHECK_CUDA(cudaEventRecord(event_, stream));
+                XM_CHECK_CUDA(musaEventRecord(event_, stream));
             }
             for (int sample_idx : sample_idxs_)
                 images[sample_idx]->imageReady(images[sample_idx]->instance, NVIMGCODEC_PROCESSING_STATUS_SUCCESS);

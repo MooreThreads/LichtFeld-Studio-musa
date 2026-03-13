@@ -8,7 +8,7 @@
 #include "helper_math.h"
 #include <cstdint>
 #include <cub/cub.cuh>
-#include <cuda_fp16.h>
+#include <musa_fp16.h>
 
 namespace edge_compute::rasterization {
 

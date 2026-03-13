@@ -20,8 +20,9 @@
 #include <unordered_map>
 #include <vector>
 
-struct CUstream_st;
-using cudaStream_t = CUstream_st*;
+// Forward declaration: musaStream_t is defined in musa_runtime_api.h as MUstream_st*
+struct MUstream_st;
+using musaStream_t = MUstream_st*;
 
 namespace lfs::io {
 
@@ -76,7 +77,7 @@ namespace lfs::io {
         size_t sequence_id;
         lfs::core::Tensor tensor;              // Image tensor [C,H,W], float32
         std::optional<lfs::core::Tensor> mask; // Optional mask [H,W], float32
-        cudaStream_t stream = nullptr;
+        musaStream_t stream = nullptr;
     };
 
     class LFS_IO_API PipelinedImageLoader {
@@ -153,7 +154,7 @@ namespace lfs::io {
         struct PendingPair {
             std::optional<lfs::core::Tensor> image;
             std::optional<lfs::core::Tensor> mask;
-            cudaStream_t stream = nullptr;
+            musaStream_t stream = nullptr;
             bool mask_expected = false; // True if a mask was requested for this sequence_id
         };
 
@@ -248,7 +249,7 @@ namespace lfs::io {
             size_t sequence_id,
             std::optional<lfs::core::Tensor> image,
             std::optional<lfs::core::Tensor> mask,
-            cudaStream_t stream);
+            musaStream_t stream);
 
         PipelinedLoaderConfig config_;
         std::atomic<bool> running_{false};

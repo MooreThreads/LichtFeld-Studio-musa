@@ -233,7 +233,7 @@ typedef struct
  * @param [in] stream CUDA stream
  * @returns They will return 0 in case of success, and non-zero otherwise
  */
-typedef int (*nvimgcodecDeviceMalloc_t)(void* ctx, void** ptr, size_t size, cudaStream_t stream);
+typedef int (*nvimgcodecDeviceMalloc_t)(void* ctx, void** ptr, size_t size, musaStream_t stream);
 
 /**
  * @brief Function type for device memory deallocation.
@@ -245,7 +245,7 @@ typedef int (*nvimgcodecDeviceMalloc_t)(void* ctx, void** ptr, size_t size, cuda
  * @param [in] stream CUDA stream
  * @returns They will return 0 in case of success, and non-zero otherwise
  */
-typedef int (*nvimgcodecDeviceFree_t)(void* ctx, void* ptr, size_t size, cudaStream_t stream);
+typedef int (*nvimgcodecDeviceFree_t)(void* ctx, void* ptr, size_t size, musaStream_t stream);
 
 /**
  * @brief Function type for host pinned memory resource allocation.
@@ -256,7 +256,7 @@ typedef int (*nvimgcodecDeviceFree_t)(void* ctx, void* ptr, size_t size, cudaStr
  * @param [in] stream CUDA stream
  * @returns They will return 0 in case of success, and non-zero otherwise
  */
-typedef int (*nvimgcodecPinnedMalloc_t)(void* ctx, void** ptr, size_t size, cudaStream_t stream);
+typedef int (*nvimgcodecPinnedMalloc_t)(void* ctx, void** ptr, size_t size, musaStream_t stream);
 
 /**
  * @brief Function type for host pinned memory deallocation.
@@ -268,7 +268,7 @@ typedef int (*nvimgcodecPinnedMalloc_t)(void* ctx, void** ptr, size_t size, cuda
  * @param [in] stream CUDA stream
  * @returns They will return 0 in case of success, and non-zero otherwise
  */
-typedef int (*nvimgcodecPinnedFree_t)(void* ctx, void* ptr, size_t size, cudaStream_t stream);
+typedef int (*nvimgcodecPinnedFree_t)(void* ctx, void* ptr, size_t size, musaStream_t stream);
 
 /**
  * @brief Device memory allocator.
@@ -490,7 +490,7 @@ typedef struct
     size_t buffer_size;                      /**< Size of buffer in which image data is stored. */
     nvimgcodecImageBufferKind_t buffer_kind; /**< Buffer kind in which image data is stored.*/
 
-    cudaStream_t cuda_stream; /**< CUDA stream to synchronize with */
+    musaStream_t cuda_stream; /**< CUDA stream to synchronize with */
 } nvimgcodecImageInfo_t;
 
 /**

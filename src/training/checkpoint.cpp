@@ -21,7 +21,7 @@ namespace lfs::training {
     using lfs::core::CheckpointHeader;
     using lfs::core::has_flag;
 
-    std::expected<void, std::string> save_checkpoint(
+    lfs_compat::expected<void, std::string> save_checkpoint(
         const std::filesystem::path& path,
         const int iteration,
         const IStrategy& strategy,
@@ -33,7 +33,7 @@ namespace lfs::training {
         try {
             // Validate input path
             if (path.empty()) {
-                return std::unexpected("Cannot save checkpoint: output path is empty");
+                return lfs_compat::unexpected("Cannot save checkpoint: output path is empty");
             }
 
             const auto checkpoint_dir = path / "checkpoints";
@@ -42,7 +42,7 @@ namespace lfs::training {
             std::error_code ec;
             std::filesystem::create_directories(checkpoint_dir, ec);
             if (ec) {
-                return std::unexpected("Failed to create checkpoint directory '" +
+                return lfs_compat::unexpected("Failed to create checkpoint directory '" +
                                        lfs::core::path_to_utf8(checkpoint_dir) + "': " + ec.message());
             }
 
@@ -110,12 +110,12 @@ namespace lfs::training {
                     .is_disk_space_error = is_disk_space}
                     .emit();
 
-                return std::unexpected(error.format());
+                return lfs_compat::unexpected(error.format());
             }
 
             std::ofstream file;
             if (!lfs::core::open_file_for_write(checkpoint_path, std::ios::binary, file)) {
-                return std::unexpected("Failed to open checkpoint file: " + lfs::core::path_to_utf8(checkpoint_path));
+                return lfs_compat::unexpected("Failed to open checkpoint file: " + lfs::core::path_to_utf8(checkpoint_path));
             }
 
             CheckpointHeader header{};
@@ -191,11 +191,11 @@ namespace lfs::training {
             return {};
 
         } catch (const std::exception& e) {
-            return std::unexpected(std::string("Save checkpoint failed: ") + e.what());
+            return lfs_compat::unexpected(std::string("Save checkpoint failed: ") + e.what());
         }
     }
 
-    std::expected<int, std::string> load_checkpoint(
+    lfs_compat::expected<int, std::string> load_checkpoint(
         const std::filesystem::path& path,
         IStrategy& strategy,
         lfs::core::param::TrainingParameters& params,
@@ -206,17 +206,17 @@ namespace lfs::training {
         try {
             std::ifstream file;
             if (!lfs::core::open_file_for_read(path, std::ios::binary, file)) {
-                return std::unexpected("Failed to open: " + lfs::core::path_to_utf8(path));
+                return lfs_compat::unexpected("Failed to open: " + lfs::core::path_to_utf8(path));
             }
 
             CheckpointHeader header{};
             file.read(reinterpret_cast<char*>(&header), sizeof(header));
 
             if (header.magic != CHECKPOINT_MAGIC) {
-                return std::unexpected("Invalid checkpoint: wrong magic");
+                return lfs_compat::unexpected("Invalid checkpoint: wrong magic");
             }
             if (header.version > CHECKPOINT_VERSION) {
-                return std::unexpected("Unsupported version: " + std::to_string(header.version));
+                return lfs_compat::unexpected("Unsupported version: " + std::to_string(header.version));
             }
 
             // Verify strategy compatibility
@@ -226,7 +226,7 @@ namespace lfs::training {
             file.read(saved_type.data(), type_len);
 
             if (saved_type != strategy.strategy_type()) {
-                return std::unexpected("Strategy mismatch: '" + saved_type +
+                return lfs_compat::unexpected("Strategy mismatch: '" + saved_type +
                                        "' vs '" + strategy.strategy_type() + "'");
             }
 
@@ -333,7 +333,7 @@ namespace lfs::training {
             return header.iteration;
 
         } catch (const std::exception& e) {
-            return std::unexpected(std::string("Load checkpoint failed: ") + e.what());
+            return lfs_compat::unexpected(std::string("Load checkpoint failed: ") + e.what());
         }
     }
 

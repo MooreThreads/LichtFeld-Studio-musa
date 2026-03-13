@@ -12,8 +12,8 @@
 
 #define CHECK_CUDA(call)                                        \
     do {                                                        \
-        if (auto e = call; e != cudaSuccess) {                  \
-            LOG_ERROR("CUDA error: {}", cudaGetErrorString(e)); \
+        if (auto e = call; e != musaSuccess) {                  \
+            LOG_ERROR("CUDA error: {}", musaGetErrorString(e)); \
         }                                                       \
     } while (0)
 

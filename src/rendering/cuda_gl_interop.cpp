@@ -11,11 +11,11 @@
 #include "cuda_gl_interop.hpp"
 #include "image_layout.hpp"
 #include <cassert>
-#include <format>
+#include <fmt/format.h>
 
 #ifdef CUDA_GL_INTEROP_ENABLED
 // Only include CUDA GL interop when enabled
-#include <cuda_gl_interop.h>
+#include <musa_gl_interop.h>
 #endif
 
 namespace lfs::rendering {
@@ -28,7 +28,7 @@ namespace lfs::rendering {
     void CudaGraphicsResourceDeleter::operator()(void* resource) const {
 #ifdef CUDA_GL_INTEROP_ENABLED
         if (resource) {
-            cudaGraphicsUnregisterResource(static_cast<cudaGraphicsResource_t>(resource));
+            musaGraphicsUnregisterResource(static_cast<musaGraphicsResource_t>(resource));
             LOG_TRACE("Unregistered CUDA graphics resource");
         }
 #endif
@@ -64,7 +64,7 @@ namespace lfs::rendering {
         if (gl_err != GL_NO_ERROR) {
             cleanup();
             LOG_ERROR("OpenGL error during texture creation: {}", gl_err);
-            return std::unexpected(std::format("OpenGL error during texture creation: {}", gl_err));
+            return lfs_compat::unexpected(fmt::format("OpenGL error during texture creation: {}", gl_err));
         }
 
         LOG_DEBUG("Non-interop texture created successfully");
@@ -102,7 +102,7 @@ namespace lfs::rendering {
     Result<void> CudaGLInteropTextureImpl<false>::updateFromTensor(const Tensor& image) {
         // CPU fallback - this should not be called for non-interop version
         LOG_ERROR("CUDA-GL interop not available - use regular framebuffer upload");
-        return std::unexpected("CUDA-GL interop not available - use regular framebuffer upload");
+        return lfs_compat::unexpected("CUDA-GL interop not available - use regular framebuffer upload");
     }
 
     void CudaGLInteropTextureImpl<false>::cleanup() {
@@ -161,23 +161,23 @@ namespace lfs::rendering {
         if (gl_err != GL_NO_ERROR) {
             cleanup();
             LOG_ERROR("OpenGL error during texture creation: {}", gl_err);
-            return std::unexpected(std::format("OpenGL error during texture creation: {}", gl_err));
+            return lfs_compat::unexpected(fmt::format("OpenGL error during texture creation: {}", gl_err));
         }
 
         // Clear any previous CUDA errors
-        cudaGetLastError();
+        musaGetLastError();
 
         // Register texture with CUDA
-        cudaGraphicsResource_t raw_resource;
-        cudaError_t err = cudaGraphicsGLRegisterImage(
+        musaGraphicsResource_t raw_resource;
+        musaError_t err = musaGraphicsGLRegisterImage(
             &raw_resource, texture_id_, GL_TEXTURE_2D,
-            cudaGraphicsRegisterFlagsWriteDiscard);
+            musaGraphicsRegisterFlagsWriteDiscard);
 
-        if (err != cudaSuccess) {
+        if (err != musaSuccess) {
             cleanup();
-            LOG_ERROR("Failed to register OpenGL texture with CUDA: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to register OpenGL texture with CUDA: {}",
-                                               cudaGetErrorString(err)));
+            LOG_ERROR("Failed to register OpenGL texture with CUDA: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to register OpenGL texture with CUDA: {}",
+                                               musaGetErrorString(err)));
         }
 
         cuda_resource_.reset(raw_resource);
@@ -205,17 +205,17 @@ namespace lfs::rendering {
 
         if (const GLenum gl_err = glGetError(); gl_err != GL_NO_ERROR) {
             cleanup();
-            return std::unexpected(std::format("GL error creating depth texture: {}", gl_err));
+            return lfs_compat::unexpected(fmt::format("GL error creating depth texture: {}", gl_err));
         }
 
-        cudaGetLastError();
-        cudaGraphicsResource_t raw_resource;
-        const cudaError_t err = cudaGraphicsGLRegisterImage(
-            &raw_resource, texture_id_, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+        musaGetLastError();
+        musaGraphicsResource_t raw_resource;
+        const musaError_t err = musaGraphicsGLRegisterImage(
+            &raw_resource, texture_id_, GL_TEXTURE_2D, musaGraphicsRegisterFlagsWriteDiscard);
 
-        if (err != cudaSuccess) {
+        if (err != musaSuccess) {
             cleanup();
-            return std::unexpected(std::format("CUDA register failed: {}", cudaGetErrorString(err)));
+            return lfs_compat::unexpected(fmt::format("CUDA register failed: {}", musaGetErrorString(err)));
         }
 
         cuda_resource_.reset(raw_resource);
@@ -228,16 +228,16 @@ namespace lfs::rendering {
         LOG_TIMER_TRACE("CudaGLInteropTextureImpl::updateDepthFromTensor");
 
         if (!is_registered_) {
-            return std::unexpected("Depth texture not initialized");
+            return lfs_compat::unexpected("Depth texture not initialized");
         }
         if (depth.device() != lfs::core::Device::CUDA) {
-            return std::unexpected("Depth must be on CUDA");
+            return lfs_compat::unexpected("Depth must be on CUDA");
         }
 
         // Handle [1, H, W] or [H, W] formats
         Tensor depth_2d = (depth.ndim() == 3 && depth.size(0) == 1) ? depth.squeeze(0) : depth;
         if (depth_2d.ndim() != 2) {
-            return std::unexpected("Depth must be [H, W] or [1, H, W]");
+            return lfs_compat::unexpected("Depth must be [H, W] or [1, H, W]");
         }
 
         const int h = static_cast<int>(depth_2d.size(0));
@@ -249,24 +249,24 @@ namespace lfs::rendering {
             }
         }
 
-        auto raw_resource = static_cast<cudaGraphicsResource_t>(cuda_resource_.get());
-        cudaError_t err = cudaGraphicsMapResources(1, &raw_resource, 0);
-        if (err != cudaSuccess) {
-            return std::unexpected(std::format("Map failed: {}", cudaGetErrorString(err)));
+        auto raw_resource = static_cast<musaGraphicsResource_t>(cuda_resource_.get());
+        musaError_t err = musaGraphicsMapResources(1, &raw_resource, 0);
+        if (err != musaSuccess) {
+            return lfs_compat::unexpected(fmt::format("Map failed: {}", musaGetErrorString(err)));
         }
 
         const struct UnmapGuard {
-            cudaGraphicsResource_t* res;
+            musaGraphicsResource_t* res;
             ~UnmapGuard() {
                 if (res)
-                    cudaGraphicsUnmapResources(1, res, 0);
+                    musaGraphicsUnmapResources(1, res, 0);
             }
         } guard{&raw_resource};
 
-        cudaArray_t cuda_array;
-        err = cudaGraphicsSubResourceGetMappedArray(&cuda_array, raw_resource, 0, 0);
-        if (err != cudaSuccess) {
-            return std::unexpected(std::format("Get array failed: {}", cudaGetErrorString(err)));
+        musaArray_t cuda_array;
+        err = musaGraphicsSubResourceGetMappedArray(&cuda_array, raw_resource, 0, 0);
+        if (err != musaSuccess) {
+            return lfs_compat::unexpected(fmt::format("Get array failed: {}", musaGetErrorString(err)));
         }
 
         Tensor depth_contig = depth_2d.contiguous();
@@ -274,11 +274,11 @@ namespace lfs::rendering {
             depth_contig = depth_contig.to(lfs::core::DataType::Float32);
         }
 
-        err = cudaMemcpy2DToArray(cuda_array, 0, 0, depth_contig.ptr<float>(),
+        err = musaMemcpy2DToArray(cuda_array, 0, 0, depth_contig.ptr<float>(),
                                   w * sizeof(float), w * sizeof(float), h,
-                                  cudaMemcpyDeviceToDevice);
-        if (err != cudaSuccess) {
-            return std::unexpected(std::format("Copy failed: {}", cudaGetErrorString(err)));
+                                  musaMemcpyDeviceToDevice);
+        if (err != musaSuccess) {
+            return lfs_compat::unexpected(fmt::format("Copy failed: {}", musaGetErrorString(err)));
         }
 
         return {};
@@ -296,18 +296,18 @@ namespace lfs::rendering {
         external_texture_ = true; // Externally owned texture
 
         // Clear any previous CUDA errors
-        cudaGetLastError();
+        musaGetLastError();
 
         // Register existing texture with CUDA for reading
-        cudaGraphicsResource_t raw_resource;
-        cudaError_t err = cudaGraphicsGLRegisterImage(
+        musaGraphicsResource_t raw_resource;
+        musaError_t err = musaGraphicsGLRegisterImage(
             &raw_resource, texture_id, GL_TEXTURE_2D,
-            cudaGraphicsRegisterFlagsReadOnly);
+            musaGraphicsRegisterFlagsReadOnly);
 
-        if (err != cudaSuccess) {
-            LOG_ERROR("Failed to register OpenGL texture for reading: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to register OpenGL texture for reading: {}",
-                                               cudaGetErrorString(err)));
+        if (err != musaSuccess) {
+            LOG_ERROR("Failed to register OpenGL texture for reading: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to register OpenGL texture for reading: {}",
+                                               musaGetErrorString(err)));
         }
 
         cuda_resource_.reset(raw_resource);
@@ -322,7 +322,7 @@ namespace lfs::rendering {
 
         if (!is_registered_) {
             LOG_ERROR("Texture not registered");
-            return std::unexpected("Texture not registered");
+            return lfs_compat::unexpected("Texture not registered");
         }
 
         // Use target dimensions if provided, otherwise use full texture dimensions
@@ -330,32 +330,32 @@ namespace lfs::rendering {
         const int out_height = (target_height > 0 && target_height <= height_) ? target_height : height_;
 
         // Map CUDA resource
-        auto raw_resource = static_cast<cudaGraphicsResource_t>(cuda_resource_.get());
-        cudaError_t err = cudaGraphicsMapResources(1, &raw_resource, 0);
-        if (err != cudaSuccess) {
-            LOG_ERROR("Failed to map CUDA resource: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to map CUDA resource: {}",
-                                               cudaGetErrorString(err)));
+        auto raw_resource = static_cast<musaGraphicsResource_t>(cuda_resource_.get());
+        musaError_t err = musaGraphicsMapResources(1, &raw_resource, 0);
+        if (err != musaSuccess) {
+            LOG_ERROR("Failed to map CUDA resource: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to map CUDA resource: {}",
+                                               musaGetErrorString(err)));
         }
 
         // RAII unmap guard
         struct UnmapGuard {
-            cudaGraphicsResource_t* resource;
+            musaGraphicsResource_t* resource;
             ~UnmapGuard() {
                 if (resource) {
-                    cudaGraphicsUnmapResources(1, resource, 0);
+                    musaGraphicsUnmapResources(1, resource, 0);
                     LOG_TRACE("Unmapped CUDA resource");
                 }
             }
         } unmap_guard{&raw_resource};
 
         // Get CUDA array from mapped resource
-        cudaArray_t cuda_array;
-        err = cudaGraphicsSubResourceGetMappedArray(&cuda_array, raw_resource, 0, 0);
-        if (err != cudaSuccess) {
-            LOG_ERROR("Failed to get CUDA array: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to get CUDA array: {}",
-                                               cudaGetErrorString(err)));
+        musaArray_t cuda_array;
+        err = musaGraphicsSubResourceGetMappedArray(&cuda_array, raw_resource, 0, 0);
+        if (err != musaSuccess) {
+            LOG_ERROR("Failed to get CUDA array: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to get CUDA array: {}",
+                                               musaGetErrorString(err)));
         }
 
         // Allocate output tensor [H, W, 3] in float32
@@ -375,19 +375,19 @@ namespace lfs::rendering {
 
         // Copy from CUDA array to temp buffer (RGBA float32)
         // Only copy the target region (top-left corner of the texture)
-        err = cudaMemcpy2DFromArray(
+        err = musaMemcpy2DFromArray(
             rgba_temp.ptr<float>(),
             out_width * 4 * sizeof(float), // dst pitch
             cuda_array,
             0, 0,                          // src offset (x, y)
             out_width * 4 * sizeof(float), // width in bytes to copy
             out_height,                    // height (rows) to copy
-            cudaMemcpyDeviceToDevice);
+            musaMemcpyDeviceToDevice);
 
-        if (err != cudaSuccess) {
-            LOG_ERROR("Failed to copy from CUDA array: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to copy from CUDA array: {}",
-                                               cudaGetErrorString(err)));
+        if (err != musaSuccess) {
+            LOG_ERROR("Failed to copy from CUDA array: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to copy from CUDA array: {}",
+                                               musaGetErrorString(err)));
         }
 
         // Extract RGB channels (drop alpha)
@@ -430,24 +430,24 @@ namespace lfs::rendering {
 
         if (!is_registered_) {
             LOG_ERROR("Texture not initialized");
-            return std::unexpected("Texture not initialized");
+            return lfs_compat::unexpected("Texture not initialized");
         }
 
         // Ensure tensor is CUDA and 3D image tensor
         if (image.device() != lfs::core::Device::CUDA) {
             LOG_ERROR("Image must be on CUDA");
-            return std::unexpected("Image must be on CUDA");
+            return lfs_compat::unexpected("Image must be on CUDA");
         }
         if (image.ndim() != 3) {
             LOG_ERROR("Image must be rank-3 tensor, got {} dimensions", image.ndim());
-            return std::unexpected("Image must be rank-3 tensor");
+            return lfs_compat::unexpected("Image must be rank-3 tensor");
         }
 
         const auto layout = detectImageLayout(image);
         if (layout == ImageLayout::Unknown) {
             LOG_ERROR("Image must be HWC or CHW with 3/4 channels, got shape [{}, {}, {}]",
                       image.size(0), image.size(1), image.size(2));
-            return std::unexpected("Image must be HWC or CHW with 3/4 channels");
+            return lfs_compat::unexpected("Image must be HWC or CHW with 3/4 channels");
         }
 
         const int h = imageHeight(image, layout);
@@ -463,50 +463,50 @@ namespace lfs::rendering {
         }
 
         // Map CUDA resource
-        auto raw_resource = static_cast<cudaGraphicsResource_t>(cuda_resource_.get());
-        cudaError_t err = cudaGraphicsMapResources(1, &raw_resource, 0);
-        if (err != cudaSuccess) {
-            LOG_ERROR("Failed to map CUDA resource: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to map CUDA resource: {}",
-                                               cudaGetErrorString(err)));
+        auto raw_resource = static_cast<musaGraphicsResource_t>(cuda_resource_.get());
+        musaError_t err = musaGraphicsMapResources(1, &raw_resource, 0);
+        if (err != musaSuccess) {
+            LOG_ERROR("Failed to map CUDA resource: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to map CUDA resource: {}",
+                                               musaGetErrorString(err)));
         }
 
         // RAII unmap guard
         struct UnmapGuard {
-            cudaGraphicsResource_t* resource;
+            musaGraphicsResource_t* resource;
             ~UnmapGuard() {
                 if (resource) {
-                    cudaGraphicsUnmapResources(1, resource, 0);
+                    musaGraphicsUnmapResources(1, resource, 0);
                     LOG_TRACE("Unmapped CUDA resource");
                 }
             }
         } unmap_guard{&raw_resource};
 
         // Get CUDA array from mapped resource
-        cudaArray_t cuda_array;
-        err = cudaGraphicsSubResourceGetMappedArray(&cuda_array, raw_resource, 0, 0);
-        if (err != cudaSuccess) {
-            LOG_ERROR("Failed to get CUDA array: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to get CUDA array: {}",
-                                               cudaGetErrorString(err)));
+        musaArray_t cuda_array;
+        err = musaGraphicsSubResourceGetMappedArray(&cuda_array, raw_resource, 0, 0);
+        if (err != musaSuccess) {
+            LOG_ERROR("Failed to get CUDA array: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to get CUDA array: {}",
+                                               musaGetErrorString(err)));
         }
 
         // Create surface object for direct kernel writes
-        cudaResourceDesc res_desc = {};
-        res_desc.resType = cudaResourceTypeArray;
+        musaResourceDesc res_desc = {};
+        res_desc.resType = musaResourceTypeArray;
         res_desc.res.array.array = cuda_array;
 
-        cudaSurfaceObject_t surface = 0;
-        err = cudaCreateSurfaceObject(&surface, &res_desc);
-        if (err != cudaSuccess) {
-            LOG_ERROR("Failed to create surface object: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to create surface object: {}",
-                                               cudaGetErrorString(err)));
+        musaSurfaceObject_t surface = 0;
+        err = musaCreateSurfaceObject(&surface, &res_desc);
+        if (err != musaSuccess) {
+            LOG_ERROR("Failed to create surface object: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to create surface object: {}",
+                                               musaGetErrorString(err)));
         }
 
         struct SurfaceGuard {
-            cudaSurfaceObject_t surf;
-            ~SurfaceGuard() { cudaDestroySurfaceObject(surf); }
+            musaSurfaceObject_t surf;
+            ~SurfaceGuard() { musaDestroySurfaceObject(surf); }
         } surface_guard{surface};
 
         const Tensor img = image.contiguous();
@@ -520,7 +520,7 @@ namespace lfs::rendering {
 
     void CudaGLInteropTextureImpl<true>::cleanup() {
         if (is_registered_) {
-            cudaStreamSynchronize(0);
+            musaStreamSynchronize(0);
         }
         cuda_resource_.reset();
         is_registered_ = false;
@@ -542,17 +542,17 @@ namespace lfs::rendering {
 
     Result<void> CudaGLInteropBufferImpl<false>::init(GLuint buffer_id, size_t size) {
         LOG_ERROR("CUDA-GL buffer interop not available");
-        return std::unexpected("CUDA-GL buffer interop not available");
+        return lfs_compat::unexpected("CUDA-GL buffer interop not available");
     }
 
     Result<void*> CudaGLInteropBufferImpl<false>::mapBuffer() {
         LOG_ERROR("CUDA-GL buffer interop not available");
-        return std::unexpected("CUDA-GL buffer interop not available");
+        return lfs_compat::unexpected("CUDA-GL buffer interop not available");
     }
 
     Result<void> CudaGLInteropBufferImpl<false>::unmapBuffer() {
         LOG_ERROR("CUDA-GL buffer interop not available");
-        return std::unexpected("CUDA-GL buffer interop not available");
+        return lfs_compat::unexpected("CUDA-GL buffer interop not available");
     }
 
     void CudaGLInteropBufferImpl<false>::cleanup() {
@@ -586,18 +586,18 @@ namespace lfs::rendering {
         size_ = size;
 
         // Clear any previous CUDA errors
-        cudaGetLastError();
+        musaGetLastError();
 
         // Register buffer with CUDA
-        cudaGraphicsResource_t raw_resource;
-        cudaError_t err = cudaGraphicsGLRegisterBuffer(
-            &raw_resource, buffer_id, cudaGraphicsRegisterFlagsWriteDiscard);
+        musaGraphicsResource_t raw_resource;
+        musaError_t err = musaGraphicsGLRegisterBuffer(
+            &raw_resource, buffer_id, musaGraphicsRegisterFlagsWriteDiscard);
 
-        if (err != cudaSuccess) {
+        if (err != musaSuccess) {
             cleanup();
-            LOG_ERROR("Failed to register OpenGL buffer with CUDA: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to register OpenGL buffer with CUDA: {}",
-                                               cudaGetErrorString(err)));
+            LOG_ERROR("Failed to register OpenGL buffer with CUDA: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to register OpenGL buffer with CUDA: {}",
+                                               musaGetErrorString(err)));
         }
 
         cuda_resource_.reset(raw_resource);
@@ -612,7 +612,7 @@ namespace lfs::rendering {
 
         if (!is_registered_) {
             LOG_ERROR("Buffer not initialized");
-            return std::unexpected("Buffer not initialized");
+            return lfs_compat::unexpected("Buffer not initialized");
         }
 
         if (mapped_ptr_) {
@@ -621,22 +621,22 @@ namespace lfs::rendering {
         }
 
         // Map CUDA resource
-        auto raw_resource = static_cast<cudaGraphicsResource_t>(cuda_resource_.get());
-        cudaError_t err = cudaGraphicsMapResources(1, &raw_resource, 0);
-        if (err != cudaSuccess) {
-            LOG_ERROR("Failed to map CUDA resource: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to map CUDA resource: {}",
-                                               cudaGetErrorString(err)));
+        auto raw_resource = static_cast<musaGraphicsResource_t>(cuda_resource_.get());
+        musaError_t err = musaGraphicsMapResources(1, &raw_resource, 0);
+        if (err != musaSuccess) {
+            LOG_ERROR("Failed to map CUDA resource: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to map CUDA resource: {}",
+                                               musaGetErrorString(err)));
         }
 
         // Get device pointer
         size_t mapped_size;
-        err = cudaGraphicsResourceGetMappedPointer(&mapped_ptr_, &mapped_size, raw_resource);
-        if (err != cudaSuccess) {
-            cudaGraphicsUnmapResources(1, &raw_resource, 0);
-            LOG_ERROR("Failed to get mapped pointer: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to get mapped pointer: {}",
-                                               cudaGetErrorString(err)));
+        err = musaGraphicsResourceGetMappedPointer(&mapped_ptr_, &mapped_size, raw_resource);
+        if (err != musaSuccess) {
+            musaGraphicsUnmapResources(1, &raw_resource, 0);
+            LOG_ERROR("Failed to get mapped pointer: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to get mapped pointer: {}",
+                                               musaGetErrorString(err)));
         }
 
         if (mapped_size < size_) {
@@ -655,12 +655,12 @@ namespace lfs::rendering {
             return {};
         }
 
-        auto raw_resource = static_cast<cudaGraphicsResource_t>(cuda_resource_.get());
-        cudaError_t err = cudaGraphicsUnmapResources(1, &raw_resource, 0);
-        if (err != cudaSuccess) {
-            LOG_ERROR("Failed to unmap CUDA resource: {}", cudaGetErrorString(err));
-            return std::unexpected(std::format("Failed to unmap CUDA resource: {}",
-                                               cudaGetErrorString(err)));
+        auto raw_resource = static_cast<musaGraphicsResource_t>(cuda_resource_.get());
+        musaError_t err = musaGraphicsUnmapResources(1, &raw_resource, 0);
+        if (err != musaSuccess) {
+            LOG_ERROR("Failed to unmap CUDA resource: {}", musaGetErrorString(err));
+            return lfs_compat::unexpected(fmt::format("Failed to unmap CUDA resource: {}",
+                                               musaGetErrorString(err)));
         }
 
         mapped_ptr_ = nullptr;

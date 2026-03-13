@@ -655,15 +655,15 @@ namespace lfs::training {
                      capacity, current_size, 100.0f * current_size / capacity);
 
             try {
-                // ELIMINATE ALL POOL ALLOCATIONS: Replace pool-allocated parameters with direct cudaMalloc versions
-                LOG_DEBUG("  Replacing pool-allocated parameters with direct cudaMalloc versions:");
+                // ELIMINATE ALL POOL ALLOCATIONS: Replace pool-allocated parameters with direct musaMalloc versions
+                LOG_DEBUG("  Replacing pool-allocated parameters with direct musaMalloc versions:");
 
                 auto replace_with_direct = [capacity](Tensor& param) {
-                    // Create new tensor with direct cudaMalloc (ZERO pool usage!)
+                    // Create new tensor with direct musaMalloc (ZERO pool usage!)
                     auto new_param = Tensor::zeros_direct(param.shape(), capacity);
                     // Copy data from old pool-allocated tensor to new direct tensor
-                    cudaMemcpy(new_param.ptr<float>(), param.ptr<float>(),
-                               param.numel() * sizeof(float), cudaMemcpyDeviceToDevice);
+                    musaMemcpy(new_param.ptr<float>(), param.ptr<float>(),
+                               param.numel() * sizeof(float), musaMemcpyDeviceToDevice);
                     // Replace (old pool-allocated tensor gets freed)
                     param = new_param;
                 };

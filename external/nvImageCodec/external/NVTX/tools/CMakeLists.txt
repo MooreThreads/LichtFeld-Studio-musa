@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,9 +27,9 @@ option(BUILD_TESTS "Configure CMake to build tests" ON)
 option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" ON)
 
 if(BUILD_TESTS)
-    add_subdirectory(tests)
+ add_subdirectory(tests)
 endif(BUILD_TESTS)
 
 if(BUILD_BENCHMARKS)
-    add_subdirectory(benchmarks)
+ add_subdirectory(benchmarks)
 endif(BUILD_BENCHMARKS)

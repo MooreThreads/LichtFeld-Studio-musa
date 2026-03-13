@@ -24,14 +24,14 @@ namespace nvimgcodec {
 
     struct PinnedBuffer {
         explicit PinnedBuffer(const nvimgcodecExecutionParams_t* exec_params = nullptr);
-        void resize(size_t new_size, cudaStream_t new_stream);
-        void alloc_impl(size_t new_size, cudaStream_t new_stream);
+        void resize(size_t new_size, musaStream_t new_stream);
+        void alloc_impl(size_t new_size, musaStream_t new_stream);
         nvimgcodecPinnedAllocator_t* allocator;
         std::shared_ptr<void> d_ptr;
         void* data = nullptr;
         size_t capacity = 0;
         size_t size = 0;
-        cudaStream_t stream = 0;
+        musaStream_t stream = 0;
     };
 
 } // namespace nvimgcodec

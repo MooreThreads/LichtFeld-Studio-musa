@@ -11,7 +11,7 @@
 #include "optimizer/adam_optimizer.hpp"
 #include "optimizer/render_output.hpp"
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <expected>
 #include <string>
 
@@ -39,7 +39,7 @@ namespace lfs::training {
         int32_t* last_ids_ptr = nullptr;     // [C, H, W]
         float* compensations_ptr = nullptr;  // [C, N] or nullptr
 
-        // Internally allocated by gsplat (must cudaFree in backward)
+        // Internally allocated by gsplat (must musaFree in backward)
         int64_t* isect_ids_ptr = nullptr;
         int32_t* flatten_ids_ptr = nullptr;
         int32_t n_isects = 0;
@@ -101,7 +101,7 @@ namespace lfs::training {
 
     // Forward pass with optional tiling (tile_width/height=0 = full image)
     // bg_image is optional - if provided, uses per-pixel background blending instead of solid color
-    std::expected<std::pair<RenderOutput, GsplatRasterizeContext>, std::string> gsplat_rasterize_forward(
+    lfs_compat::expected<std::pair<RenderOutput, GsplatRasterizeContext>, std::string> gsplat_rasterize_forward(
         lfs::core::Camera& viewpoint_camera,
         lfs::core::SplatData& gaussian_model,
         lfs::core::Tensor& bg_color,
@@ -141,10 +141,10 @@ namespace lfs::training {
         }
         // Free internally allocated buffers since backward won't be called
         if (result->second.isect_ids_ptr != nullptr) {
-            cudaFree(result->second.isect_ids_ptr);
+            musaFree(result->second.isect_ids_ptr);
         }
         if (result->second.flatten_ids_ptr != nullptr) {
-            cudaFree(result->second.flatten_ids_ptr);
+            musaFree(result->second.flatten_ids_ptr);
         }
         // Release arena frame since no backward will be called
         auto& arena = core::GlobalArenaManager::instance().get_arena();

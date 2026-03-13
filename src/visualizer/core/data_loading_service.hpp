@@ -26,11 +26,11 @@ namespace lfs::vis {
         const lfs::core::param::TrainingParameters& getParameters() const { return params_; }
 
         // Loading operations
-        std::expected<void, std::string> loadPLY(const std::filesystem::path& path);
-        std::expected<void, std::string> loadSOG(const std::filesystem::path& path);
-        std::expected<void, std::string> loadSplatFile(const std::filesystem::path& path);
-        std::expected<void, std::string> loadDataset(const std::filesystem::path& path);
-        std::expected<void, std::string> loadCheckpointForTraining(
+        lfs_compat::expected<void, std::string> loadPLY(const std::filesystem::path& path);
+        lfs_compat::expected<void, std::string> loadSOG(const std::filesystem::path& path);
+        lfs_compat::expected<void, std::string> loadSplatFile(const std::filesystem::path& path);
+        lfs_compat::expected<void, std::string> loadDataset(const std::filesystem::path& path);
+        lfs_compat::expected<void, std::string> loadCheckpointForTraining(
             const std::filesystem::path& checkpoint_path,
             const std::filesystem::path& dataset_path = {},
             const std::filesystem::path& output_path = {});

@@ -15,7 +15,7 @@
 
 namespace lfs::training {
 
-    std::expected<std::pair<RenderOutput, FastRasterizeContext>, std::string> edge_rasterize_forward(
+    lfs_compat::expected<std::pair<RenderOutput, FastRasterizeContext>, std::string> edge_rasterize_forward(
         core::Camera& viewpoint_camera,
         core::SplatData& gaussian_model,
         core::Tensor& bg_color,
@@ -57,7 +57,7 @@ namespace lfs::training {
         const int n_primitives = static_cast<int>(means.shape()[0]);
 
         if (n_primitives == 0) {
-            return std::unexpected("n_primitives is 0 - model has no gaussians");
+            return lfs_compat::unexpected("n_primitives is 0 - model has no gaussians");
         }
 
         // Pre-allocate output tensors (reused across iterations)
@@ -107,7 +107,7 @@ namespace lfs::training {
 
         // Check if forward failed due to OOM
         if (!forward_ctx.success) {
-            return std::unexpected(std::string(forward_ctx.error_message));
+            return lfs_compat::unexpected(std::string(forward_ctx.error_message));
         }
 
         // Release arena frame — edge rasterization has no backward pass

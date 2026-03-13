@@ -10,12 +10,12 @@
 
 #define CHECK_CUDA(call)                              \
     do {                                              \
-        cudaError_t error = call;                     \
-        if (error != cudaSuccess) {                   \
+        musaError_t error = call;                     \
+        if (error != musaSuccess) {                   \
             LOG_ERROR("CUDA error at {}:{} - {}: {}", \
                       __FILE__, __LINE__,             \
-                      cudaGetErrorName(error),        \
-                      cudaGetErrorString(error));     \
+                      musaGetErrorName(error),        \
+                      musaGetErrorString(error));     \
         }                                             \
     } while (0)
 

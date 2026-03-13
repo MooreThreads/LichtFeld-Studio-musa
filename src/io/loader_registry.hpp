@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
-#include <ranges>
+
 #include <vector>
 
 namespace lfs::io {
@@ -44,7 +44,7 @@ namespace lfs::io {
             loaders_.push_back(std::move(loader));
 
             // Sort by priority (highest first)
-            std::ranges::sort(loaders_, [](const auto& a, const auto& b) {
+            std::sort(loaders_.begin(), loaders_.end(), [](const auto& a, const auto& b) {
                 return a->priority() > b->priority();
             });
         }
@@ -58,7 +58,7 @@ namespace lfs::io {
             std::lock_guard lock(mutex_);
 
             // Find first loader that can handle this path
-            auto it = std::ranges::find_if(loaders_, [&path](const auto& loader) {
+            auto it = std::find_if(loaders_.begin(), loaders_.end(), [&path](const auto& loader) {
                 return loader->canLoad(path);
             });
 
@@ -98,9 +98,8 @@ namespace lfs::io {
             }
 
             // Remove duplicates and sort
-            std::ranges::sort(extensions);
-            auto [first, last] = std::ranges::unique(extensions);
-            extensions.erase(first, last);
+            std::sort(extensions.begin(), extensions.end());
+            extensions.erase(std::unique(extensions.begin(), extensions.end()), extensions.end());
 
             return extensions;
         }

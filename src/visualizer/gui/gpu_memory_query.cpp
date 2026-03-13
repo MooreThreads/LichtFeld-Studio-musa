@@ -4,7 +4,7 @@
 
 #include "gui/gpu_memory_query.hpp"
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 #ifdef _WIN32
 #include <dxgi1_4.h>
@@ -45,7 +45,7 @@ namespace lfs::vis::gui {
                     return;
 
                 int cuda_device = 0;
-                cudaGetDevice(&cuda_device);
+                musaGetDevice(&cuda_device);
 
                 if (matchByLuid(factory, cuda_device)) {
                     factory->Release();
@@ -105,9 +105,9 @@ namespace lfs::vis::gui {
 
             // Fallback: match by dedicated VRAM size (unreliable with identical GPUs).
             void matchByVram(IDXGIFactory1* factory, int cuda_device) {
-                cudaDeviceProp props{};
+                musaDeviceProp props{};
                 size_t cuda_total = 0;
-                if (cudaGetDeviceProperties(&props, cuda_device) == cudaSuccess)
+                if (musaGetDeviceProperties(&props, cuda_device) == musaSuccess)
                     cuda_total = props.totalGlobalMem;
 
                 for (UINT i = 0;; ++i) {
@@ -183,9 +183,9 @@ namespace lfs::vis::gui {
                     return;
 
                 int cuda_device = 0;
-                cudaGetDevice(&cuda_device);
+                musaGetDevice(&cuda_device);
                 char pci_bus_id[NVML_PCI_BUS_ID_LEN];
-                if (cudaDeviceGetPCIBusId(pci_bus_id, sizeof(pci_bus_id), cuda_device) != cudaSuccess)
+                if (musaDeviceGetPCIBusId(pci_bus_id, sizeof(pci_bus_id), cuda_device) != musaSuccess)
                     return;
                 if (fn_get_handle(pci_bus_id, &device) != NVML_SUCCESS)
                     return;
@@ -222,7 +222,7 @@ namespace lfs::vis::gui {
 
         size_t free_mem = 0;
         size_t total_mem = 0;
-        cudaMemGetInfo(&free_mem, &total_mem);
+        musaMemGetInfo(&free_mem, &total_mem);
 
         info.total = total_mem;
         info.total_used = total_mem - free_mem;

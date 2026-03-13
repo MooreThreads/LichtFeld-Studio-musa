@@ -13,7 +13,7 @@
 #include "core/parameters.hpp"
 #include "core/tensor.hpp"
 #include "dataset.hpp"
-#include "lfs/kernels/ssim.cuh"
+#include "lfs/kernels/ssim.muh"
 #include "losses/photometric_loss.hpp"
 #include "metrics/metrics.hpp"
 #include "optimizer/scheduler.hpp"
@@ -99,13 +99,13 @@ namespace lfs::training {
         ~Trainer();
 
         // Initialize trainer - must be called before training
-        std::expected<void, std::string> initialize(const lfs::core::param::TrainingParameters& params);
+        lfs_compat::expected<void, std::string> initialize(const lfs::core::param::TrainingParameters& params);
 
         // Check if trainer is initialized
         bool isInitialized() const { return initialized_.load(); }
 
         // Main training method with stop token support
-        std::expected<void, std::string> train(std::stop_token stop_token = {});
+        lfs_compat::expected<void, std::string> train(std::stop_token stop_token = {});
 
         // Control methods for GUI interaction
         void request_pause() { pause_requested_ = true; }
@@ -164,8 +164,8 @@ namespace lfs::training {
         std::unique_ptr<PPISPControllerPool> takePPISPControllerPool() { return std::move(ppisp_controller_pool_); }
 
         // Checkpoint methods
-        std::expected<void, std::string> save_checkpoint(int iteration);
-        std::expected<int, std::string> load_checkpoint(const std::filesystem::path& checkpoint_path);
+        lfs_compat::expected<void, std::string> save_checkpoint(int iteration);
+        lfs_compat::expected<int, std::string> load_checkpoint(const std::filesystem::path& checkpoint_path);
         void save_final_ply_and_checkpoint(int iteration);
 
         // Orderly shutdown - GPU sync, wait for async saves, release resources. Idempotent.
@@ -204,7 +204,7 @@ namespace lfs::training {
         lfs::core::Tensor get_random_background_for_camera(int width, int height, int iteration);
 
         // Protected method for processing a single training step
-        std::expected<StepResult, std::string> train_step(
+        lfs_compat::expected<StepResult, std::string> train_step(
             int iter,
             lfs::core::Camera* cam,
             lfs::core::Tensor gt_image,
@@ -213,7 +213,7 @@ namespace lfs::training {
 
         // Compute photometric loss AND gradient manually (no autograd)
         // Returns GPU tensor for loss (avoid sync!)
-        std::expected<std::pair<lfs::core::Tensor, lfs::core::Tensor>, std::string> compute_photometric_loss_with_gradient(
+        lfs_compat::expected<std::pair<lfs::core::Tensor, lfs::core::Tensor>, std::string> compute_photometric_loss_with_gradient(
             const lfs::core::Tensor& rendered,
             const lfs::core::Tensor& gt_image,
             const lfs::core::param::OptimizationParameters& opt_params);
@@ -225,7 +225,7 @@ namespace lfs::training {
         };
 
         // Masked photometric loss with optional alpha gradient
-        std::expected<MaskLossResult, std::string> compute_photometric_loss_with_mask(
+        lfs_compat::expected<MaskLossResult, std::string> compute_photometric_loss_with_mask(
             const lfs::core::Tensor& rendered,
             const lfs::core::Tensor& gt_image,
             const lfs::core::Tensor& mask,
@@ -233,33 +233,33 @@ namespace lfs::training {
             const lfs::core::param::OptimizationParameters& opt_params);
 
         // Validate masks exist for all cameras when mask mode is enabled
-        std::expected<void, std::string> validate_masks();
+        lfs_compat::expected<void, std::string> validate_masks();
 
         // Returns GPU tensor for loss (avoid sync!)
-        std::expected<lfs::core::Tensor, std::string> compute_scale_reg_loss(
+        lfs_compat::expected<lfs::core::Tensor, std::string> compute_scale_reg_loss(
             lfs::core::SplatData& splatData,
             AdamOptimizer& optimizer,
             const lfs::core::param::OptimizationParameters& opt_params);
 
         // Returns GPU tensor for loss (avoid sync!)
-        std::expected<lfs::core::Tensor, std::string> compute_opacity_reg_loss(
+        lfs_compat::expected<lfs::core::Tensor, std::string> compute_opacity_reg_loss(
             lfs::core::SplatData& splatData,
             AdamOptimizer& optimizer,
             const lfs::core::param::OptimizationParameters& opt_params);
 
         // Sparsity optimization - returns GPU tensor (no CPU sync)
-        std::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string> compute_sparsity_loss_forward(
+        lfs_compat::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string> compute_sparsity_loss_forward(
             const int iter, const lfs::core::SplatData& splat_data);
 
-        std::expected<void, std::string> handle_sparsity_update(const int iter, lfs::core::SplatData& splat_data);
-        std::expected<void, std::string> apply_sparsity_pruning(const int iter, lfs::core::SplatData& splat_data);
+        lfs_compat::expected<void, std::string> handle_sparsity_update(const int iter, lfs::core::SplatData& splat_data);
+        lfs_compat::expected<void, std::string> apply_sparsity_pruning(const int iter, lfs::core::SplatData& splat_data);
 
         // Cleanup method for re-initialization
         void cleanup();
 
-        std::expected<void, std::string> initialize_bilateral_grid();
-        std::expected<void, std::string> initialize_ppisp();
-        std::expected<void, std::string> initialize_ppisp_controller();
+        lfs_compat::expected<void, std::string> initialize_bilateral_grid();
+        lfs_compat::expected<void, std::string> initialize_ppisp();
+        lfs_compat::expected<void, std::string> initialize_ppisp_controller();
 
         // Handle control requests
         void handle_control_requests(int iter, std::stop_token stop_token = {});
@@ -337,7 +337,7 @@ namespace lfs::training {
         // Async callback system
         std::function<void()> callback_;
         std::atomic<bool> callback_busy_{false};
-        cudaStream_t callback_stream_ = nullptr;
+        musaStream_t callback_stream_ = nullptr;
 
         // Python control scripts (file paths) to execute before training starts
         std::vector<std::filesystem::path> python_scripts_;

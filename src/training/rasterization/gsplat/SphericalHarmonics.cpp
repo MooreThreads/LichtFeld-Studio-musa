@@ -6,7 +6,7 @@
 #include "Common.h"
 #include "Ops.h"
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -18,7 +18,7 @@ namespace gsplat_lfs {
         int64_t total_elements,
         int32_t K,
         float* colors,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         if (total_elements == 0) {
             return;
         }
@@ -41,7 +41,7 @@ namespace gsplat_lfs {
         bool compute_v_dirs,
         float* v_coeffs,
         float* v_dirs,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         if (total_elements == 0) {
             return;
         }

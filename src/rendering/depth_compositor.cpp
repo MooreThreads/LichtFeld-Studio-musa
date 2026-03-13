@@ -18,7 +18,7 @@ namespace lfs::rendering {
                                          "depth_composite.frag", false);
         if (!shader_result) {
             LOG_ERROR("Failed to load depth composite shader: {}", shader_result.error().what());
-            return std::unexpected(shader_result.error().what());
+            return lfs_compat::unexpected(shader_result.error().what());
         }
         shader_ = std::move(*shader_result);
 
@@ -33,12 +33,12 @@ namespace lfs::rendering {
 
         auto vao_result = create_vao();
         if (!vao_result)
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         vao_ = std::move(*vao_result);
 
         auto vbo_result = create_vbo();
         if (!vbo_result)
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         vbo_ = std::move(*vbo_result);
 
         glBindVertexArray(vao_.get());
@@ -67,7 +67,7 @@ namespace lfs::rendering {
                                             const glm::vec2& splat_texcoord_scale,
                                             bool splat_depth_is_ndc) {
         if (!initialized_)
-            return std::unexpected("DepthCompositor not initialized");
+            return lfs_compat::unexpected("DepthCompositor not initialized");
 
         GLStateGuard state_guard;
         ShaderScope scope(shader_);
@@ -107,7 +107,7 @@ namespace lfs::rendering {
 
     Result<void> DepthCompositor::presentMeshOnly(GLuint mesh_color_tex, GLuint mesh_depth_tex) {
         if (!initialized_)
-            return std::unexpected("DepthCompositor not initialized");
+            return lfs_compat::unexpected("DepthCompositor not initialized");
 
         GLStateGuard state_guard;
         ShaderScope scope(shader_);

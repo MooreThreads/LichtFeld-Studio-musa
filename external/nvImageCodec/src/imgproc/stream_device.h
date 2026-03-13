@@ -22,13 +22,13 @@
 
 namespace nvimgcodec {
 
-    CUdevice get_stream_device(cudaStream_t stream);
+    CUdevice get_stream_device(musaStream_t stream);
 
     // Check if the device (and current driver) associated with the given stream
     // can use asynchronous memory allocations and deallocations
-    bool can_use_async_mem_ops(cudaStream_t stream);
+    bool can_use_async_mem_ops(musaStream_t stream);
 
-    // Retrieve the device id associated with the cudaStream_t
-    int get_stream_device_id(cudaStream_t stream);
+    // Retrieve the device id associated with the musaStream_t
+    int get_stream_device_id(musaStream_t stream);
 
 } // namespace nvimgcodec

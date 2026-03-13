@@ -57,7 +57,7 @@ namespace lfs::training {
     // Explicit forward pass - returns render output and context for backward
     // Optional tile parameters for memory-efficient training (tile_width/height=0 means full image)
     // bg_image is optional - if provided, uses per-pixel background blending instead of solid color
-    std::expected<std::pair<RenderOutput, FastRasterizeContext>, std::string> fast_rasterize_forward(
+    lfs_compat::expected<std::pair<RenderOutput, FastRasterizeContext>, std::string> fast_rasterize_forward(
         lfs::core::Camera& viewpoint_camera,
         lfs::core::SplatData& gaussian_model,
         lfs::core::Tensor& bg_color,

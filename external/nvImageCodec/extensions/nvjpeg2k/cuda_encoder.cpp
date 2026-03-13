@@ -87,7 +87,7 @@ namespace nvjpeg2k {
             const nvimgcodecExecutionParams_t* exec_params_;
 
             PinnedBuffer pinned_buffer_;
-            cudaEvent_t event_;
+            musaEvent_t event_;
             nvjpeg2kEncodeState_t state_;
 
             PerThreadResources(const nvimgcodecFrameworkDesc_t* framework, const char* plugin_id, nvjpeg2kEncoder_t handle,
@@ -99,7 +99,7 @@ namespace nvjpeg2k {
                   pinned_buffer_(exec_params_),
                   event_(nullptr),
                   state_(nullptr) {
-                XM_CHECK_CUDA(cudaEventCreate(&event_));
+                XM_CHECK_CUDA(musaEventCreate(&event_));
                 XM_CHECK_NVJPEG2K(nvjpeg2kEncodeStateCreate(handle_, &state_));
             }
 
@@ -108,7 +108,7 @@ namespace nvjpeg2k {
                     XM_NVJPEG2K_LOG_DESTROY(nvjpeg2kEncodeStateDestroy(state_));
                 }
                 if (event_) {
-                    XM_CUDA_LOG_DESTROY(cudaEventDestroy(event_));
+                    XM_CUDA_LOG_DESTROY(musaEventDestroy(event_));
                 }
             }
         };
@@ -562,8 +562,8 @@ namespace nvjpeg2k {
             XM_CHECK_NVJPEG2K(nvjpeg2kEncodeParamsSetInputFormat(encode_params.get(), format));
 
             XM_CHECK_NVJPEG2K(nvjpeg2kEncode(handle_, state_handle, encode_params.get(), &input_image, image_info.cuda_stream));
-            XM_CHECK_CUDA(cudaEventRecord(t.event_, image_info.cuda_stream));
-            XM_CHECK_CUDA(cudaEventSynchronize(t.event_));
+            XM_CHECK_CUDA(musaEventRecord(t.event_, image_info.cuda_stream));
+            XM_CHECK_CUDA(musaEventSynchronize(t.event_));
 
             size_t length;
             XM_CHECK_NVJPEG2K(nvjpeg2kEncodeRetrieveBitstream(handle_, state_handle, NULL, &length, image_info.cuda_stream));
@@ -571,7 +571,7 @@ namespace nvjpeg2k {
             XM_CHECK_NVJPEG2K(nvjpeg2kEncodeRetrieveBitstream(
                 handle_, state_handle, static_cast<uint8_t*>(t.pinned_buffer_.data), &length, image_info.cuda_stream));
 
-            XM_CHECK_CUDA(cudaStreamSynchronize(image_info.cuda_stream));
+            XM_CHECK_CUDA(musaStreamSynchronize(image_info.cuda_stream));
 
             nvimgcodecIoStreamDesc_t* io_stream = code_stream->io_stream;
             size_t output_size;

@@ -5,7 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::training::kernels {
 
@@ -35,7 +35,7 @@ namespace lfs::training::kernels {
         float* grad_alpha,
         int H, int W,
         bool is_chw_layout,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Fused kernel for computing grad_alpha with background image
@@ -56,7 +56,7 @@ namespace lfs::training::kernels {
         const float* bg_image,
         float* grad_alpha,
         int H, int W,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Fused kernel for background blending in rasterization forward pass
@@ -85,7 +85,7 @@ namespace lfs::training::kernels {
         const float* bg_color,
         float* output,
         int H, int W,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Fused kernel for background blending with full background image
@@ -109,7 +109,7 @@ namespace lfs::training::kernels {
         const float* bg_image,
         float* output,
         int H, int W,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Fused kernel for sigmoid backward chain rule
@@ -126,7 +126,7 @@ namespace lfs::training::kernels {
         float* v_opacities,
         const float* sigmoid,
         int64_t N,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Fused kernel for exp backward chain rule
@@ -143,7 +143,7 @@ namespace lfs::training::kernels {
         float* v_scales,
         const float* scales,
         int64_t N,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Fused kernel for quaternion normalization backward
@@ -164,7 +164,7 @@ namespace lfs::training::kernels {
         const float* quats_normalized,
         const float* quats_raw,
         int64_t N,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Add gradients from src to dst buffer (dst += src)
@@ -181,7 +181,7 @@ namespace lfs::training::kernels {
         float* dst,
         const float* src,
         int64_t n_elements,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Add gradients with unsqueeze (src [N] -> dst [N, 1])
@@ -198,7 +198,7 @@ namespace lfs::training::kernels {
         float* dst,
         const float* src,
         int64_t N,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Add SH gradients with slice (src [N, K_src, 3] -> dst0 [N, 1, 3], dst_rest [N, K_dst, 3])
@@ -222,7 +222,7 @@ namespace lfs::training::kernels {
         int64_t N,
         int64_t K_src,
         int64_t K_dst,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Compute L2 norm of each row and add to destination buffer
@@ -239,7 +239,7 @@ namespace lfs::training::kernels {
         float* densification_info,
         const float* grad_means,
         int64_t N,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Permute CHW to HWC layout
@@ -258,7 +258,7 @@ namespace lfs::training::kernels {
         const float* src,
         float* dst,
         int C, int H, int W,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Permute HWC to CHW layout
@@ -277,7 +277,7 @@ namespace lfs::training::kernels {
         const float* src,
         float* dst,
         int C, int H, int W,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Squeeze 1HW to HW
@@ -295,7 +295,7 @@ namespace lfs::training::kernels {
         const float* src,
         float* dst,
         int H, int W,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Bilinear resize for [C, H, W] float32 tensors
@@ -318,13 +318,13 @@ namespace lfs::training::kernels {
         int C,
         int src_H, int src_W,
         int dst_H, int dst_W,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     // Generate random per-pixel RGB background [3, H, W] with values in [0, 1]
     void launch_random_background(
         float* output,
         int H, int W,
         uint64_t seed,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace lfs::training::kernels

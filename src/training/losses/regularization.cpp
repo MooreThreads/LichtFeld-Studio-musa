@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "regularization.hpp"
-#include "lfs/kernels/regularization.cuh" // LibTorch-free CUDA kernels
+#include "lfs/kernels/regularization.muh" // LibTorch-free CUDA kernels
 #include <format>
 
 namespace lfs::training::losses {
 
-    std::expected<lfs::core::Tensor, std::string> ScaleRegularization::forward(
+    lfs_compat::expected<lfs::core::Tensor, std::string> ScaleRegularization::forward(
         const lfs::core::Tensor& scaling_raw,
         lfs::core::Tensor& scaling_raw_grad,
         const Params& params) {
@@ -19,13 +19,13 @@ namespace lfs::training::losses {
 
             // Validate inputs
             if (scaling_raw.device() != lfs::core::Device::CUDA) {
-                return std::unexpected("scaling_raw must be on CUDA device");
+                return lfs_compat::unexpected("scaling_raw must be on CUDA device");
             }
             if (scaling_raw_grad.device() != lfs::core::Device::CUDA) {
-                return std::unexpected("scaling_raw_grad must be on CUDA device");
+                return lfs_compat::unexpected("scaling_raw_grad must be on CUDA device");
             }
             if (scaling_raw.shape() != scaling_raw_grad.shape()) {
-                return std::unexpected("scaling_raw and scaling_raw_grad must have same shape");
+                return lfs_compat::unexpected("scaling_raw and scaling_raw_grad must have same shape");
             }
 
             size_t n = scaling_raw.numel();
@@ -52,11 +52,11 @@ namespace lfs::training::losses {
             return loss_tensor;
 
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Error in ScaleRegularization::forward: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Error in ScaleRegularization::forward: {}", e.what()));
         }
     }
 
-    std::expected<lfs::core::Tensor, std::string> OpacityRegularization::forward(
+    lfs_compat::expected<lfs::core::Tensor, std::string> OpacityRegularization::forward(
         const lfs::core::Tensor& opacity_raw,
         lfs::core::Tensor& opacity_raw_grad,
         const Params& params) {
@@ -67,13 +67,13 @@ namespace lfs::training::losses {
 
             // Validate inputs
             if (opacity_raw.device() != lfs::core::Device::CUDA) {
-                return std::unexpected("opacity_raw must be on CUDA device");
+                return lfs_compat::unexpected("opacity_raw must be on CUDA device");
             }
             if (opacity_raw_grad.device() != lfs::core::Device::CUDA) {
-                return std::unexpected("opacity_raw_grad must be on CUDA device");
+                return lfs_compat::unexpected("opacity_raw_grad must be on CUDA device");
             }
             if (opacity_raw.shape() != opacity_raw_grad.shape()) {
-                return std::unexpected("opacity_raw and opacity_raw_grad must have same shape");
+                return lfs_compat::unexpected("opacity_raw and opacity_raw_grad must have same shape");
             }
 
             size_t n = opacity_raw.numel();
@@ -100,7 +100,7 @@ namespace lfs::training::losses {
             return loss_tensor;
 
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Error in OpacityRegularization::forward: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Error in OpacityRegularization::forward: {}", e.what()));
         }
     }
 

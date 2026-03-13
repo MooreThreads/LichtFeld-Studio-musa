@@ -8,7 +8,7 @@
 
 #include "Common.h"
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_fwd {
 
@@ -25,7 +25,7 @@ namespace gsplat_fwd {
         int64_t total_elements,         // M (visible gaussians)
         int32_t K,                      // number of SH coefficients
         float* colors,                  // [M, 3] output (pre-allocated)
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Tile Intersection
@@ -39,7 +39,7 @@ namespace gsplat_fwd {
     };
 
     // Note: isect_ids and flatten_ids are allocated internally
-    // Caller must free them with cudaFree when done
+    // Caller must free them with musaFree when done
     IntersectTileResult intersect_tile(
         const float* means2d,        // [C, N, 2]
         const int32_t* radii,        // [C, N, 2]
@@ -54,7 +54,7 @@ namespace gsplat_fwd {
         bool wrap_x,
         bool sort,
         int32_t* tiles_per_gauss_out, // [C, N] pre-allocated output
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void intersect_offset(
         const int64_t* isect_ids, // [n_isects]
@@ -63,7 +63,7 @@ namespace gsplat_fwd {
         uint32_t tile_width,
         uint32_t tile_height,
         int32_t* isect_offsets, // [C, tile_height, tile_width] output
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Quaternion to Rotation Matrix
@@ -73,7 +73,7 @@ namespace gsplat_fwd {
         const float* quats, // [N, 4]
         int64_t N,
         float* rotmats, // [N, 3, 3] output
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // View Direction Computation for SH
@@ -90,7 +90,7 @@ namespace gsplat_fwd {
         int num_transforms,
         const int* visible_indices, // [M] maps output idx → global gaussian idx, nullptr = all visible
         float* dirs,                // [C, M, 3] output
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Projection - Unscented Transform for 3DGS
@@ -131,7 +131,7 @@ namespace gsplat_fwd {
         float* depths,        // [C, M]
         float* conics,        // [C, M, 3]
         float* compensations, // [C, M] optional
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Rasterization - Forward Only
@@ -175,7 +175,7 @@ namespace gsplat_fwd {
         float* alphas,        // [C, image_height, image_width, 1]
         int32_t* last_ids,    // [C, image_height, image_width]
         float* median_depths, // [C, image_height, image_width] (can be nullptr)
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // High-level API: Fully fused rasterization with SH evaluation
@@ -196,7 +196,7 @@ namespace gsplat_fwd {
         int32_t* last_ids;        // [C, H, W]
         float* median_depths;     // [C, H, W] optional (can be nullptr)
         float* compensations;     // [C, N] optional (can be nullptr)
-        // These are allocated internally - caller must free with cudaFree:
+        // These are allocated internally - caller must free with musaFree:
         int64_t* isect_ids;   // [n_isects]
         int32_t* flatten_ids; // [n_isects]
         int32_t n_isects;
@@ -247,6 +247,6 @@ namespace gsplat_fwd {
         const int* visible_indices, // [M] maps output idx → global gaussian idx, nullptr = all visible
         // outputs (result struct with pre-allocated buffers)
         RasterizeWithSHResult& result,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace gsplat_fwd

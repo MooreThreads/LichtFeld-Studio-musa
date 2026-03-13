@@ -13,6 +13,6 @@ namespace lfs::io {
     using SogProgressCallback = ExportProgressCallback;
 
     // Internal: Loading function (not in public API)
-    std::expected<SplatData, std::string> load_sog(const std::filesystem::path& filepath);
+    lfs_compat::expected<SplatData, std::string> load_sog(const std::filesystem::path& filepath);
 
 } // namespace lfs::io

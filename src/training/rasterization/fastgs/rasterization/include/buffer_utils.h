@@ -8,7 +8,7 @@
 #include "rasterization_config.h"
 #include <cstdint>
 #include <cub/cub.cuh>
-#include <cuda_fp16.h>
+#include <musa_fp16.h>
 
 namespace fast_lfs::rasterization {
 

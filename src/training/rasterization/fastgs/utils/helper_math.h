@@ -42,7 +42,7 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 typedef unsigned int uint;
 typedef unsigned short ushort;
@@ -51,7 +51,7 @@ typedef unsigned short ushort;
 #define EXIT_WAIVED 2
 #endif
 
-#ifndef __CUDACC__
+#ifndef __MUSACC__
 #include <math.h>
 
 ////////////////////////////////////////////////////////////////////////////////

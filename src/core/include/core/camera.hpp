@@ -8,7 +8,7 @@
 #include "core/cuda/undistort/undistort.hpp"
 #include "core/export.hpp"
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <filesystem>
 #include <future>
 #include <string>
@@ -157,7 +157,7 @@ namespace lfs::core {
         UndistortParams _undistort_params{};
 
         // CUDA stream for async operations
-        cudaStream_t _stream = nullptr;
+        musaStream_t _stream = nullptr;
     };
     inline float focal2fov(float focal, int pixels) {
         return 2.0f * std::atan(pixels / (2.0f * focal));

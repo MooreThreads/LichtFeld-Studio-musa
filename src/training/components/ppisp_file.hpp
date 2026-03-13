@@ -43,7 +43,7 @@ namespace lfs::training {
     /// @param path Output file path (typically .ppisp extension)
     /// @param ppisp Required - the trained PPISP module
     /// @param controller_pool Optional - controller pool for novel views
-    [[nodiscard]] std::expected<void, std::string> save_ppisp_file(
+    [[nodiscard]] lfs_compat::expected<void, std::string> save_ppisp_file(
         const std::filesystem::path& path,
         const PPISP& ppisp,
         const PPISPControllerPool* controller_pool = nullptr);
@@ -52,7 +52,7 @@ namespace lfs::training {
     /// @param path Input file path
     /// @param ppisp PPISP instance to load into (must be pre-constructed with matching dimensions)
     /// @param controller_pool Optional controller pool to load into
-    [[nodiscard]] std::expected<void, std::string> load_ppisp_file(
+    [[nodiscard]] lfs_compat::expected<void, std::string> load_ppisp_file(
         const std::filesystem::path& path,
         PPISP& ppisp,
         PPISPControllerPool* controller_pool = nullptr);

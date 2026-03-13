@@ -53,7 +53,7 @@ namespace {
         return lfs::core::LogLevel::Info; // Default
     }
 
-    std::expected<std::tuple<ParseResult, std::function<void()>>, std::string> parse_arguments(
+    lfs_compat::expected<std::tuple<ParseResult, std::function<void()>>, std::string> parse_arguments(
         const std::vector<std::string>& args,
         lfs::core::param::TrainingParameters& params) {
 
@@ -233,7 +233,7 @@ namespace {
                 std::print("{}", e.what());
                 return std::make_tuple(ParseResult::Help, std::function<void()>{});
             } catch (const ::args::ParseError& e) {
-                return std::unexpected(std::format("Parse error: {}\n{}", e.what(), parser.Help()));
+                return lfs_compat::unexpected(std::format("Parse error: {}\n{}", e.what(), parser.Help()));
             }
 
             // Initialize logger (CLI args override environment variable)
@@ -292,7 +292,7 @@ namespace {
                     const std::filesystem::path view_path = lfs::core::utf8_to_path(view_path_str);
 
                     if (!std::filesystem::exists(view_path)) {
-                        return std::unexpected(std::format("Path does not exist: {}", lfs::core::path_to_utf8(view_path)));
+                        return lfs_compat::unexpected(std::format("Path does not exist: {}", lfs::core::path_to_utf8(view_path)));
                     }
 
                     constexpr std::array<std::string_view, 12> SUPPORTED_EXTENSIONS = {
@@ -301,7 +301,7 @@ namespace {
                     const auto is_supported = [&](const std::filesystem::path& p) {
                         auto ext = p.extension().string();
                         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-                        return std::ranges::find(SUPPORTED_EXTENSIONS, ext) != SUPPORTED_EXTENSIONS.end();
+                        return std::find(SUPPORTED_EXTENSIONS.begin(), SUPPORTED_EXTENSIONS.end(), ext) != SUPPORTED_EXTENSIONS.end();
                     };
 
                     if (std::filesystem::is_directory(view_path)) {
@@ -310,16 +310,16 @@ namespace {
                                 params.view_paths.push_back(entry.path());
                             }
                         }
-                        std::ranges::sort(params.view_paths);
+                        std::sort(params.view_paths.begin(), params.view_paths.end());
 
                         if (params.view_paths.empty()) {
-                            return std::unexpected(std::format(
+                            return lfs_compat::unexpected(std::format(
                                 "No supported files found in: {}", lfs::core::path_to_utf8(view_path)));
                         }
                         LOG_DEBUG("Found {} view files in directory", params.view_paths.size());
                     } else {
                         if (!is_supported(view_path)) {
-                            return std::unexpected(std::format(
+                            return lfs_compat::unexpected(std::format(
                                 "Unsupported file format: {}", lfs::core::path_to_utf8(view_path)));
                         }
                         params.view_paths.push_back(view_path);
@@ -338,10 +338,10 @@ namespace {
                 if (!import_path_str.empty()) {
                     const std::filesystem::path import_path = lfs::core::utf8_to_path(import_path_str);
                     if (!std::filesystem::exists(import_path)) {
-                        return std::unexpected(std::format("Path does not exist: {}", lfs::core::path_to_utf8(import_path)));
+                        return lfs_compat::unexpected(std::format("Path does not exist: {}", lfs::core::path_to_utf8(import_path)));
                     }
                     if (!std::filesystem::is_directory(import_path)) {
-                        return std::unexpected(std::format("Expected directory for --import-cameras: {}", lfs::core::path_to_utf8(import_path)));
+                        return lfs_compat::unexpected(std::format("Expected directory for --import-cameras: {}", lfs::core::path_to_utf8(import_path)));
                     }
                     params.import_cameras_path = import_path;
                 }
@@ -354,7 +354,7 @@ namespace {
                 if (!ckpt_path_str.empty()) {
                     const auto ckpt_path = lfs::core::utf8_to_path(ckpt_path_str);
                     if (!std::filesystem::exists(ckpt_path)) {
-                        return std::unexpected(std::format("Checkpoint file does not exist: {}", ckpt_path_str));
+                        return lfs_compat::unexpected(std::format("Checkpoint file does not exist: {}", ckpt_path_str));
                     }
                     params.resume_checkpoint = ckpt_path;
                 }
@@ -365,7 +365,7 @@ namespace {
                 params.init_path = path_str;
 
                 if (!std::filesystem::exists(lfs::core::utf8_to_path(path_str))) {
-                    return std::unexpected(std::format("Initialization file does not exist: {}", path_str));
+                    return lfs_compat::unexpected(std::format("Initialization file does not exist: {}", path_str));
                 }
             }
 
@@ -376,7 +376,7 @@ namespace {
 
             // If headless mode, require data path or resume checkpoint
             if (headless && !has_data_path && !has_resume) {
-                return std::unexpected(std::format(
+                return lfs_compat::unexpected(std::format(
                     "ERROR: Headless mode requires --data-path or --resume\n\n{}",
                     parser.Help()));
             }
@@ -391,13 +391,13 @@ namespace {
                 std::error_code ec;
                 std::filesystem::create_directories(params.dataset.output_path, ec);
                 if (ec) {
-                    return std::unexpected(std::format(
+                    return lfs_compat::unexpected(std::format(
                         "Failed to create output directory '{}': {}",
                         lfs::core::path_to_utf8(params.dataset.output_path), ec.message()));
                 }
             } else if (has_data_path != has_output_path && !has_resume) {
                 // Only require both if not in resume mode
-                return std::unexpected(std::format(
+                return lfs_compat::unexpected(std::format(
                     "ERROR: Training mode requires both --data-path and --output-path\n\n{}",
                     parser.Help()));
             } else if (has_resume) {
@@ -412,7 +412,7 @@ namespace {
                     std::error_code ec;
                     std::filesystem::create_directories(params.dataset.output_path, ec);
                     if (ec) {
-                        return std::unexpected(std::format(
+                        return lfs_compat::unexpected(std::format(
                             "Failed to create output directory '{}': {}",
                             lfs::core::path_to_utf8(params.dataset.output_path), ec.message()));
                     }
@@ -422,7 +422,7 @@ namespace {
             if (strategy) {
                 const auto strat = ::args::get(strategy);
                 if (VALID_STRATEGIES.find(strat) == VALID_STRATEGIES.end()) {
-                    return std::unexpected(std::format(
+                    return lfs_compat::unexpected(std::format(
                         "ERROR: Invalid optimization strategy '{}'. Valid strategies are: mcmc, adc, igs+",
                         strat));
                 }
@@ -443,17 +443,17 @@ namespace {
             if (max_width) {
                 int width = ::args::get(max_width);
                 if (width <= 0) {
-                    return std::unexpected("ERROR: --max-width must be greather than 0");
+                    return lfs_compat::unexpected("ERROR: --max-width must be greather than 0");
                 }
                 if (width > 4096) {
-                    return std::unexpected("ERROR: --max-width cannot be higher than 4096");
+                    return lfs_compat::unexpected("ERROR: --max-width cannot be higher than 4096");
                 }
             }
 
             if (tile_mode) {
                 int mode = ::args::get(tile_mode);
                 if (mode != 1 && mode != 2 && mode != 4) {
-                    return std::unexpected("ERROR: --tile-mode must be 1 (1 tile), 2 (2 tiles), or 4 (4 tiles)");
+                    return lfs_compat::unexpected("ERROR: --tile-mode must be 1 (1 tile), 2 (2 tiles), or 4 (4 tiles)");
                 }
             }
 
@@ -461,7 +461,7 @@ namespace {
             if (sh_degree) {
                 int degree = ::args::get(sh_degree);
                 if (degree < 0 || degree > 3) {
-                    return std::unexpected("ERROR: --sh-degree must be 0, 1, 2, or 3");
+                    return lfs_compat::unexpected("ERROR: --sh-degree must be 0, 1, 2, or 3");
                 }
             }
 
@@ -469,7 +469,7 @@ namespace {
             if (min_opacity) {
                 float opacity = ::args::get(min_opacity);
                 if (opacity < 0.0f || opacity > 1.0f) {
-                    return std::unexpected("ERROR: --min-opacity must be between 0.0 and 1.0");
+                    return lfs_compat::unexpected("ERROR: --min-opacity must be between 0.0 and 1.0");
                 }
             }
 
@@ -477,7 +477,7 @@ namespace {
             if (init_num_pts) {
                 int pts = ::args::get(init_num_pts);
                 if (pts <= 0) {
-                    return std::unexpected("ERROR: --init-num-pts must be greater than 0");
+                    return lfs_compat::unexpected("ERROR: --init-num-pts must be greater than 0");
                 }
             }
 
@@ -485,7 +485,7 @@ namespace {
             if (prune_ratio) {
                 float ratio = ::args::get(prune_ratio);
                 if (ratio < 0.0f || ratio > 1.0f) {
-                    return std::unexpected("ERROR: --prune-ratio must be between 0.0 and 1.0");
+                    return lfs_compat::unexpected("ERROR: --prune-ratio must be between 0.0 and 1.0");
                 }
             }
 
@@ -620,7 +620,7 @@ namespace {
             return std::make_tuple(ParseResult::Success, apply_cmd_overrides);
 
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Unexpected error during argument parsing: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Unexpected error during argument parsing: {}", e.what()));
         }
     }
 
@@ -647,7 +647,7 @@ namespace {
 } // anonymous namespace
 
 // Public interface
-std::expected<std::unique_ptr<lfs::core::param::TrainingParameters>, std::string>
+lfs_compat::expected<std::unique_ptr<lfs::core::param::TrainingParameters>, std::string>
 lfs::core::args::parse_args_and_params(int argc, const char* const argv[]) {
 
     auto params = std::make_unique<lfs::core::param::TrainingParameters>();
@@ -665,7 +665,7 @@ lfs::core::args::parse_args_and_params(int argc, const char* const argv[]) {
     const std::string& config_file = params->optimization.config_file;
 
     if (!parse_result) {
-        return std::unexpected(parse_result.error());
+        return lfs_compat::unexpected(parse_result.error());
     }
 
     const auto [result, apply_overrides] = *parse_result;
@@ -677,12 +677,12 @@ lfs::core::args::parse_args_and_params(int argc, const char* const argv[]) {
     if (!config_file.empty()) {
         const auto opt_result = lfs::core::param::read_optim_params_from_json(lfs::core::utf8_to_path(config_file));
         if (!opt_result) {
-            return std::unexpected(std::format("Config load failed: {}", opt_result.error()));
+            return lfs_compat::unexpected(std::format("Config load failed: {}", opt_result.error()));
         }
         params->optimization = *opt_result;
 
         if (!strategy.empty() && strategy != params->optimization.strategy) {
-            return std::unexpected("--strategy conflicts with config file");
+            return lfs_compat::unexpected("--strategy conflicts with config file");
         }
     } else {
         if (strategy == "adc")
@@ -702,7 +702,7 @@ lfs::core::args::parse_args_and_params(int argc, const char* const argv[]) {
     apply_ppisp_defaults(*params);
 
     if (auto error = params->optimization.validate(); !error.empty())
-        return std::unexpected("ERROR: " + error);
+        return lfs_compat::unexpected("ERROR: " + error);
 
     return params;
 }
@@ -735,7 +735,7 @@ namespace {
     }
 } // namespace
 
-std::expected<lfs::core::args::ParsedArgs, std::string>
+lfs_compat::expected<lfs::core::args::ParsedArgs, std::string>
 lfs::core::args::parse_args(const int argc, const char* const argv[]) {
     if (argc >= 2) {
         const std::string_view arg1 = argv[1];
@@ -763,7 +763,7 @@ lfs::core::args::parse_args(const int argc, const char* const argv[]) {
             // Handle convert subcommand below
         } else if (arg1 == "plugin") {
             if (argc < 3) {
-                return std::unexpected("Usage: LichtFeld-Studio plugin <create|check|list> [name]");
+                return lfs_compat::unexpected("Usage: LichtFeld-Studio plugin <create|check|list> [name]");
             }
 
             const std::string_view subcmd = argv[2];
@@ -771,13 +771,13 @@ lfs::core::args::parse_args(const int argc, const char* const argv[]) {
 
             if (subcmd == "create") {
                 if (argc < 4) {
-                    return std::unexpected("Usage: LichtFeld-Studio plugin create <name>");
+                    return lfs_compat::unexpected("Usage: LichtFeld-Studio plugin create <name>");
                 }
                 mode.command = PluginMode::Command::CREATE;
                 mode.name = argv[3];
             } else if (subcmd == "check") {
                 if (argc < 4) {
-                    return std::unexpected("Usage: LichtFeld-Studio plugin check <name>");
+                    return lfs_compat::unexpected("Usage: LichtFeld-Studio plugin check <name>");
                 }
                 mode.command = PluginMode::Command::CHECK;
                 mode.name = argv[3];
@@ -793,20 +793,20 @@ Commands:
 )");
                 return HelpMode{};
             } else {
-                return std::unexpected(std::format("Unknown plugin command: {}", subcmd));
+                return lfs_compat::unexpected(std::format("Unknown plugin command: {}", subcmd));
             }
 
             return mode;
         } else {
             auto result = parse_args_and_params(argc, argv);
             if (!result)
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             return TrainingMode{std::move(*result)};
         }
     } else {
         auto result = parse_args_and_params(argc, argv);
         if (!result)
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         return TrainingMode{std::move(*result)};
     }
 
@@ -830,11 +830,11 @@ Commands:
         std::print("{}", parser.Help());
         return HelpMode{};
     } catch (const ::args::ParseError& e) {
-        return std::unexpected(std::format("{}\n\n{}", e.what(), parser.Help()));
+        return lfs_compat::unexpected(std::format("{}\n\n{}", e.what(), parser.Help()));
     }
 
     if (!input) {
-        return std::unexpected(std::format("Missing input path\n\n{}", parser.Help()));
+        return lfs_compat::unexpected(std::format("Missing input path\n\n{}", parser.Help()));
     }
 
     param::ConvertParameters params;
@@ -842,11 +842,11 @@ Commands:
     params.sh_degree = sh_degree ? ::args::get(sh_degree) : -1;
 
     if (!std::filesystem::exists(params.input_path)) {
-        return std::unexpected(std::format("Input not found: {}", lfs::core::path_to_utf8(params.input_path)));
+        return lfs_compat::unexpected(std::format("Input not found: {}", lfs::core::path_to_utf8(params.input_path)));
     }
 
     if (params.sh_degree < -1 || params.sh_degree > 3) {
-        return std::unexpected("SH degree must be -1 (keep) or 0-3");
+        return lfs_compat::unexpected("SH degree must be -1 (keep) or 0-3");
     }
 
     if (output)
@@ -859,13 +859,13 @@ Commands:
         if (const auto fmt = parseFormat(::args::get(format))) {
             params.format = *fmt;
         } else {
-            return std::unexpected(std::format("Invalid format '{}'. Use: ply, sog, html", ::args::get(format)));
+            return lfs_compat::unexpected(std::format("Invalid format '{}'. Use: ply, sog, html", ::args::get(format)));
         }
     } else if (!params.output_path.empty()) {
         if (const auto fmt = parseFormat(params.output_path.extension().string())) {
             params.format = *fmt;
         } else {
-            return std::unexpected(std::format("Unknown extension '{}'. Use --format", params.output_path.extension().string()));
+            return lfs_compat::unexpected(std::format("Unknown extension '{}'. Use --format", params.output_path.extension().string()));
         }
     }
 

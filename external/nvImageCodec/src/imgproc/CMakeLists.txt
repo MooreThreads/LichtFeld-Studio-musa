@@ -13,33 +13,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(nvimgcodec_imgproc_static OBJECT 
-    convert_kernel_gpu.cu
-    pinned_buffer.cpp
-    device_buffer.cpp
-    exception.cpp
-    stream_device.cpp
-    color_space_conversion_impl.h
-    convert.h
-    convert_kernel_gpu.h
-    cuda_utils.h
-    dev_string.h
-    device_buffer.h
-    device_guard.h
-    exception.h
-    force_inline.h
-    host_dev.h
-    int_literals.h
-    math_util.h
-    pinned_buffer.h
-    roi.h
-    sample_format_utils.h
-    static_switch.h
-    stream_device.h
-    surface.h
-    tuple_helpers.h
-    type_utils.h
-    util.h
+set(NVIMGCODEC_MU_SOURCES convert_kernel_gpu.mu)
+set_source_files_properties(${NVIMGCODEC_MU_SOURCES}
+    PROPERTIES LANGUAGE CXX COMPILE_FLAGS "-x musa")
+
+add_library(nvimgcodec_imgproc_static OBJECT
+ ${NVIMGCODEC_MU_SOURCES}
+ pinned_buffer.cpp
+ device_buffer.cpp
+ exception.cpp
+ stream_device.cpp
+ color_space_conversion_impl.h
+ convert.h
+ convert_kernel_gpu.h
+ cuda_utils.h
+ dev_string.h
+ device_buffer.h
+ device_guard.h
+ exception.h
+ force_inline.h
+ host_dev.h
+ int_literals.h
+ math_util.h
+ pinned_buffer.h
+ roi.h
+ sample_format_utils.h
+ static_switch.h
+ stream_device.h
+ surface.h
+ tuple_helpers.h
+ type_utils.h
+ util.h
 )
 set_property(TARGET nvimgcodec_imgproc_static PROPERTY POSITION_INDEPENDENT_CODE ON)
 
@@ -47,5 +51,5 @@ set_property(TARGET nvimgcodec_imgproc_static PROPERTY POSITION_INDEPENDENT_CODE
 target_include_directories(nvimgcodec_imgproc_static PRIVATE ${Boost_INCLUDE_DIRS})
 
 if(WIN32)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --compiler-options \" /Zc:preprocessor \"  -Xfatbin -compress-all")
+ set(CMAKE_MU_FLAGS "${CMAKE_MU_FLAGS} --compiler-options \" /Zc:preprocessor \" -Xfatbin -compress-all")
 endif()

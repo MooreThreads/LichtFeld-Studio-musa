@@ -10,7 +10,7 @@
 #include "core/tensor.hpp"
 #include <chrono>
 #include <mutex>
-#include <source_location>
+#include "core/source_location_compat.hpp"
 #include <string>
 #include <vector>
 

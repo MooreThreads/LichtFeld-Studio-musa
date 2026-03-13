@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "core/cuda_version.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::core {
 
     CudaVersionInfo check_cuda_version() {
         CudaVersionInfo info;
 
-        if (cudaDriverGetVersion(&info.driver_version) != cudaSuccess) {
+        if (musaDriverGetVersion(&info.driver_version) != musaSuccess) {
             info.query_failed = true;
             return info;
         }

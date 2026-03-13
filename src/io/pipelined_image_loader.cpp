@@ -7,10 +7,12 @@
 #include "core/image_io.hpp"
 #include "core/logger.hpp"
 #include "core/path_utils.hpp"
-#include "cuda/image_format_kernels.cuh"
+#include "cuda/image_format_kernels.muh"
+#ifdef LFS_HAS_NVCODEC
 #include "io/nvcodec_image_loader.hpp"
+#endif
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <stb_image.h>
 
 #include <algorithm>
@@ -51,6 +53,7 @@ namespace lfs::io {
 #endif
         }
 
+#ifdef LFS_HAS_NVCODEC
         std::mutex& get_nvcodec_mutex() {
             static std::mutex mtx;
             return mtx;
@@ -78,12 +81,17 @@ namespace lfs::io {
             std::lock_guard<std::mutex> lock(get_nvcodec_mutex());
             get_nvcodec_instance().reset();
         }
+#endif // LFS_HAS_NVCODEC
 
         bool is_nvcodec_available() {
+#ifdef LFS_HAS_NVCODEC
             static std::once_flag flag;
             static bool available = false;
             std::call_once(flag, [] { available = NvCodecImageLoader::is_available(); });
             return available;
+#else
+            return false;
+#endif
         }
 
         std::tuple<uint8_t*, int, int> load_grayscale_stb(const std::filesystem::path& path) {
@@ -157,8 +165,10 @@ namespace lfs::io {
                 t.join();
         }
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
+#ifdef LFS_HAS_NVCODEC
         reset_nvcodec_loader();
+#endif
 
         if (config_.use_filesystem_cache && !fs_cache_folder_.empty()) {
             std::error_code ec;
@@ -239,6 +249,7 @@ namespace lfs::io {
 
     std::optional<lfs::core::Tensor> PipelinedImageLoader::decode_cached_image(
         const std::filesystem::path& path, const LoadParams& params) {
+#ifdef LFS_HAS_NVCODEC
         auto key = make_cache_key(path, params);
         auto jpeg_data = get_from_jpeg_cache(key);
         if (!jpeg_data)
@@ -251,6 +262,10 @@ namespace lfs::io {
             return std::nullopt;
 
         return tensor;
+#else
+        (void)path; (void)params;
+        return std::nullopt;
+#endif
     }
 
     std::string PipelinedImageLoader::make_cache_key(const std::filesystem::path& path, const LoadParams& params) const {
@@ -373,7 +388,7 @@ namespace lfs::io {
         size_t sequence_id,
         std::optional<lfs::core::Tensor> image,
         std::optional<lfs::core::Tensor> mask,
-        cudaStream_t stream) {
+        musaStream_t stream) {
 
         std::lock_guard<std::mutex> lock(pending_pairs_mutex_);
         auto& pair = pending_pairs_[sequence_id];
@@ -632,6 +647,7 @@ namespace lfs::io {
     }
 
     void PipelinedImageLoader::gpu_batch_decode_thread_func() {
+#ifdef LFS_HAS_NVCODEC
         std::vector<PrefetchedImage> batch;
         batch.reserve(config_.jpeg_batch_size);
 
@@ -757,6 +773,7 @@ namespace lfs::io {
                 }
             }
         }
+#endif // LFS_HAS_NVCODEC
     }
 
     void PipelinedImageLoader::cold_process_thread_func() {
@@ -769,8 +786,6 @@ namespace lfs::io {
             }
 
             try {
-                auto& nvcodec = get_nvcodec_loader();
-
                 if (item.alpha_as_mask) {
                     auto [img_data, width, height, channels] = lfs::core::load_image_with_alpha(
                         item.path, item.params.resize_factor, item.params.max_width);
@@ -815,23 +830,26 @@ namespace lfs::io {
                         alpha = lfs::core::undistort_mask(alpha, scaled, nullptr);
                     }
 
+#ifdef LFS_HAS_NVCODEC
                     if (is_nvcodec_available()) {
                         try {
-                            auto rgb_jpeg = nvcodec.encode_to_jpeg(rgb, config_.cache_jpeg_quality, nullptr);
+                            auto& nvcodec_ref = get_nvcodec_loader();
+                            auto rgb_jpeg = nvcodec_ref.encode_to_jpeg(rgb, config_.cache_jpeg_quality, nullptr);
                             put_in_jpeg_cache(item.cache_key,
                                               std::make_shared<std::vector<uint8_t>>(std::move(rgb_jpeg)));
 
                             const auto alpha_key = make_mask_cache_key(item.path, item.params);
-                            auto alpha_jpeg = nvcodec.encode_grayscale_to_jpeg(
+                            auto alpha_jpeg = nvcodec_ref.encode_grayscale_to_jpeg(
                                 alpha, config_.cache_jpeg_quality, nullptr);
                             put_in_jpeg_cache(alpha_key,
                                               std::make_shared<std::vector<uint8_t>>(std::move(alpha_jpeg)));
                         } catch (const std::exception&) {
                         }
                     }
+#endif
 
-                    if (const cudaError_t err = cudaStreamSynchronize(nullptr); err != cudaSuccess) {
-                        throw std::runtime_error(std::string("CUDA sync failed: ") + cudaGetErrorString(err));
+                    if (const musaError_t err = musaStreamSynchronize(nullptr); err != musaSuccess) {
+                        throw std::runtime_error(std::string("CUDA sync failed: ") + musaGetErrorString(err));
                     }
 
                     try_complete_pair(item.sequence_id, std::move(rgb), std::move(alpha), nullptr);
@@ -840,15 +858,18 @@ namespace lfs::io {
                     lfs::core::Tensor mask_tensor;
                     bool used_gpu = false;
 
+#ifdef LFS_HAS_NVCODEC
                     if (is_nvcodec_available()) {
                         try {
-                            mask_tensor = nvcodec.load_image_gpu(
+                            auto& nvcodec_ref = get_nvcodec_loader();
+                            mask_tensor = nvcodec_ref.load_image_gpu(
                                 item.path, item.params.resize_factor, item.params.max_width,
                                 nullptr, DecodeFormat::Grayscale);
                             used_gpu = true;
                         } catch (const std::exception&) {
                         }
                     }
+#endif
 
                     if (!used_gpu) {
                         const auto [gray_data, src_w, src_h] = load_grayscale_stb(item.path);
@@ -887,7 +908,7 @@ namespace lfs::io {
                             cuda::launch_uint8_hw_to_float32_hw(
                                 gpu_uint8.ptr<uint8_t>(), mask_tensor.ptr<float>(), target_h, target_w, nullptr);
                         }
-                        cudaStreamSynchronize(nullptr);
+                        musaStreamSynchronize(nullptr);
                     }
 
                     const size_t H = mask_tensor.shape()[0];
@@ -907,18 +928,21 @@ namespace lfs::io {
                         mask_tensor = lfs::core::undistort_mask(mask_tensor, scaled, nullptr);
                     }
 
+#ifdef LFS_HAS_NVCODEC
                     if (is_nvcodec_available()) {
                         try {
-                            auto jpeg_bytes = nvcodec.encode_grayscale_to_jpeg(
+                            auto& nvcodec_ref = get_nvcodec_loader();
+                            auto jpeg_bytes = nvcodec_ref.encode_grayscale_to_jpeg(
                                 mask_tensor, config_.cache_jpeg_quality, nullptr);
                             put_in_jpeg_cache(item.cache_key,
                                               std::make_shared<std::vector<uint8_t>>(std::move(jpeg_bytes)));
                         } catch (const std::exception&) {
                         }
                     }
+#endif
 
-                    if (const cudaError_t err = cudaStreamSynchronize(nullptr); err != cudaSuccess) {
-                        throw std::runtime_error(std::string("CUDA sync failed: ") + cudaGetErrorString(err));
+                    if (const musaError_t err = musaStreamSynchronize(nullptr); err != musaSuccess) {
+                        throw std::runtime_error(std::string("CUDA sync failed: ") + musaGetErrorString(err));
                     }
 
                     try_complete_pair(item.sequence_id, std::nullopt, std::move(mask_tensor), nullptr);
@@ -927,14 +951,17 @@ namespace lfs::io {
                     lfs::core::Tensor decoded;
                     bool used_gpu = false;
 
+#ifdef LFS_HAS_NVCODEC
                     if (is_nvcodec_available() && item.is_original_jpeg) {
                         try {
-                            decoded = nvcodec.load_image_gpu(
+                            auto& nvcodec_ref = get_nvcodec_loader();
+                            decoded = nvcodec_ref.load_image_gpu(
                                 item.path, item.params.resize_factor, item.params.max_width);
                             used_gpu = true;
                         } catch (const std::exception&) {
                         }
                     }
+#endif
 
                     if (!used_gpu) {
                         auto [img_data, width, height, channels] = lfs::core::load_image(
@@ -963,8 +990,8 @@ namespace lfs::io {
                             reinterpret_cast<float*>(decoded.data_ptr()),
                             H, W, C, nullptr);
 
-                        if (const cudaError_t err = cudaDeviceSynchronize(); err != cudaSuccess) {
-                            throw std::runtime_error(std::string("CUDA sync failed: ") + cudaGetErrorString(err));
+                        if (const musaError_t err = musaDeviceSynchronize(); err != musaSuccess) {
+                            throw std::runtime_error(std::string("CUDA sync failed: ") + musaGetErrorString(err));
                         }
                         gpu_uint8 = lfs::core::Tensor();
                     }
@@ -977,15 +1004,18 @@ namespace lfs::io {
                         decoded = lfs::core::undistort_image(decoded, scaled, nullptr);
                     }
 
+#ifdef LFS_HAS_NVCODEC
                     if (is_nvcodec_available()) {
                         try {
-                            auto jpeg_bytes = nvcodec.encode_to_jpeg(
+                            auto& nvcodec_ref = get_nvcodec_loader();
+                            auto jpeg_bytes = nvcodec_ref.encode_to_jpeg(
                                 decoded, config_.cache_jpeg_quality, nullptr);
                             put_in_jpeg_cache(item.cache_key,
                                               std::make_shared<std::vector<uint8_t>>(std::move(jpeg_bytes)));
                         } catch (const std::exception&) {
                         }
                     }
+#endif
 
                     try_complete_pair(item.sequence_id, std::move(decoded), std::nullopt, nullptr);
                 }
@@ -1015,7 +1045,7 @@ namespace lfs::io {
                             lfs::core::Device::CUDA, lfs::core::DataType::Float32);
                         cuda::launch_uint8_hwc_to_float32_chw(
                             gpu_uint8.ptr<uint8_t>(), decoded.ptr<float>(), H, W, C, nullptr);
-                        cudaStreamSynchronize(nullptr);
+                        musaStreamSynchronize(nullptr);
 
                         {
                             std::lock_guard<std::mutex> lock(pending_pairs_mutex_);

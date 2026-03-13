@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "photometric_loss.hpp"
-#include "lfs/kernels/l1_loss.cuh"
-#include "lfs/kernels/ssim.cuh"
+#include "lfs/kernels/l1_loss.muh"
+#include "lfs/kernels/ssim.muh"
 #include <format>
 
 namespace lfs::training::losses {
@@ -25,7 +25,7 @@ namespace lfs::training::losses {
         }
     }
 
-    std::expected<std::pair<lfs::core::Tensor, PhotometricLoss::Context>, std::string>
+    lfs_compat::expected<std::pair<lfs::core::Tensor, PhotometricLoss::Context>, std::string>
     PhotometricLoss::forward(
         const lfs::core::Tensor& rendered,
         const lfs::core::Tensor& gt_image,
@@ -37,7 +37,7 @@ namespace lfs::training::losses {
 
             // Validate shapes
             if (rendered_4d.shape() != gt_4d.shape()) {
-                return std::unexpected("Shape mismatch: rendered and gt_image must have same shape");
+                return lfs_compat::unexpected("Shape mismatch: rendered and gt_image must have same shape");
             }
 
             lfs::core::Tensor grad_combined;
@@ -94,7 +94,7 @@ namespace lfs::training::losses {
                 .grad_image = grad_combined};
             return std::make_pair(loss_tensor_gpu, ctx);
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Error computing photometric loss with gradient: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Error computing photometric loss with gradient: {}", e.what()));
         }
     }
 

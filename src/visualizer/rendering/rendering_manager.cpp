@@ -31,7 +31,7 @@
 #include "training/trainer.hpp"
 #include "training/training_manager.hpp"
 #include <algorithm>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <shared_mutex>
@@ -44,7 +44,7 @@ namespace lfs::vis {
         template <typename TRenderable>
         [[nodiscard]] const TRenderable* findRenderableByNodeId(const std::vector<TRenderable>& renderables,
                                                                 const core::NodeId node_id) {
-            const auto it = std::ranges::find_if(renderables, [node_id](const auto& item) {
+            const auto it = std::find_if(renderables.begin(), renderables.end(), [node_id](const auto& item) {
                 return item.node_id == node_id;
             });
             return it != renderables.end() ? &(*it) : nullptr;
@@ -90,6 +90,8 @@ namespace lfs::vis {
         auto& entry = texture_cache_[cam_id];
         entry.last_access = std::chrono::steady_clock::now();
 
+        TextureInfo info{};
+#ifdef LFS_HAS_NVCODEC
         if (!nvcodec_loader_ && is_jpeg) {
             try {
                 constexpr lfs::io::NvCodecImageLoader::Options OPTS{.device_id = 0, .decoder_pool_size = 2};
@@ -99,10 +101,10 @@ namespace lfs::vis {
             }
         }
 
-        TextureInfo info{};
         if (nvcodec_loader_ && is_jpeg) {
             info = loadTextureGPU(image_path, entry);
         }
+#endif
 
         if (info.texture_id == 0) {
             info = loadTexture(image_path);
@@ -204,6 +206,7 @@ namespace lfs::vis {
     }
 
     GTTextureCache::TextureInfo GTTextureCache::loadTextureGPU(const std::filesystem::path& path, CacheEntry& entry) {
+#ifdef LFS_HAS_NVCODEC
         if (!nvcodec_loader_)
             return {};
 
@@ -245,6 +248,11 @@ namespace lfs::vis {
             entry.interop_texture.reset();
             return {};
         }
+#else
+        (void)path;
+        (void)entry;
+        return {};
+#endif
     }
 
     // RenderingManager Implementation
@@ -1086,7 +1094,7 @@ namespace lfs::vis {
                 if (scaled_x >= 0 && scaled_x < depth_width && scaled_y >= 0 && scaled_y < depth_height) {
                     float d;
                     const float* gpu_ptr = depth_ptr->ptr<float>() + scaled_y * depth_width + scaled_x;
-                    CHECK_CUDA(cudaMemcpy(&d, gpu_ptr, sizeof(float), cudaMemcpyDeviceToHost));
+                    CHECK_CUDA(musaMemcpy(&d, gpu_ptr, sizeof(float), musaMemcpyDeviceToHost));
                     if (d < 1e9f) {
                         splat_depth = d;
                     }
@@ -1332,6 +1340,7 @@ namespace lfs::vis {
         if (num_gaussians == 0)
             return;
 
+#ifdef CUDA_GL_INTEROP_ENABLED
         lfs::launchAdjustSaturation(
             sh0_tensor.ptr<float>(),
             screen_pos->ptr<float>(),
@@ -1341,6 +1350,9 @@ namespace lfs::vis {
             nullptr);
 
         markDirty(DirtyFlag::SPLATS);
+#else
+        LOG_WARN("adjustSaturation not available without CUDA-GL interop");
+#endif
     }
 
 } // namespace lfs::vis

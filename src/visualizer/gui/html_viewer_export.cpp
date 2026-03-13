@@ -7,7 +7,7 @@
 
 namespace lfs::vis::gui {
 
-    std::expected<void, std::string> export_html_viewer(
+    lfs_compat::expected<void, std::string> export_html_viewer(
         const lfs::core::SplatData& splat_data,
         const HtmlViewerExportOptions& options) {
 
@@ -18,7 +18,7 @@ namespace lfs::vis::gui {
 
         auto result = lfs::io::export_html(splat_data, io_options);
         if (!result) {
-            return std::unexpected(result.error().format());
+            return lfs_compat::unexpected(result.error().format());
         }
         return {};
     }

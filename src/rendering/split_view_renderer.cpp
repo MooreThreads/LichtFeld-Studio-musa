@@ -20,14 +20,14 @@ namespace lfs::rendering {
         auto shader_result = load_shader("split_view", "split_view.vert", "split_view.frag", false);
         if (!shader_result) {
             LOG_ERROR("Failed to load split view shader: {}", shader_result.error().what());
-            return std::unexpected("Failed to load split view shader");
+            return lfs_compat::unexpected("Failed to load split view shader");
         }
         split_shader_ = std::move(*shader_result);
 
         auto panel_result = load_shader("split_panel", "screen_quad.vert", "split_panel.frag", false);
         if (!panel_result) {
             LOG_ERROR("Failed to load split panel shader: {}", panel_result.error().what());
-            return std::unexpected("Failed to load split panel shader");
+            return lfs_compat::unexpected("Failed to load split panel shader");
         }
         panel_shader_ = std::move(*panel_result);
 
@@ -50,12 +50,12 @@ namespace lfs::rendering {
     Result<void> SplitViewRenderer::setupQuad() {
         auto vao_result = create_vao();
         if (!vao_result) {
-            return std::unexpected("Failed to create VAO");
+            return lfs_compat::unexpected("Failed to create VAO");
         }
 
         auto vbo_result = create_vbo();
         if (!vbo_result) {
-            return std::unexpected("Failed to create VBO");
+            return lfs_compat::unexpected("Failed to create VBO");
         }
         quad_vbo_ = std::move(*vbo_result);
 
@@ -146,7 +146,7 @@ namespace lfs::rendering {
             if (!panel.model) {
                 LOG_ERROR("Model3D panel has no model");
                 framebuffer->unbind();
-                return std::unexpected("Model3D panel has no model");
+                return lfs_compat::unexpected("Model3D panel has no model");
             }
 
             RenderingPipeline::RenderRequest base_req{
@@ -180,7 +180,7 @@ namespace lfs::rendering {
             if (!render_result) {
                 LOG_ERROR("Failed to render model: {}", render_result.error());
                 framebuffer->unbind();
-                return std::unexpected(render_result.error());
+                return lfs_compat::unexpected(render_result.error());
             }
 
             if (auto upload_result = RenderingPipeline::uploadToScreen(*render_result, screen_renderer, render_size);
@@ -209,13 +209,13 @@ namespace lfs::rendering {
             if (panel.texture_id == 0) {
                 LOG_ERROR("Panel has invalid texture ID");
                 framebuffer->unbind();
-                return std::unexpected("Panel has invalid texture ID");
+                return lfs_compat::unexpected("Panel has invalid texture ID");
             }
 
             if (auto result = blitTextureToFramebuffer(panel.texture_id); !result) {
                 LOG_ERROR("Failed to blit texture: {}", result.error());
                 framebuffer->unbind();
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
             break;
         }
@@ -223,7 +223,7 @@ namespace lfs::rendering {
         default:
             LOG_ERROR("Unknown panel content type: {}", static_cast<int>(panel.content_type));
             framebuffer->unbind();
-            return std::unexpected("Unknown panel content type");
+            return lfs_compat::unexpected("Unknown panel content type");
         }
 
         framebuffer->unbind();
@@ -240,12 +240,12 @@ namespace lfs::rendering {
 
         if (!initialized_) {
             if (auto result = initialize(); !result) {
-                return std::unexpected("Failed to initialize split view renderer");
+                return lfs_compat::unexpected("Failed to initialize split view renderer");
             }
         }
 
         if (request.panels.size() != 2) {
-            return std::unexpected("Split view requires exactly 2 panels");
+            return lfs_compat::unexpected("Split view requires exactly 2 panels");
         }
 
         const int fb_width = request.viewport.size.x;
@@ -253,7 +253,7 @@ namespace lfs::rendering {
 
         if (auto result = createFramebuffers(fb_width, fb_height); !result) {
             LOG_ERROR("Failed to create framebuffers: {}", result.error());
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         GLint current_viewport[4];
@@ -281,19 +281,19 @@ namespace lfs::rendering {
                     *target_texture = panel.texture_id;
                     if (*target_texture == 0) {
                         LOG_ERROR("Panel {} has invalid texture ID", i);
-                        return std::unexpected("Invalid texture ID");
+                        return lfs_compat::unexpected("Invalid texture ID");
                     }
                 } else if (panel.content_type == PanelContentType::Model3D) {
                     auto* framebuffer = (i == 0) ? left_framebuffer_.get() : right_framebuffer_.get();
                     if (!framebuffer) {
                         LOG_ERROR("Framebuffer for panel {} is null", i);
-                        return std::unexpected("Framebuffer not initialized");
+                        return lfs_compat::unexpected("Framebuffer not initialized");
                     }
 
                     auto result = renderPanelContent(framebuffer, panel, request,
                                                      pipeline, screen_renderer, quad_shader);
                     if (!result) {
-                        return std::unexpected(result.error());
+                        return lfs_compat::unexpected(result.error());
                     }
                     *target_texture = framebuffer->getFrameTexture();
 
@@ -309,13 +309,13 @@ namespace lfs::rendering {
         } else {
             if (!left_framebuffer_ || !right_framebuffer_) {
                 LOG_ERROR("Framebuffers not initialized");
-                return std::unexpected("Framebuffers not initialized");
+                return lfs_compat::unexpected("Framebuffers not initialized");
             }
 
             auto left_panel_result = renderPanelContent(left_framebuffer_.get(), request.panels[0],
                                                         request, pipeline, screen_renderer, quad_shader);
             if (!left_panel_result) {
-                return std::unexpected(left_panel_result.error());
+                return lfs_compat::unexpected(left_panel_result.error());
             }
             left_texture = left_framebuffer_->getFrameTexture();
             if (left_panel_result->has_value()) {
@@ -325,7 +325,7 @@ namespace lfs::rendering {
             auto right_panel_result = renderPanelContent(right_framebuffer_.get(), request.panels[1],
                                                          request, pipeline, screen_renderer, quad_shader);
             if (!right_panel_result) {
-                return std::unexpected(right_panel_result.error());
+                return lfs_compat::unexpected(right_panel_result.error());
             }
             right_texture = right_framebuffer_->getFrameTexture();
             if (right_panel_result->has_value()) {
@@ -377,7 +377,7 @@ namespace lfs::rendering {
             !result) {
             LOG_ERROR("Failed to composite split view: {}", result.error());
             glBindFramebuffer(GL_FRAMEBUFFER, current_fbo);
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, current_fbo);

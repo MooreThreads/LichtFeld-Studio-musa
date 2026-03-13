@@ -10,8 +10,8 @@
 #include "core/logger.hpp"
 #include "core/path_utils.hpp"
 #include "core/splat_data.hpp"
-#include "io/cuda/image_format_kernels.cuh"
-#include "lfs/kernels/ssim.cuh"
+#include "io/cuda/image_format_kernels.muh"
+#include "lfs/kernels/ssim.muh"
 #include <algorithm>
 #include <cassert>
 #include <chrono>

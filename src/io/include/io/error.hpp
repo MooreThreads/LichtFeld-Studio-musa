@@ -142,15 +142,15 @@ namespace lfs::io {
     };
 
     template <typename T>
-    using Result = std::expected<T, Error>;
+    using Result = lfs_compat::expected<T, Error>;
 
-    inline std::unexpected<Error> make_error(ErrorCode code, std::string message) {
-        return std::unexpected(Error{code, std::move(message)});
+    inline lfs_compat::unexpected<Error> make_error(ErrorCode code, std::string message) {
+        return lfs_compat::unexpected(Error{code, std::move(message)});
     }
 
-    inline std::unexpected<Error> make_error(ErrorCode code, std::string message,
+    inline lfs_compat::unexpected<Error> make_error(ErrorCode code, std::string message,
                                              const std::filesystem::path& path) {
-        return std::unexpected(Error{code, std::move(message), path});
+        return lfs_compat::unexpected(Error{code, std::move(message), path});
     }
 
     /// Check disk space with safety margin (default 10%)
@@ -192,7 +192,7 @@ namespace lfs::io {
 
         if (space_info.available < required_with_margin) {
             constexpr double MB = 1024.0 * 1024.0;
-            return std::unexpected(Error{
+            return lfs_compat::unexpected(Error{
                 ErrorCode::INSUFFICIENT_DISK_SPACE,
                 std::format("Need {:.1f} MB but only {:.1f} MB available",
                             static_cast<double>(required_with_margin) / MB,

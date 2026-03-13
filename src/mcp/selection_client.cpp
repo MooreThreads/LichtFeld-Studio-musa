@@ -27,15 +27,15 @@ namespace lfs::mcp {
 
     namespace {
 
-        std::expected<void, std::string> parse_response(const std::string& response) {
+        lfs_compat::expected<void, std::string> parse_response(const std::string& response) {
             try {
                 const auto j = json::parse(response);
                 if (!j.value("success", false)) {
-                    return std::unexpected(j.value("error", "Unknown error"));
+                    return lfs_compat::unexpected(j.value("error", "Unknown error"));
                 }
                 return {};
             } catch (const std::exception& e) {
-                return std::unexpected(std::string("Invalid response: ") + e.what());
+                return lfs_compat::unexpected(std::string("Invalid response: ") + e.what());
             }
         }
 
@@ -70,22 +70,22 @@ namespace lfs::mcp {
         return true;
     }
 
-    std::expected<std::string, std::string> SelectionClient::send_command(const std::string& json_command) {
+    lfs_compat::expected<std::string, std::string> SelectionClient::send_command(const std::string& json_command) {
         const std::string pipe_name = socket_path_to_pipe_name(socket_path_);
 
         if (!WaitNamedPipeA(pipe_name.c_str(), SOCKET_TIMEOUT_SEC * 1000)) {
-            return std::unexpected("GUI not running (timeout waiting for pipe)");
+            return lfs_compat::unexpected("GUI not running (timeout waiting for pipe)");
         }
 
         HANDLE pipe = CreateFileA(pipe_name.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
         if (pipe == INVALID_HANDLE_VALUE)
-            return std::unexpected("GUI not running");
+            return lfs_compat::unexpected("GUI not running");
 
         OVERLAPPED overlapped = {};
         overlapped.hEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
         if (!overlapped.hEvent) {
             CloseHandle(pipe);
-            return std::unexpected("Failed to create event");
+            return lfs_compat::unexpected("Failed to create event");
         }
 
         DWORD bytes_written = 0;
@@ -95,13 +95,13 @@ namespace lfs::mcp {
                     CancelIo(pipe);
                     CloseHandle(overlapped.hEvent);
                     CloseHandle(pipe);
-                    return std::unexpected("Write timeout");
+                    return lfs_compat::unexpected("Write timeout");
                 }
                 GetOverlappedResult(pipe, &overlapped, &bytes_written, FALSE);
             } else {
                 CloseHandle(overlapped.hEvent);
                 CloseHandle(pipe);
-                return std::unexpected("Failed to send command");
+                return lfs_compat::unexpected("Failed to send command");
             }
         }
 
@@ -115,13 +115,13 @@ namespace lfs::mcp {
                     CancelIo(pipe);
                     CloseHandle(overlapped.hEvent);
                     CloseHandle(pipe);
-                    return std::unexpected("Read timeout");
+                    return lfs_compat::unexpected("Read timeout");
                 }
                 GetOverlappedResult(pipe, &overlapped, &bytes_read, FALSE);
             } else {
                 CloseHandle(overlapped.hEvent);
                 CloseHandle(pipe);
-                return std::unexpected("No response from GUI");
+                return lfs_compat::unexpected("No response from GUI");
             }
         }
 
@@ -129,7 +129,7 @@ namespace lfs::mcp {
         CloseHandle(pipe);
 
         if (bytes_read == 0)
-            return std::unexpected("No response from GUI");
+            return lfs_compat::unexpected("No response from GUI");
 
         buffer[bytes_read] = '\0';
         return std::string(buffer);
@@ -151,10 +151,10 @@ namespace lfs::mcp {
         return connected;
     }
 
-    std::expected<std::string, std::string> SelectionClient::send_command(const std::string& json_command) {
+    lfs_compat::expected<std::string, std::string> SelectionClient::send_command(const std::string& json_command) {
         const int fd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (fd < 0)
-            return std::unexpected("Failed to create socket");
+            return lfs_compat::unexpected("Failed to create socket");
 
         sockaddr_un addr{};
         addr.sun_family = AF_UNIX;
@@ -162,7 +162,7 @@ namespace lfs::mcp {
 
         if (connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
             close(fd);
-            return std::unexpected("GUI not running");
+            return lfs_compat::unexpected("GUI not running");
         }
 
         struct timeval tv;
@@ -173,7 +173,7 @@ namespace lfs::mcp {
 
         if (write(fd, json_command.c_str(), json_command.size()) < 0) {
             close(fd);
-            return std::unexpected("Failed to send command");
+            return lfs_compat::unexpected("Failed to send command");
         }
 
         char buffer[RECV_BUFFER_SIZE];
@@ -181,7 +181,7 @@ namespace lfs::mcp {
         close(fd);
 
         if (bytes_read <= 0)
-            return std::unexpected("No response from GUI (timeout or error)");
+            return lfs_compat::unexpected("No response from GUI (timeout or error)");
 
         buffer[bytes_read] = '\0';
         return std::string(buffer);
@@ -189,88 +189,88 @@ namespace lfs::mcp {
 
 #endif
 
-    std::expected<void, std::string> SelectionClient::select_rect(float x0, float y0, float x1, float y1,
+    lfs_compat::expected<void, std::string> SelectionClient::select_rect(float x0, float y0, float x1, float y1,
                                                                   const std::string& mode, int camera_index) {
         const json command = {{"command", "select_rect"}, {"x0", x0}, {"y0", y0}, {"x1", x1}, {"y1", y1}, {"mode", mode}, {"camera_index", camera_index}};
 
         const auto result = send_command(command.dump());
         if (!result)
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
 
         return parse_response(*result);
     }
 
-    std::expected<void, std::string> SelectionClient::select_polygon(const std::vector<float>& points,
+    lfs_compat::expected<void, std::string> SelectionClient::select_polygon(const std::vector<float>& points,
                                                                      const std::string& mode, int camera_index) {
         const json command = {{"command", "select_polygon"}, {"points", points}, {"mode", mode}, {"camera_index", camera_index}};
 
         const auto result = send_command(command.dump());
         if (!result)
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
 
         return parse_response(*result);
     }
 
-    std::expected<void, std::string> SelectionClient::select_lasso(const std::vector<float>& points,
+    lfs_compat::expected<void, std::string> SelectionClient::select_lasso(const std::vector<float>& points,
                                                                    const std::string& mode, int camera_index) {
         const json command = {{"command", "select_lasso"}, {"points", points}, {"mode", mode}, {"camera_index", camera_index}};
 
         const auto result = send_command(command.dump());
         if (!result)
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
 
         return parse_response(*result);
     }
 
-    std::expected<void, std::string> SelectionClient::select_ring(const float x, const float y,
+    lfs_compat::expected<void, std::string> SelectionClient::select_ring(const float x, const float y,
                                                                   const std::string& mode, const int camera_index) {
         const json command = {{"command", "select_ring"}, {"x", x}, {"y", y}, {"mode", mode}, {"camera_index", camera_index}};
 
         const auto result = send_command(command.dump());
         if (!result)
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
 
         return parse_response(*result);
     }
 
-    std::expected<void, std::string> SelectionClient::select_brush(float x, float y, float radius,
+    lfs_compat::expected<void, std::string> SelectionClient::select_brush(float x, float y, float radius,
                                                                    const std::string& mode, int camera_index) {
         const json command = {{"command", "select_brush"}, {"x", x}, {"y", y}, {"radius", radius}, {"mode", mode}, {"camera_index", camera_index}};
 
         const auto result = send_command(command.dump());
         if (!result)
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
 
         return parse_response(*result);
     }
 
-    std::expected<void, std::string> SelectionClient::apply_mask(const std::vector<uint8_t>& mask) {
+    lfs_compat::expected<void, std::string> SelectionClient::apply_mask(const std::vector<uint8_t>& mask) {
         const json command = {{"command", "apply_mask"}, {"mask", mask}};
 
         const auto result = send_command(command.dump());
         if (!result)
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
 
         return parse_response(*result);
     }
 
-    std::expected<void, std::string> SelectionClient::deselect_all() {
+    lfs_compat::expected<void, std::string> SelectionClient::deselect_all() {
         const json command = {{"command", "deselect_all"}};
 
         const auto result = send_command(command.dump());
         if (!result)
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
 
         return parse_response(*result);
     }
 
-    std::expected<CapabilityCallResult, std::string> SelectionClient::invoke_capability(const std::string& name,
+    lfs_compat::expected<CapabilityCallResult, std::string> SelectionClient::invoke_capability(const std::string& name,
                                                                                         const std::string& args_json) {
         const json command = {{"command", "invoke_capability"}, {"capability", name}, {"args", args_json}};
 
         const auto result = send_command(command.dump());
         if (!result)
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
 
         try {
             const auto j = json::parse(*result);
@@ -280,7 +280,7 @@ namespace lfs::mcp {
             cap_result.error = j.value("error", "");
             return cap_result;
         } catch (const std::exception& e) {
-            return std::unexpected(std::string("Invalid response: ") + e.what());
+            return lfs_compat::unexpected(std::string("Invalid response: ") + e.what());
         }
     }
 

@@ -23,17 +23,17 @@ namespace lfs::training {
 
     void StrategyFactory::register_builtins() {
         registry_["adc"] = [](core::SplatData& model)
-            -> std::expected<std::unique_ptr<IStrategy>, std::string> {
+            -> lfs_compat::expected<std::unique_ptr<IStrategy>, std::string> {
             return std::make_unique<ADC>(model);
         };
 
         registry_["mcmc"] = [](core::SplatData& model)
-            -> std::expected<std::unique_ptr<IStrategy>, std::string> {
+            -> lfs_compat::expected<std::unique_ptr<IStrategy>, std::string> {
             return std::make_unique<MCMC>(model);
         };
 
         registry_["igs+"] = [](core::SplatData& model)
-            -> std::expected<std::unique_ptr<IStrategy>, std::string> {
+            -> lfs_compat::expected<std::unique_ptr<IStrategy>, std::string> {
             return std::make_unique<ImprovedGSPlus>(model);
         };
     }
@@ -54,7 +54,7 @@ namespace lfs::training {
         return registry_.erase(name) > 0;
     }
 
-    std::expected<std::unique_ptr<IStrategy>, std::string>
+    lfs_compat::expected<std::unique_ptr<IStrategy>, std::string>
     StrategyFactory::create(const std::string& name, core::SplatData& model) const {
         std::shared_lock lock(mutex_);
         const auto it = registry_.find(name);
@@ -66,7 +66,7 @@ namespace lfs::training {
                 }
                 available += n;
             }
-            return std::unexpected(
+            return lfs_compat::unexpected(
                 std::format("Unknown strategy: '{}'. Available: {}", name, available));
         }
         return it->second(model);

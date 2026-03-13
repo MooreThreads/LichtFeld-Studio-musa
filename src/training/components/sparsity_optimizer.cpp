@@ -3,7 +3,7 @@
 
 #include "sparsity_optimizer.hpp"
 #include "core/logger.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <format>
 
 namespace lfs::training {
@@ -23,10 +23,10 @@ namespace lfs::training {
         : config_(config) {
     }
 
-    std::expected<void, std::string> ADMMSparsityOptimizer::initialize(const lfs::core::Tensor& opacities) {
+    lfs_compat::expected<void, std::string> ADMMSparsityOptimizer::initialize(const lfs::core::Tensor& opacities) {
         try {
             if (opacities.numel() == 0) {
-                return std::unexpected("Invalid opacity tensor for initialization");
+                return lfs_compat::unexpected("Invalid opacity tensor for initialization");
             }
 
             // Initialize ADMM variables
@@ -46,11 +46,11 @@ namespace lfs::training {
             return {};
         } catch (const std::exception& e) {
             LOG_ERROR("Failed to initialize ADMM sparsity optimizer: {}", e.what());
-            return std::unexpected(std::format("Failed to initialize ADMM optimizer: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to initialize ADMM optimizer: {}", e.what()));
         }
     }
 
-    std::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string>
+    lfs_compat::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string>
     ADMMSparsityOptimizer::compute_loss_forward(const lfs::core::Tensor& opacities) {
         try {
             if (!initialized_) {
@@ -60,7 +60,7 @@ namespace lfs::training {
             }
 
             if (opacities.numel() == 0) {
-                return std::unexpected("Invalid opacity tensor for loss computation");
+                return lfs_compat::unexpected("Invalid opacity tensor for loss computation");
             }
 
             // Compute ADMM sparsity loss (manual - no autograd)
@@ -91,11 +91,11 @@ namespace lfs::training {
             return std::make_pair(std::move(loss_tensor), ctx);
         } catch (const std::exception& e) {
             LOG_ERROR("Failed to compute ADMM sparsity loss (manual forward): {}", e.what());
-            return std::unexpected(std::format("Failed to compute sparsity loss: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to compute sparsity loss: {}", e.what()));
         }
     }
 
-    std::expected<void, std::string>
+    lfs_compat::expected<void, std::string>
     ADMMSparsityOptimizer::compute_loss_backward(const SparsityLossContext& ctx,
                                                  float grad_loss,
                                                  lfs::core::Tensor& grad_opacities) {
@@ -122,26 +122,26 @@ namespace lfs::training {
             );
 
             // Check for kernel errors
-            cudaError_t err = cudaGetLastError();
-            if (err != cudaSuccess) {
-                return std::unexpected(std::format("CUDA kernel error: {}", cudaGetErrorString(err)));
+            musaError_t err = musaGetLastError();
+            if (err != musaSuccess) {
+                return lfs_compat::unexpected(std::format("CUDA kernel error: {}", musaGetErrorString(err)));
             }
 
             return {};
         } catch (const std::exception& e) {
             LOG_ERROR("Failed to compute ADMM sparsity loss backward: {}", e.what());
-            return std::unexpected(std::format("Failed to compute sparsity loss backward: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to compute sparsity loss backward: {}", e.what()));
         }
     }
 
-    std::expected<void, std::string> ADMMSparsityOptimizer::update_state(const lfs::core::Tensor& opacities) {
+    lfs_compat::expected<void, std::string> ADMMSparsityOptimizer::update_state(const lfs::core::Tensor& opacities) {
         try {
             if (!initialized_) {
                 return initialize(opacities);
             }
 
             if (opacities.numel() == 0) {
-                return std::unexpected("Invalid opacity tensor for state update");
+                return lfs_compat::unexpected("Invalid opacity tensor for state update");
             }
 
             // ADMM update step
@@ -161,15 +161,15 @@ namespace lfs::training {
             return {};
         } catch (const std::exception& e) {
             LOG_ERROR("Failed to update ADMM state: {}", e.what());
-            return std::unexpected(std::format("Failed to update ADMM state: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to update ADMM state: {}", e.what()));
         }
     }
 
-    std::expected<lfs::core::Tensor, std::string>
+    lfs_compat::expected<lfs::core::Tensor, std::string>
     ADMMSparsityOptimizer::get_prune_mask(const lfs::core::Tensor& opacities) {
         try {
             if (opacities.numel() == 0) {
-                return std::unexpected("Invalid opacity tensor for pruning");
+                return lfs_compat::unexpected("Invalid opacity tensor for pruning");
             }
 
             // opa = sigmoid(opacities.flatten())
@@ -197,7 +197,7 @@ namespace lfs::training {
             return mask;
         } catch (const std::exception& e) {
             LOG_ERROR("Failed to generate prune mask: {}", e.what());
-            return std::unexpected(std::format("Failed to generate prune mask: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to generate prune mask: {}", e.what()));
         }
     }
 

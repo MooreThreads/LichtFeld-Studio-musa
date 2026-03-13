@@ -68,27 +68,27 @@ namespace lfs::rendering {
         auto pbr_result = load_shader("mesh_pbr", "mesh_pbr.vert", "mesh_pbr.frag", false);
         if (!pbr_result) {
             LOG_ERROR("Failed to load PBR shader: {}", pbr_result.error().what());
-            return std::unexpected(pbr_result.error().what());
+            return lfs_compat::unexpected(pbr_result.error().what());
         }
         pbr_shader_ = std::move(*pbr_result);
 
         auto wire_result = load_shader("mesh_wireframe", "mesh_wireframe.vert", "mesh_wireframe.frag", false);
         if (!wire_result) {
             LOG_ERROR("Failed to load wireframe shader: {}", wire_result.error().what());
-            return std::unexpected(wire_result.error().what());
+            return lfs_compat::unexpected(wire_result.error().what());
         }
         wireframe_shader_ = std::move(*wire_result);
 
         auto shadow_result = load_shader("shadow_depth", "shadow_depth.vert", "shadow_depth.frag", false);
         if (!shadow_result) {
             LOG_ERROR("Failed to load shadow shader: {}", shadow_result.error().what());
-            return std::unexpected(shadow_result.error().what());
+            return lfs_compat::unexpected(shadow_result.error().what());
         }
         shadow_shader_ = std::move(*shadow_result);
 
         auto vao_result = create_vao();
         if (!vao_result)
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         vao_ = std::move(*vao_result);
 
         auto pos_result = create_vbo();
@@ -98,7 +98,7 @@ namespace lfs::rendering {
         auto col_result = create_vbo();
         auto ebo_result = create_vbo();
         if (!pos_result || !norm_result || !tang_result || !tc_result || !col_result || !ebo_result)
-            return std::unexpected("Failed to create VBOs");
+            return lfs_compat::unexpected("Failed to create VBOs");
 
         vbo_positions_ = std::move(*pos_result);
         vbo_normals_ = std::move(*norm_result);
@@ -173,7 +173,7 @@ namespace lfs::rendering {
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            return std::unexpected("Mesh FBO incomplete");
+            return lfs_compat::unexpected("Mesh FBO incomplete");
         }
 
         fbo_width_ = width;
@@ -211,7 +211,7 @@ namespace lfs::rendering {
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            return std::unexpected("Shadow FBO incomplete");
+            return lfs_compat::unexpected("Shadow FBO incomplete");
         }
 
         shadow_map_resolution_ = resolution;
@@ -380,7 +380,7 @@ namespace lfs::rendering {
                                       bool use_fbo,
                                       bool clear_fbo) {
         if (!initialized_)
-            return std::unexpected("MeshRenderer not initialized");
+            return lfs_compat::unexpected("MeshRenderer not initialized");
 
         if (mesh.vertex_count() == 0 || mesh.face_count() == 0)
             return {};

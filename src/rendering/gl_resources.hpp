@@ -8,7 +8,7 @@
 #include <expected>
 #include <filesystem>
 #include <glad/glad.h>
-#include <source_location>
+#include "core/source_location_compat.hpp"
 #include <span>
 #include <utility>
 
@@ -16,7 +16,7 @@ namespace lfs::rendering {
 
     // Consistent error handling
     template <typename T>
-    using Result = std::expected<T, std::string>;
+    using Result = lfs_compat::expected<T, std::string>;
 
     // RAII wrappers for OpenGL resources
     template <typename Deleter>
@@ -102,7 +102,7 @@ namespace lfs::rendering {
         glGenVertexArrays(1, &id);
         if (glGetError() != GL_NO_ERROR || id == 0) {
             LOG_ERROR("Failed to create VAO");
-            return std::unexpected("Failed to create VAO");
+            return lfs_compat::unexpected("Failed to create VAO");
         }
         LOG_TRACE("Created VAO: {}", id);
         return VAO(id);
@@ -113,7 +113,7 @@ namespace lfs::rendering {
         glGenBuffers(1, &id);
         if (glGetError() != GL_NO_ERROR || id == 0) {
             LOG_ERROR("Failed to create VBO");
-            return std::unexpected("Failed to create VBO");
+            return lfs_compat::unexpected("Failed to create VBO");
         }
         LOG_TRACE("Created VBO: {}", id);
         return VBO(id);

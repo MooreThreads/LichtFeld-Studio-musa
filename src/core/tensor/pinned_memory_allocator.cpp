@@ -5,30 +5,30 @@
 #include "core/logger.hpp"
 #include <chrono>
 #include <cmath>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 #define CHECK_CUDA(call)                              \
     do {                                              \
-        cudaError_t error = call;                     \
-        if (error != cudaSuccess) {                   \
+        musaError_t error = call;                     \
+        if (error != musaSuccess) {                   \
             LOG_ERROR("CUDA error at {}:{} - {}: {}", \
                       __FILE__, __LINE__,             \
-                      cudaGetErrorName(error),        \
-                      cudaGetErrorString(error));     \
+                      musaGetErrorName(error),        \
+                      musaGetErrorString(error));     \
         }                                             \
     } while (0)
 
 namespace lfs::core {
 
     // Block implementation
-    PinnedMemoryAllocator::Block::Block(void* p, size_t s, cudaStream_t stream)
+    PinnedMemoryAllocator::Block::Block(void* p, size_t s, musaStream_t stream)
         : ptr(p),
           size(s),
           last_stream(stream) {
         if (ptr) {
-            cudaError_t err = cudaEventCreate(&ready_event);
-            if (err != cudaSuccess) {
-                LOG_ERROR("cudaEventCreate failed: {}", cudaGetErrorString(err));
+            musaError_t err = musaEventCreate(&ready_event);
+            if (err != musaSuccess) {
+                LOG_ERROR("musaEventCreate failed: {}", musaGetErrorString(err));
                 ready_event = nullptr;
             }
         }
@@ -36,9 +36,9 @@ namespace lfs::core {
 
     PinnedMemoryAllocator::Block::~Block() {
         if (ready_event) {
-            cudaError_t err = cudaEventDestroy(ready_event);
-            if (err != cudaSuccess) {
-                LOG_ERROR("cudaEventDestroy failed: {}", cudaGetErrorString(err));
+            musaError_t err = musaEventDestroy(ready_event);
+            if (err != musaSuccess) {
+                LOG_ERROR("musaEventDestroy failed: {}", musaGetErrorString(err));
             }
         }
     }
@@ -58,7 +58,7 @@ namespace lfs::core {
         if (this != &other) {
             // Clean up existing event
             if (ready_event) {
-                cudaEventDestroy(ready_event);
+                musaEventDestroy(ready_event);
             }
 
             // Move data
@@ -136,12 +136,12 @@ namespace lfs::core {
                 Block& block = it->second[i];
 
                 // Check if stream has completed (non-blocking query)
-                cudaError_t status = cudaSuccess;
+                musaError_t status = musaSuccess;
                 if (block.ready_event) {
-                    status = cudaEventQuery(block.ready_event);
+                    status = musaEventQuery(block.ready_event);
                 }
 
-                if (status == cudaSuccess) {
+                if (status == musaSuccess) {
                     // Stream completed! Safe to reuse this block
                     void* ptr = block.ptr;
                     size_t size = block.size;
@@ -159,11 +159,11 @@ namespace lfs::core {
                               bytes, stats_.allocated_bytes / (1024.0 * 1024.0));
 
                     return ptr;
-                } else if (status != cudaErrorNotReady) {
+                } else if (status != musaErrorNotReady) {
                     // Unexpected error - log and skip this block
-                    LOG_ERROR("cudaEventQuery failed: {}", cudaGetErrorString(status));
+                    LOG_ERROR("musaEventQuery failed: {}", musaGetErrorString(status));
                 }
-                // If cudaErrorNotReady, stream still running - try next block
+                // If musaErrorNotReady, stream still running - try next block
             }
 
             // No ready blocks found - fall through to allocate new
@@ -172,11 +172,11 @@ namespace lfs::core {
 
         // Cache miss - need to allocate new pinned memory
         void* ptr = nullptr;
-        cudaError_t err = cudaHostAlloc(&ptr, rounded_size, cudaHostAllocDefault);
+        musaError_t err = musaHostAlloc(&ptr, rounded_size, musaHostAllocDefault);
 
-        if (err != cudaSuccess) {
-            LOG_ERROR("cudaHostAlloc failed for {} bytes: {}",
-                      rounded_size, cudaGetErrorString(err));
+        if (err != musaSuccess) {
+            LOG_ERROR("musaHostAlloc failed for {} bytes: {}",
+                      rounded_size, musaGetErrorString(err));
             // Fall back to regular malloc as last resort
             ptr = std::malloc(rounded_size);
             if (!ptr) {
@@ -197,7 +197,7 @@ namespace lfs::core {
         return ptr;
     }
 
-    void PinnedMemoryAllocator::deallocate(void* ptr, cudaStream_t stream) {
+    void PinnedMemoryAllocator::deallocate(void* ptr, musaStream_t stream) {
         if (!ptr) {
             return;
         }
@@ -232,10 +232,10 @@ namespace lfs::core {
 
         // Record event on the stream to track when memory is safe to reuse
         if (block.ready_event) {
-            cudaError_t err = cudaEventRecord(block.ready_event, stream);
-            if (err != cudaSuccess) {
-                LOG_ERROR("cudaEventRecord failed: {} - memory may not be stream-safe!",
-                          cudaGetErrorString(err));
+            musaError_t err = musaEventRecord(block.ready_event, stream);
+            if (err != musaSuccess) {
+                LOG_ERROR("musaEventRecord failed: {} - memory may not be stream-safe!",
+                          musaGetErrorString(err));
             }
         }
 
@@ -257,14 +257,14 @@ namespace lfs::core {
             for (auto& block : blocks) {
                 // Wait for stream to complete before freeing
                 if (block.ready_event) {
-                    cudaError_t status = cudaEventSynchronize(block.ready_event);
-                    if (status != cudaSuccess) {
-                        LOG_ERROR("cudaEventSynchronize failed during cache clear: {}",
-                                  cudaGetErrorString(status));
+                    musaError_t status = musaEventSynchronize(block.ready_event);
+                    if (status != musaSuccess) {
+                        LOG_ERROR("musaEventSynchronize failed during cache clear: {}",
+                                  musaGetErrorString(status));
                     }
                 }
 
-                CHECK_CUDA(cudaFreeHost(block.ptr));
+                CHECK_CUDA(musaFreeHost(block.ptr));
                 freed_bytes += block.size;
                 freed_blocks++;
             }

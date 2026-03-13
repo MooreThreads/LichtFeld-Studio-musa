@@ -648,7 +648,7 @@ namespace lfs::rendering {
     // Public API
     // ============================================================================
 
-    std::expected<std::unique_ptr<SplatData>, std::string>
+    lfs_compat::expected<std::unique_ptr<SplatData>, std::string>
     mesh_to_splat(const MeshData& mesh,
                   const Mesh2SplatOptions& options,
                   Mesh2SplatProgressCallback progress) {
@@ -661,19 +661,19 @@ namespace lfs::rendering {
 
         // Validate inputs
         if (!mesh.vertices.is_valid() || mesh.vertex_count() == 0)
-            return std::unexpected("Mesh has no vertices");
+            return lfs_compat::unexpected("Mesh has no vertices");
         if (!mesh.indices.is_valid() || mesh.face_count() == 0)
-            return std::unexpected("Mesh has no faces");
+            return lfs_compat::unexpected("Mesh has no faces");
         assert(options.resolution_target > 0);
         assert(options.sigma > 0.0f);
 
         // Phase 1: Extract per-face geometry from indexed mesh
         if (!report(0.0f, "Preparing mesh data"))
-            return std::unexpected("Cancelled");
+            return lfs_compat::unexpected("Cancelled");
 
         auto submesh_geometries = extract_geometry(mesh);
         if (submesh_geometries.empty())
-            return std::unexpected("No geometry extracted");
+            return lfs_compat::unexpected("No geometry extracted");
 
         // Compute global bounding box and total vertex count
         glm::vec3 global_min(std::numeric_limits<float>::max());
@@ -686,7 +686,7 @@ namespace lfs::rendering {
         }
         const float scene_scale = glm::length(global_max - global_min) * 0.5f;
         if (scene_scale <= 0.0f)
-            return std::unexpected("Degenerate mesh: zero bounding box extent");
+            return lfs_compat::unexpected("Degenerate mesh: zero bounding box extent");
 
         const int res = options.resolution_target;
 
@@ -697,14 +697,14 @@ namespace lfs::rendering {
 
         // Phase 3: GL pipeline — save state, compile shaders, run conversion
         if (!report(0.2f, "Compiling shaders"))
-            return std::unexpected("Cancelled");
+            return lfs_compat::unexpected("Cancelled");
 
         GlStateSave state_save;
         GlCleanup cleanup;
 
         cleanup.program = create_conversion_program();
         if (!cleanup.program)
-            return std::unexpected("Failed to compile mesh2splat shaders");
+            return lfs_compat::unexpected("Failed to compile mesh2splat shaders");
 
         // SSBO for gaussian output. Each rasterized fragment writes one GaussianVertex.
         // For sparse meshes (few large triangles), res^2 * 6 is sufficient.
@@ -729,7 +729,7 @@ namespace lfs::rendering {
 
         // Create FBO at full resolution
         if (!create_fbo(res, res, cleanup.fbo, cleanup.rbo)) {
-            return std::unexpected("Failed to create framebuffer");
+            return lfs_compat::unexpected("Failed to create framebuffer");
         }
 
         // Set up GL state for conversion
@@ -745,7 +745,7 @@ namespace lfs::rendering {
 
         // Phase 4: Process each submesh
         if (!report(0.3f, "Converting mesh to splats"))
-            return std::unexpected("Cancelled");
+            return lfs_compat::unexpected("Cancelled");
 
         for (size_t si = 0; si < submesh_geometries.size(); si++) {
             const auto& geo = submesh_geometries[si];
@@ -864,7 +864,7 @@ namespace lfs::rendering {
             const float pct = 0.3f + 0.5f * static_cast<float>(si + 1) /
                                          static_cast<float>(submesh_geometries.size());
             if (!report(pct, "Converting submesh"))
-                return std::unexpected("Cancelled");
+                return lfs_compat::unexpected("Cancelled");
         }
 
         // Phase 5: Read back results
@@ -876,7 +876,7 @@ namespace lfs::rendering {
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 
         if (num_gaussians == 0) {
-            return std::unexpected("Conversion produced zero gaussians");
+            return lfs_compat::unexpected("Conversion produced zero gaussians");
         }
 
         const uint32_t max_gaussians = static_cast<uint32_t>(ssbo_size / sizeof(GaussianVertex));
@@ -889,7 +889,7 @@ namespace lfs::rendering {
         LOG_INFO("mesh2splat: produced {} gaussians (resolution={})", num_gaussians, options.resolution_target);
 
         if (!report(0.85f, "Reading back data"))
-            return std::unexpected("Cancelled");
+            return lfs_compat::unexpected("Cancelled");
 
         std::vector<GaussianVertex> gpu_data(num_gaussians);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, cleanup.ssbo);
@@ -901,7 +901,7 @@ namespace lfs::rendering {
 
         // Phase 6: Convert to SplatData
         if (!report(0.9f, "Building SplatData"))
-            return std::unexpected("Cancelled");
+            return lfs_compat::unexpected("Cancelled");
 
         const float scale_multiplier = options.sigma / static_cast<float>(res);
         LOG_DEBUG("mesh2splat: scale_multiplier={:.6f} (sigma={}, res={})",
@@ -925,7 +925,7 @@ namespace lfs::rendering {
         }
 
         if (!report(1.0f, "Complete"))
-            return std::unexpected("Cancelled");
+            return lfs_compat::unexpected("Cancelled");
 
         return splat;
     }

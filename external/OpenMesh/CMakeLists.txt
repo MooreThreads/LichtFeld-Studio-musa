@@ -9,12 +9,12 @@ enable_testing()
 
 
 project (OpenMesh 
-         VERSION 11.0.0
-         LANGUAGES C CXX ) 
+ VERSION 11.0.0
+ LANGUAGES C CXX ) 
 
 # Set AUTO UIC/MOC Policy to new for CMAKE 3.17 or higher
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.17")
-    cmake_policy(SET CMP0100 NEW)
+ cmake_policy(SET CMP0100 NEW)
 endif()
 
 
@@ -27,13 +27,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 if ( WIN32 )
-  # This is the base directory for windows library search used in the finders we ship.
-  set(CMAKE_WINDOWS_LIBS_DIR "c:/libs" CACHE STRING "Default Library search dir on windows." )
+ # This is the base directory for windows library search used in the finders we ship.
+ set(CMAKE_WINDOWS_LIBS_DIR "c:/libs" CACHE STRING "Default Library search dir on windows." )
 endif()
 
 if (NOT WIN32 AND NOT CMAKE_BUILD_TYPE)
-  message(STATUS "No build type selected, default to Release")
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+ message(STATUS "No build type selected, default to Release")
+ set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
 # add our macro directory to cmake search path
@@ -43,12 +43,12 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_CU
 
 # Define disable debug postfix option
 option(OPENMESH_DISABLE_DEBUG_POSTFIX
-       "Disable the debug postfix (e.g. _d) on targets"
-       OFF)
+ "Disable the debug postfix (e.g. _d) on targets"
+ OFF)
 
 # If not disabled set Debug-Postfix
 if(NOT OPENMESH_DISABLE_DEBUG_POSTFIX)
-    set(CMAKE_DEBUG_POSTFIX "d")
+ set(CMAKE_DEBUG_POSTFIX "d")
 endif()
 
 # include our cmake files
@@ -56,7 +56,7 @@ include (VCICommon)
 
 # Disable package building when built as an external library
 if(${CMAKE_PROJECT_NAME} MATCHES "OpenMesh")
-    include(OpenMeshPackage)
+ include(OpenMeshPackage)
 endif()
 
 include (VCIOutput)
@@ -68,7 +68,7 @@ include(VCIQt)
 
 set(NO_DECREMENT_DEPRECATED_WARNINGS OFF CACHE BOOL "Disables all deprecated warnings warning about decrement operations on normal circulators.")
 if(NO_DECREMENT_DEPRECATED_WARNINGS)
-  add_definitions( -DNO_DECREMENT_DEPRECATED_WARNINGS )
+ add_definitions( -DNO_DECREMENT_DEPRECATED_WARNINGS )
 endif()
 
 # ========================================================================
@@ -76,33 +76,33 @@ endif()
 # ========================================================================
 
 if ( WIN32 )
-  if ( NOT DEFINED OPENMESH_BUILD_SHARED )
-    set( OPENMESH_BUILD_SHARED false CACHE BOOL "Build as shared library(DLL)?" )
-  endif()
+ if ( NOT DEFINED OPENMESH_BUILD_SHARED )
+ set( OPENMESH_BUILD_SHARED false CACHE BOOL "Build as shared library(DLL)?" )
+ endif()
 endif()
 
 # ========================================================================
 # Add bundle targets here
 # ========================================================================
 if ( NOT DEFINED BUILD_APPS )
-  set( BUILD_APPS true CACHE BOOL "Enable or disable building of apps" )
+ set( BUILD_APPS true CACHE BOOL "Enable or disable building of apps" )
 endif()
 
 # Only call fixbundle, when we are building OpenMesh standalone
 if( (${CMAKE_PROJECT_NAME} MATCHES "OpenMesh") AND BUILD_APPS )
 
-  if (WIN32)
-    if ( NOT "${CMAKE_GENERATOR}" MATCHES "MinGW Makefiles" AND BUILD_APPS )
-      add_custom_target (fixbundle ALL
-        COMMAND ${CMAKE_COMMAND} -P "${CMAKE_BINARY_DIR}/fixbundle.win.cmake" )
-    endif()
-  endif()
+ if (WIN32)
+ if ( NOT "${CMAKE_GENERATOR}" MATCHES "MinGW Makefiles" AND BUILD_APPS )
+ add_custom_target (fixbundle ALL
+ COMMAND ${CMAKE_COMMAND} -P "${CMAKE_BINARY_DIR}/fixbundle.win.cmake" )
+ endif()
+ endif()
 
-  if (APPLE)
-    add_custom_target (fixbundle ALL
-      COMMAND ${CMAKE_COMMAND} -P "${CMAKE_BINARY_DIR}/fixbundle.cmake"
-    )
-  endif()
+ if (APPLE)
+ add_custom_target (fixbundle ALL
+ COMMAND ${CMAKE_COMMAND} -P "${CMAKE_BINARY_DIR}/fixbundle.cmake"
+ )
+ endif()
 
 endif() # project OpenMesh
 
@@ -121,13 +121,13 @@ endif()
 
 # Do not build unit tests when build as external library
 if(${CMAKE_PROJECT_NAME} MATCHES "OpenMesh")
-    add_subdirectory (src/Unittests)
+ add_subdirectory (src/Unittests)
 else()
 	# If built as a dependent project simulate effects of
 	# successful finder run:
 	set (OPENMESH_FOUND true PARENT_SCOPE)
 	set (OPENMESH_LIBRARIES OpenMeshCore OpenMeshTools PARENT_SCOPE)
-	set (OPENMESH_INCLUDE_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/src" PARENT_SCOPE)
+	set (OPENMESH_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src" PARENT_SCOPE)
 	set (OPENMESH_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" PARENT_SCOPE)
 
 	# Also define variables provided by the old legacy finder.
@@ -148,36 +148,36 @@ set(OPENMESH_DOCS OFF CACHE BOOL "" FORCE)
 # Only call fixbundle, when we are building OpenMesh standalone
 if(${CMAKE_PROJECT_NAME} MATCHES "OpenMesh")
 
-  if (WIN32 AND  BUILD_APPS)
-    # prepare bundle generation cmake file and add a build target for it
-    configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/cmake/fixbundle.cmake.win.in"
-       "${CMAKE_CURRENT_BINARY_DIR}/fixbundle.win.cmake" @ONLY IMMEDIATE)
+ if (WIN32 AND BUILD_APPS)
+ # prepare bundle generation cmake file and add a build target for it
+ configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/cmake/fixbundle.cmake.win.in"
+ "${CMAKE_CURRENT_BINARY_DIR}/fixbundle.win.cmake" @ONLY IMMEDIATE)
 
-    if ( NOT "${CMAKE_GENERATOR}" MATCHES "MinGW Makefiles" )
-      # let bundle generation depend on all targets
-      add_dependencies (fixbundle QtViewer DecimaterGui)
-    endif()
+ if ( NOT "${CMAKE_GENERATOR}" MATCHES "MinGW Makefiles" )
+ # let bundle generation depend on all targets
+ add_dependencies (fixbundle QtViewer DecimaterGui)
+ endif()
  
-  endif()
+ endif()
  
-  # On apple we do a fixbundle, which is only necessary for the apps and not for the libs
-  if (APPLE AND BUILD_APPS)
-    # prepare bundle generation cmake file and add a build target for it
-    configure_file ("${CMAKE_SOURCE_DIR}/cmake/fixbundle.cmake.in"
-       "${CMAKE_BINARY_DIR}/fixbundle.cmake" @ONLY IMMEDIATE)
+ # On apple we do a fixbundle, which is only necessary for the apps and not for the libs
+ if (APPLE AND BUILD_APPS)
+ # prepare bundle generation cmake file and add a build target for it
+ configure_file ("${CMAKE_SOURCE_DIR}/cmake/fixbundle.cmake.in"
+ "${CMAKE_BINARY_DIR}/fixbundle.cmake" @ONLY IMMEDIATE)
 
-    # let bundle generation depend on all targets
-    if (QT_FOUND)
-        add_dependencies (fixbundle DecimaterGui ProgViewer QtViewer SubdividerGui)
-    endif()
+ # let bundle generation depend on all targets
+ if (QT_FOUND)
+ add_dependencies (fixbundle DecimaterGui ProgViewer QtViewer SubdividerGui)
+ endif()
 
-    # Required for Snow leopard, and the latest qt. Then the resources have to be copied
-    if ( EXISTS "/opt/local/libexec/qt4-mac/lib/QtGui.framework/Versions/4/Resources/qt_menu.nib" )
-        add_custom_command(TARGET OpenMesh POST_BUILD
-           COMMAND ${CMAKE_COMMAND} -E copy_directory "/opt/local/libexec/qt4-mac/lib/QtGui.framework/Versions/4/Resources/qt_menu.nib" 
-                                                      "${CMAKE_BINARY_DIR}/Build/Libraries/qt_menu.nib" )
-    endif ()
-  endif ()
+ # Required for Snow leopard, and the latest qt. Then the resources have to be copied
+ if ( EXISTS "/opt/local/libexec/qt4-mac/lib/QtGui.framework/Versions/4/Resources/qt_menu.nib" )
+ add_custom_command(TARGET OpenMesh POST_BUILD
+ COMMAND ${CMAKE_COMMAND} -E copy_directory "/opt/local/libexec/qt4-mac/lib/QtGui.framework/Versions/4/Resources/qt_menu.nib" 
+ "${CMAKE_BINARY_DIR}/Build/Libraries/qt_menu.nib" )
+ endif ()
+ endif ()
 
 endif()
 

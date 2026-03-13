@@ -40,7 +40,7 @@ namespace lfs::vis {
         // Async hover readback (1-frame latency)
         unsigned long long* h_hovered_depth_id_ = nullptr;
         unsigned long long last_hovered_result_ = 0xFFFFFFFFFFFFFFFFULL;
-        cudaEvent_t readback_event_ = nullptr;
+        musaEvent_t readback_event_ = nullptr;
         bool readback_pending_ = false;
     };
 

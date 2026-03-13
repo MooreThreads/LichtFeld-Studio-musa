@@ -6,7 +6,7 @@
 #include "Common.h"
 #include "Ops.h"
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -14,7 +14,7 @@ namespace gsplat_lfs {
         const float* quats,
         int64_t N,
         float* rotmats,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         GSPLAT_CHECK_CUDA_PTR(quats, "quats");
         GSPLAT_CHECK_CUDA_PTR(rotmats, "rotmats");
 

@@ -5,7 +5,7 @@
 #pragma once
 
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::training::kernels {
 
@@ -65,7 +65,7 @@ namespace lfs::training::kernels {
         int N,
         int num_selected,
         int shN_dim,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief Split selected Gaussians
@@ -123,7 +123,7 @@ namespace lfs::training::kernels {
         int num_keep,
         int shN_dim,
         bool revised_opacity,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief In-place split selected Gaussians
@@ -175,7 +175,7 @@ namespace lfs::training::kernels {
         int num_split,
         int shN_dim,
         bool revised_opacity,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /**
      * @brief In-place Long-Axis-Split selected Gaussians
@@ -223,6 +223,6 @@ namespace lfs::training::kernels {
         const int64_t* split_indices,
         int num_split,
         int shN_dim,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace lfs::training::kernels

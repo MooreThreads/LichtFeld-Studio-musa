@@ -43,7 +43,7 @@ namespace lfs::rendering {
         FT_Library ft;
         if (FT_Init_FreeType(&ft)) {
             LOG_ERROR("Could not init FreeType Library");
-            return std::unexpected("Could not init FreeType Library");
+            return lfs_compat::unexpected("Could not init FreeType Library");
         }
 
         // RAII wrapper for FreeType library
@@ -60,7 +60,7 @@ namespace lfs::rendering {
         FT_Face face;
         if (FT_New_Face(ft, fontPath_utf8.c_str(), 0, &face)) {
             LOG_ERROR("Failed to load font from: {}", fontPath.string());
-            return std::unexpected(std::format("Failed to load font from: {}", fontPath.string()));
+            return lfs_compat::unexpected(std::format("Failed to load font from: {}", fontPath.string()));
         }
 
         // RAII wrapper for FreeType face
@@ -119,7 +119,7 @@ namespace lfs::rendering {
 
         if (characters.empty()) {
             LOG_ERROR("Failed to load any characters from font");
-            return std::unexpected("Failed to load any characters from font");
+            return lfs_compat::unexpected("Failed to load any characters from font");
         }
 
         LOG_INFO("Successfully loaded {} characters from font", loaded_count);
@@ -133,7 +133,7 @@ namespace lfs::rendering {
         auto result = load_shader("text_renderer", "text_renderer.vert", "text_renderer.frag", false);
         if (!result) {
             LOG_ERROR("Failed to load text renderer shader: {}", result.error().what());
-            return std::unexpected(result.error().what());
+            return lfs_compat::unexpected(result.error().what());
         }
         shader_ = std::move(*result);
 
@@ -141,14 +141,14 @@ namespace lfs::rendering {
         auto vao_result = create_vao();
         if (!vao_result) {
             LOG_ERROR("Failed to create VAO: {}", vao_result.error());
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         }
         vao_ = std::move(*vao_result);
 
         auto vbo_result = create_vbo();
         if (!vbo_result) {
             LOG_ERROR("Failed to create VBO: {}", vbo_result.error());
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         }
         vbo_ = std::move(*vbo_result);
 
@@ -180,12 +180,12 @@ namespace lfs::rendering {
                                           const glm::vec3& color) {
         if (!shader_.valid()) {
             LOG_ERROR("Text renderer shader not initialized");
-            return std::unexpected("Text renderer shader not initialized");
+            return lfs_compat::unexpected("Text renderer shader not initialized");
         }
 
         if (characters.empty()) {
             LOG_ERROR("No font loaded");
-            return std::unexpected("No font loaded");
+            return lfs_compat::unexpected("No font loaded");
         }
 
         LOG_TIMER_TRACE("TextRenderer::RenderText");

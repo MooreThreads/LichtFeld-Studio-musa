@@ -46,7 +46,7 @@ namespace lfs::training {
         }
     } // namespace
 
-    std::expected<void, std::string> loadTrainingDataIntoScene(
+    lfs_compat::expected<void, std::string> loadTrainingDataIntoScene(
         const lfs::core::param::TrainingParameters& params,
         lfs::core::Scene& scene) {
 
@@ -70,12 +70,12 @@ namespace lfs::training {
         LOG_INFO("Loading dataset from: {}", lfs::core::path_to_utf8(params.dataset.data_path));
         auto load_result = data_loader->load(params.dataset.data_path, load_options);
         if (!load_result) {
-            return std::unexpected(std::format("Failed to load dataset: {}", load_result.error().format()));
+            return lfs_compat::unexpected(std::format("Failed to load dataset: {}", load_result.error().format()));
         }
 
         LOG_INFO("Dataset loaded successfully using {} loader", load_result->loader_used);
 
-        return std::visit([&](auto&& data) -> std::expected<void, std::string> {
+        return std::visit([&](auto&& data) -> lfs_compat::expected<void, std::string> {
             using T = std::decay_t<decltype(data)>;
 
             if constexpr (std::is_same_v<T, std::shared_ptr<lfs::core::SplatData>>) {
@@ -108,7 +108,7 @@ namespace lfs::training {
                     if (ext == ".ply" && !lfs::io::is_gaussian_splat_ply(init_file)) {
                         auto pc_result = lfs::io::load_ply_point_cloud(init_file);
                         if (!pc_result) {
-                            return std::unexpected(std::format("Failed to load '{}': {}",
+                            return lfs_compat::unexpected(std::format("Failed to load '{}': {}",
                                                                lfs::core::path_to_utf8(init_file), pc_result.error()));
                         }
 
@@ -116,7 +116,7 @@ namespace lfs::training {
                             params, load_result->scene_center, *pc_result, static_cast<int>(pc_result->size()));
 
                         if (!splat_result) {
-                            return std::unexpected(std::format("Init failed: {}", splat_result.error()));
+                            return lfs_compat::unexpected(std::format("Init failed: {}", splat_result.error()));
                         }
 
                         auto model = std::make_unique<lfs::core::SplatData>(std::move(*splat_result));
@@ -129,7 +129,7 @@ namespace lfs::training {
                         auto load_result = loader->load(init_file);
 
                         if (!load_result) {
-                            return std::unexpected(std::format("Failed to load '{}': {}",
+                            return lfs_compat::unexpected(std::format("Failed to load '{}': {}",
                                                                lfs::core::path_to_utf8(init_file), load_result.error().format()));
                         }
 
@@ -148,7 +148,7 @@ namespace lfs::training {
                             scene.addSplat("Model", std::move(model), dataset_id);
                             scene.setTrainingModelNode("Model");
                         } catch (const std::bad_variant_access&) {
-                            return std::unexpected(std::format("'{}': invalid SplatData", lfs::core::path_to_utf8(init_file)));
+                            return lfs_compat::unexpected(std::format("'{}': invalid SplatData", lfs::core::path_to_utf8(init_file)));
                         }
                     }
                 } else {
@@ -223,13 +223,13 @@ namespace lfs::training {
                 return {};
 
             } else {
-                return std::unexpected("Unknown data type returned from loader");
+                return lfs_compat::unexpected("Unknown data type returned from loader");
             }
         },
                           load_result->data);
     }
 
-    std::expected<void, std::string> initializeTrainingModel(
+    lfs_compat::expected<void, std::string> initializeTrainingModel(
         const lfs::core::param::TrainingParameters& params,
         lfs::core::Scene& scene) {
 
@@ -308,7 +308,7 @@ namespace lfs::training {
                 LOG_INFO("CropBox filtering: {} -> {} points", num_points, filtered_count);
 
                 if (filtered_count == 0) {
-                    return std::unexpected("CropBox filtered out all points");
+                    return lfs_compat::unexpected("CropBox filtered out all points");
                 }
 
                 auto filtered_means_tensor = lfs::core::Tensor::from_vector(
@@ -349,7 +349,7 @@ namespace lfs::training {
             params, scene_center, point_cloud_to_use, max_cap);
 
         if (!splat_result) {
-            return std::unexpected(std::format("Failed to initialize model: {}", splat_result.error()));
+            return lfs_compat::unexpected(std::format("Failed to initialize model: {}", splat_result.error()));
         }
 
         if (max_cap > 0 && max_cap < static_cast<int>(splat_result->size())) {
@@ -375,7 +375,7 @@ namespace lfs::training {
         return {};
     }
 
-    std::expected<void, std::string> validateDatasetPath(
+    lfs_compat::expected<void, std::string> validateDatasetPath(
         const lfs::core::param::TrainingParameters& params) {
 
         auto data_loader = lfs::io::Loader::create();
@@ -388,17 +388,17 @@ namespace lfs::training {
 
         auto result = data_loader->load(params.dataset.data_path, load_options);
         if (!result) {
-            return std::unexpected(result.error().format());
+            return lfs_compat::unexpected(result.error().format());
         }
         return {};
     }
 
-    std::expected<void, std::string> applyLoadResultToScene(
+    lfs_compat::expected<void, std::string> applyLoadResultToScene(
         const lfs::core::param::TrainingParameters& params,
         lfs::core::Scene& scene,
         lfs::io::LoadResult&& load_result) {
 
-        return std::visit([&](auto&& data) -> std::expected<void, std::string> {
+        return std::visit([&](auto&& data) -> lfs_compat::expected<void, std::string> {
             using T = std::decay_t<decltype(data)>;
 
             if constexpr (std::is_same_v<T, std::shared_ptr<lfs::core::SplatData>>) {
@@ -429,14 +429,14 @@ namespace lfs::training {
                     if (ext == ".ply" && !lfs::io::is_gaussian_splat_ply(init_file)) {
                         auto pc_result = lfs::io::load_ply_point_cloud(init_file);
                         if (!pc_result) {
-                            return std::unexpected(std::format("Failed to load '{}': {}",
+                            return lfs_compat::unexpected(std::format("Failed to load '{}': {}",
                                                                lfs::core::path_to_utf8(init_file), pc_result.error()));
                         }
 
                         auto splat_result = lfs::core::init_model_from_pointcloud(
                             params, load_result.scene_center, *pc_result, static_cast<int>(pc_result->size()));
                         if (!splat_result) {
-                            return std::unexpected(std::format("Init failed: {}", splat_result.error()));
+                            return lfs_compat::unexpected(std::format("Init failed: {}", splat_result.error()));
                         }
 
                         auto model = std::make_unique<lfs::core::SplatData>(std::move(*splat_result));
@@ -448,7 +448,7 @@ namespace lfs::training {
                         auto loader = lfs::io::Loader::create();
                         auto init_result = loader->load(init_file);
                         if (!init_result) {
-                            return std::unexpected(std::format("Failed to load '{}': {}",
+                            return lfs_compat::unexpected(std::format("Failed to load '{}': {}",
                                                                lfs::core::path_to_utf8(init_file), init_result.error().format()));
                         }
 
@@ -466,7 +466,7 @@ namespace lfs::training {
                             scene.addSplat("Model", std::move(model), dataset_id);
                             scene.setTrainingModelNode("Model");
                         } catch (const std::bad_variant_access&) {
-                            return std::unexpected(std::format("'{}': invalid SplatData", lfs::core::path_to_utf8(init_file)));
+                            return lfs_compat::unexpected(std::format("'{}': invalid SplatData", lfs::core::path_to_utf8(init_file)));
                         }
                     }
                 } else if (data.point_cloud && data.point_cloud->size() > 0) {
@@ -523,7 +523,7 @@ namespace lfs::training {
                 return {};
 
             } else {
-                return std::unexpected("Unknown data type from loader");
+                return lfs_compat::unexpected("Unknown data type from loader");
             }
         },
                           load_result.data);

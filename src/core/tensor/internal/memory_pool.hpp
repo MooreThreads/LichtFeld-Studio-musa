@@ -9,7 +9,7 @@
 #include "deferred_free_queue.hpp"
 #include "gpu_slab_allocator.hpp"
 #include "size_bucketed_pool.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <iomanip>
 #include <memory>
 #include <mutex>
@@ -26,7 +26,7 @@ namespace lfs::core {
                                        Async,
                                        Direct };
 
-    // Multi-tier CUDA memory pool: slab (≤256KB), bucketed (≤16GB), cudaMallocAsync.
+    // Multi-tier CUDA memory pool: slab (≤256KB), bucketed (≤16GB), musaMallocAsync.
     class LFS_CORE_API CudaMemoryPool {
     public:
         static CudaMemoryPool& instance();
@@ -41,7 +41,7 @@ namespace lfs::core {
             GPUSlabAllocator::instance().shutdown();
         }
 
-        void* allocate(size_t bytes, cudaStream_t stream = nullptr) {
+        void* allocate(size_t bytes, musaStream_t stream = nullptr) {
             if (bytes == 0)
                 return nullptr;
 
@@ -81,8 +81,8 @@ namespace lfs::core {
                 const size_t bucket_size = SizeBucketedPool::get_bucket_size(bytes);
 
 #if CUDART_VERSION >= 12080
-                cudaError_t err = cudaMallocAsync(&ptr, bucket_size, stream);
-                if (err == cudaSuccess) {
+                musaError_t err = musaMallocAsync(&ptr, bucket_size, stream);
+                if (err == musaSuccess) {
                     stats_.bucket_allocs.fetch_add(1, std::memory_order_relaxed);
                     stats_.bucket_bytes.fetch_add(bytes, std::memory_order_relaxed);
                     stats_.bucket_waste.fetch_add(bucket_size - bytes, std::memory_order_relaxed);
@@ -99,14 +99,14 @@ namespace lfs::core {
                     log_stats_periodically();
                     return ptr;
                 }
-                LOG_WARN("cudaMallocAsync failed for bucket " + std::to_string(bucket_size) + ": " + cudaGetErrorString(err));
+                LOG_WARN("musaMallocAsync failed for bucket " + std::to_string(bucket_size) + ": " + musaGetErrorString(err));
 #endif
             }
 
 #if CUDART_VERSION >= 12080
             {
-                cudaError_t err = cudaMallocAsync(&ptr, bytes, stream);
-                if (err == cudaSuccess) {
+                musaError_t err = musaMallocAsync(&ptr, bytes, stream);
+                if (err == musaSuccess) {
                     stats_.async_allocs.fetch_add(1, std::memory_order_relaxed);
                     stats_.async_bytes.fetch_add(bytes, std::memory_order_relaxed);
                     if constexpr (ENABLE_ALLOCATION_PROFILING) {
@@ -120,7 +120,7 @@ namespace lfs::core {
             return allocate_direct(bytes);
         }
 
-        void deallocate(void* ptr, cudaStream_t stream = nullptr) {
+        void deallocate(void* ptr, musaStream_t stream = nullptr) {
             if (!ptr)
                 return;
             if (shutdown_.load(std::memory_order_acquire))
@@ -143,7 +143,7 @@ namespace lfs::core {
                     SizeBucketedPool::instance().cache_free(ptr, size);
                     return;
                 case AllocMethod::Direct:
-                    cudaFree(ptr);
+                    musaFree(ptr);
                     direct_alloc_count_.fetch_sub(1, std::memory_order_release);
                     return;
                 case AllocMethod::Async:
@@ -152,13 +152,13 @@ namespace lfs::core {
             }
 
 #if CUDART_VERSION >= 12080
-            cudaFreeAsync(ptr, stream);
+            musaFree(ptr);
 #else
-            cudaFree(ptr);
+            musaFree(ptr);
 #endif
         }
 
-        void deallocate(void* ptr, size_t bytes, cudaStream_t stream = nullptr) {
+        void deallocate(void* ptr, size_t bytes, musaStream_t stream = nullptr) {
             if (!ptr)
                 return;
             if (shutdown_.load(std::memory_order_acquire))
@@ -194,7 +194,7 @@ namespace lfs::core {
             if (lookup_allocation(ptr, method, size)) {
                 untrack_allocation(ptr);
                 if (method == AllocMethod::Direct) {
-                    cudaFree(ptr);
+                    musaFree(ptr);
                     direct_alloc_count_.fetch_sub(1, std::memory_order_release);
                     return;
                 }
@@ -202,9 +202,9 @@ namespace lfs::core {
 
             // Async allocation
 #if CUDART_VERSION >= 12080
-            cudaFreeAsync(ptr, stream);
+            musaFree(ptr);
 #else
-            cudaFree(ptr);
+            musaFree(ptr);
 #endif
         }
 
@@ -223,21 +223,21 @@ namespace lfs::core {
         void configure() {
 #if CUDART_VERSION >= 12080
             int device;
-            cudaError_t err = cudaGetDevice(&device);
-            if (err != cudaSuccess) {
-                LOG_ERROR(std::string("cudaGetDevice failed: ") + cudaGetErrorString(err));
+            musaError_t err = musaGetDevice(&device);
+            if (err != musaSuccess) {
+                LOG_ERROR(std::string("musaGetDevice failed: ") + musaGetErrorString(err));
                 return;
             }
 
-            cudaMemPool_t pool;
-            err = cudaDeviceGetDefaultMemPool(&pool, device);
-            if (err != cudaSuccess) {
-                LOG_ERROR(std::string("cudaDeviceGetDefaultMemPool failed: ") + cudaGetErrorString(err));
+            musaMemPool_t pool;
+            err = musaDeviceGetDefaultMemPool(&pool, device);
+            if (err != musaSuccess) {
+                LOG_ERROR(std::string("musaDeviceGetDefaultMemPool failed: ") + musaGetErrorString(err));
                 return;
             }
 
             uint64_t threshold = UINT64_MAX;
-            cudaMemPoolSetAttribute(pool, cudaMemPoolAttrReleaseThreshold, &threshold);
+            musaMemPoolSetAttribute(pool, musaMemPoolAttrReleaseThreshold, &threshold);
 
             LOG_DEBUG("CUDA memory pool configured for device " + std::to_string(device) + " (CUDA " + std::to_string(CUDART_VERSION) + ")");
 #else
@@ -267,13 +267,13 @@ namespace lfs::core {
 
 #if CUDART_VERSION >= 12080
             int device;
-            cudaGetDevice(&device);
-            cudaMemPool_t pool;
-            cudaDeviceGetDefaultMemPool(&pool, device);
+            musaGetDevice(&device);
+            musaMemPool_t pool;
+            musaDeviceGetDefaultMemPool(&pool, device);
 
             uint64_t used = 0, reserved = 0;
-            cudaMemPoolGetAttribute(pool, cudaMemPoolAttrUsedMemCurrent, &used);
-            cudaMemPoolGetAttribute(pool, cudaMemPoolAttrReservedMemCurrent, &reserved);
+            musaMemPoolGetAttribute(pool, musaMemPoolAttrUsedMemCurrent, &used);
+            musaMemPoolGetAttribute(pool, musaMemPoolAttrReservedMemCurrent, &reserved);
 
             oss << "  CUDA Pool: " << (used / 1024.0 / 1024.0) << " / "
                 << (reserved / 1024.0 / 1024.0) << " MB used/reserved\n";
@@ -285,24 +285,24 @@ namespace lfs::core {
             SizeBucketedPool::instance().trim_cache();
 #if CUDART_VERSION >= 12080
             int device;
-            cudaGetDevice(&device);
-            cudaMemPool_t pool;
-            cudaDeviceGetDefaultMemPool(&pool, device);
-            cudaMemPoolTrimTo(pool, 0);
+            musaGetDevice(&device);
+            musaMemPool_t pool;
+            musaDeviceGetDefaultMemPool(&pool, device);
+            musaMemPoolTrimTo(pool, 0);
 #endif
         }
 
         void trim_cached_memory() {
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             DeferredFreeQueue::instance().flush();
             SizeBucketedPool::instance().trim_cache();
 
 #if CUDART_VERSION >= 12080
             int device;
-            cudaGetDevice(&device);
-            cudaMemPool_t pool;
-            if (cudaDeviceGetDefaultMemPool(&pool, device) == cudaSuccess) {
-                cudaMemPoolTrimTo(pool, 0);
+            musaGetDevice(&device);
+            musaMemPool_t pool;
+            if (musaDeviceGetDefaultMemPool(&pool, device) == musaSuccess) {
+                musaMemPoolTrimTo(pool, 0);
             }
 #endif
         }
@@ -346,22 +346,22 @@ namespace lfs::core {
         void* allocate_direct(size_t bytes) {
             void* ptr = nullptr;
 
-            cudaError_t err = cudaMalloc(&ptr, bytes);
-            if (err != cudaSuccess) {
-                LOG_WARN(std::string("[MEM] cudaMalloc failed: ") + cudaGetErrorString(err) + ", trimming...");
-                cudaDeviceSynchronize();
+            musaError_t err = musaMalloc(&ptr, bytes);
+            if (err != musaSuccess) {
+                LOG_WARN(std::string("[MEM] musaMalloc failed: ") + musaGetErrorString(err) + ", trimming...");
+                musaDeviceSynchronize();
                 SizeBucketedPool::instance().trim_cache();
 #if CUDART_VERSION >= 12080
                 int device;
-                cudaGetDevice(&device);
-                cudaMemPool_t pool;
-                cudaDeviceGetDefaultMemPool(&pool, device);
-                cudaMemPoolTrimTo(pool, 0);
+                musaGetDevice(&device);
+                musaMemPool_t pool;
+                musaDeviceGetDefaultMemPool(&pool, device);
+                musaMemPoolTrimTo(pool, 0);
 #endif
-                err = cudaMalloc(&ptr, bytes);
-                if (err != cudaSuccess) {
-                    LOG_ERROR(std::string("[MEM] cudaMalloc retry failed: ") + cudaGetErrorString(err));
-                    cudaGetLastError(); // Clear sticky error state for clean recovery
+                err = musaMalloc(&ptr, bytes);
+                if (err != musaSuccess) {
+                    LOG_ERROR(std::string("[MEM] musaMalloc retry failed: ") + musaGetErrorString(err));
+                    musaGetLastError(); // Clear sticky error state for clean recovery
                     return nullptr;
                 }
             }
@@ -411,13 +411,13 @@ namespace lfs::core {
 
 #if CUDART_VERSION >= 12080
                 int device;
-                cudaGetDevice(&device);
-                cudaMemPool_t pool;
-                cudaDeviceGetDefaultMemPool(&pool, device);
+                musaGetDevice(&device);
+                musaMemPool_t pool;
+                musaDeviceGetDefaultMemPool(&pool, device);
 
                 uint64_t pool_used = 0, pool_reserved = 0;
-                cudaMemPoolGetAttribute(pool, cudaMemPoolAttrUsedMemCurrent, &pool_used);
-                cudaMemPoolGetAttribute(pool, cudaMemPoolAttrReservedMemCurrent, &pool_reserved);
+                musaMemPoolGetAttribute(pool, musaMemPoolAttrUsedMemCurrent, &pool_used);
+                musaMemPoolGetAttribute(pool, musaMemPoolAttrReservedMemCurrent, &pool_reserved);
 
                 constexpr double GB = 1024.0 * 1024.0 * 1024.0;
                 std::ostringstream oss;

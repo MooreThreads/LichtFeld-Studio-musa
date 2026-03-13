@@ -16,7 +16,7 @@ namespace lfs::core {
 
 namespace lfs::rendering {
 
-    [[nodiscard]] std::expected<std::unique_ptr<core::SplatData>, std::string>
+    [[nodiscard]] lfs_compat::expected<std::unique_ptr<core::SplatData>, std::string>
     mesh_to_splat(const core::MeshData& mesh,
                   const core::Mesh2SplatOptions& options = {},
                   core::Mesh2SplatProgressCallback progress = nullptr);

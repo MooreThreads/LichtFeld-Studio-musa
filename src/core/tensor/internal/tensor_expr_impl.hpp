@@ -11,7 +11,7 @@
 #include "lazy_ir.hpp"
 #include "tensor_expr.hpp"
 #include "tensor_functors.hpp" // For ops::compose
-#include <cuda_fp16.h>
+#include "core/musa_fp16_host.hpp"
 #include <typeinfo>
 
 namespace lfs::core {

@@ -8,7 +8,7 @@
 #include "core/image_loader.hpp"
 #include "core/logger.hpp"
 #include <cassert>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::core {
     static Tensor world_to_view(const Tensor& R, const Tensor& t) {
@@ -113,13 +113,13 @@ namespace lfs::core {
         _FoVy = focal2fov(_focal_y, _camera_height);
 
         // Create CUDA stream for async image loading (like reference implementation)
-        cudaStreamCreate(&_stream);
+        musaStreamCreate(&_stream);
     }
 
     Camera::~Camera() {
         // Destroy CUDA stream if it was created
         if (_stream) {
-            cudaStreamDestroy(_stream);
+            musaStreamDestroy(_stream);
             _stream = nullptr;
         }
     }
@@ -163,7 +163,7 @@ namespace lfs::core {
         if (this != &other) {
             // Destroy our current stream
             if (_stream) {
-                cudaStreamDestroy(_stream);
+                musaStreamDestroy(_stream);
             }
 
             // Move all members
@@ -229,7 +229,7 @@ namespace lfs::core {
         _world_view_transform = transform;
 
         // Create CUDA stream for async image loading
-        cudaStreamCreate(&_stream);
+        musaStreamCreate(&_stream);
     }
     Tensor Camera::K() const {
         // Create [1, 3, 3] zero matrix on same device as world_view_transform
@@ -270,7 +270,7 @@ namespace lfs::core {
         if (image.device() != Device::CUDA) {
             image = image.to(Device::CUDA, _stream);
             if (_stream) {
-                cudaStreamSynchronize(_stream);
+                musaStreamSynchronize(_stream);
             }
         }
 
@@ -377,7 +377,7 @@ namespace lfs::core {
         if (mask.device() != Device::CUDA) {
             mask = mask.to(Device::CUDA, _stream);
             if (_stream) {
-                cudaStreamSynchronize(_stream);
+                musaStreamSynchronize(_stream);
             }
         }
 

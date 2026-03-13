@@ -198,7 +198,7 @@ namespace lfs::io {
         }
     };
 
-    [[nodiscard]] std::expected<std::pair<size_t, FastPropertyLayout>, std::string>
+    [[nodiscard]] lfs_compat::expected<std::pair<size_t, FastPropertyLayout>, std::string>
     parse_header(const char* data, size_t file_size) {
         LOG_TIMER_TRACE("PLY header parsing");
 
@@ -499,7 +499,7 @@ namespace lfs::io {
     }
 
     // Main function - returns SplatData
-    [[nodiscard]] std::expected<SplatData, std::string>
+    [[nodiscard]] lfs_compat::expected<SplatData, std::string>
     load_ply(const std::filesystem::path& filepath) {
         try {
             LOG_TIMER("PLY File Loading");
@@ -649,7 +649,7 @@ namespace lfs::io {
         } catch (const std::exception& e) {
             std::string error_msg = std::format("Failed to load PLY file: {}", e.what());
             LOG_ERROR("{}", error_msg);
-            return std::unexpected(error_msg);
+            return lfs_compat::unexpected(error_msg);
         }
     }
 
@@ -923,12 +923,12 @@ namespace lfs::io {
 
         // Check disk space with 10% margin
         if (auto space_check = check_disk_space(options.output_path, estimated_size, 1.1f); !space_check) {
-            return std::unexpected(space_check.error());
+            return lfs_compat::unexpected(space_check.error());
         }
 
         // Verify path is writable
         if (auto writable_check = verify_writable(options.output_path); !writable_check) {
-            return std::unexpected(writable_check.error());
+            return lfs_compat::unexpected(writable_check.error());
         }
 
         // Create parent directories
@@ -962,7 +962,7 @@ namespace lfs::io {
 
             if (const auto result = write_ply_binary(point_cloud, options.output_path, options.binary);
                 !result) {
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
 
             if (options.progress_callback) {
@@ -1019,17 +1019,17 @@ namespace lfs::io {
         return has_opacity && has_scale && has_rotation;
     }
 
-    std::expected<lfs::core::PointCloud, std::string> load_ply_point_cloud(const std::filesystem::path& filepath) {
+    lfs_compat::expected<lfs::core::PointCloud, std::string> load_ply_point_cloud(const std::filesystem::path& filepath) {
         constexpr uint8_t DEFAULT_COLOR = 255;
 
         if (!std::filesystem::exists(filepath)) {
-            return std::unexpected(std::format("File not found: {}", lfs::core::path_to_utf8(filepath)));
+            return lfs_compat::unexpected(std::format("File not found: {}", lfs::core::path_to_utf8(filepath)));
         }
 
         try {
             std::ifstream file;
             if (!lfs::core::open_file_for_read(filepath, std::ios::binary, file)) {
-                return std::unexpected(std::format("Cannot open: {}", lfs::core::path_to_utf8(filepath)));
+                return lfs_compat::unexpected(std::format("Cannot open: {}", lfs::core::path_to_utf8(filepath)));
             }
 
             tinyply::PlyFile ply;
@@ -1039,7 +1039,7 @@ namespace lfs::io {
             try {
                 vertices = ply.request_properties_from_element("vertex", {"x", "y", "z"});
             } catch (const std::exception& e) {
-                return std::unexpected(std::format("Missing vertices: {}", e.what()));
+                return lfs_compat::unexpected(std::format("Missing vertices: {}", e.what()));
             }
 
             std::shared_ptr<tinyply::PlyData> colors;
@@ -1065,7 +1065,7 @@ namespace lfs::io {
                 for (size_t i = 0; i < N * 3; ++i)
                     pos_ptr[i] = static_cast<float>(src[i]);
             } else {
-                return std::unexpected("Unsupported vertex type");
+                return lfs_compat::unexpected("Unsupported vertex type");
             }
 
             Tensor color_tensor;
@@ -1086,7 +1086,7 @@ namespace lfs::io {
 
             return PointCloud(std::move(positions), std::move(color_tensor));
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Load failed: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Load failed: {}", e.what()));
         }
     }
 

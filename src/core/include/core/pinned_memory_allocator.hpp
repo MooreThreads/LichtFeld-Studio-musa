@@ -7,7 +7,7 @@
 
 #include <atomic>
 #include <cstddef>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -18,19 +18,19 @@ namespace lfs::core {
     /**
      * @brief Caching allocator for CUDA pinned (page-locked) host memory
      *
-     * This allocator uses cudaHostAlloc to create page-locked memory that can be
+     * This allocator uses musaHostAlloc to create page-locked memory that can be
      * directly accessed by the GPU via DMA, providing 2-3x faster PCIe bandwidth
      * compared to regular pageable memory.
      *
      * Features:
-     * - Caches freed blocks to avoid expensive cudaHostAlloc/cudaFreeHost calls
+     * - Caches freed blocks to avoid expensive musaHostAlloc/musaFreeHost calls
      * - Size-based bucketing for efficient reuse
      * - Thread-safe with per-size-class locking
      * - Similar design to PyTorch's CachingHostAllocator
      *
      * Performance benefits:
      * - CPU->GPU transfer: ~7-11 GB/s (vs ~3 GB/s for regular memory)
-     * - cudaMemcpyAsync can overlap with CPU work
+     * - musaMemcpyAsync can overlap with CPU work
      * - Reduced PCIe latency
      */
     class LFS_CORE_API PinnedMemoryAllocator {
@@ -54,7 +54,7 @@ namespace lfs::core {
         /**
          * @brief Deallocate pinned memory (caches it for reuse)
          *
-         * Instead of immediately calling cudaFreeHost, the block is cached
+         * Instead of immediately calling musaFreeHost, the block is cached
          * for potential reuse by future allocations of similar size.
          *
          * STREAM-AWARE: Records a CUDA event on the given stream to track when
@@ -64,7 +64,7 @@ namespace lfs::core {
          * @param ptr Pointer to pinned memory to free
          * @param stream CUDA stream that last used this memory (nullptr = default stream)
          */
-        void deallocate(void* ptr, cudaStream_t stream = nullptr);
+        void deallocate(void* ptr, musaStream_t stream = nullptr);
 
         /**
          * @brief Clear all cached blocks and free them to the system
@@ -80,7 +80,7 @@ namespace lfs::core {
          * Allocates and immediately frees pinned memory for common image sizes,
          * warming up the cache so subsequent allocations are instant.
          *
-         * This eliminates the cudaHostAlloc penalty (e.g., 23.8ms for 4K) on
+         * This eliminates the musaHostAlloc penalty (e.g., 23.8ms for 4K) on
          * first use, matching LibTorch's pre-warmed pool performance.
          *
          * Call once during application startup.
@@ -137,12 +137,12 @@ namespace lfs::core {
         struct Block {
             void* ptr{nullptr};
             size_t size{0};
-            cudaStream_t last_stream{nullptr}; ///< Stream that last used this memory
-            cudaEvent_t ready_event{nullptr};  ///< Event signaling when safe to reuse
+            musaStream_t last_stream{nullptr}; ///< Stream that last used this memory
+            musaEvent_t ready_event{nullptr};  ///< Event signaling when safe to reuse
 
             Block() = default;
 
-            Block(void* p, size_t s, cudaStream_t stream = nullptr);
+            Block(void* p, size_t s, musaStream_t stream = nullptr);
 
             ~Block();
 

@@ -36,10 +36,10 @@ namespace lfs::vis {
 
         virtual void run() = 0;
         virtual void setParameters(const lfs::core::param::TrainingParameters& params) = 0;
-        virtual std::expected<void, std::string> loadPLY(const std::filesystem::path& path) = 0;
-        virtual std::expected<void, std::string> addSplatFile(const std::filesystem::path& path) = 0;
-        virtual std::expected<void, std::string> loadDataset(const std::filesystem::path& path) = 0;
-        virtual std::expected<void, std::string> loadCheckpointForTraining(const std::filesystem::path& path) = 0;
+        virtual lfs_compat::expected<void, std::string> loadPLY(const std::filesystem::path& path) = 0;
+        virtual lfs_compat::expected<void, std::string> addSplatFile(const std::filesystem::path& path) = 0;
+        virtual lfs_compat::expected<void, std::string> loadDataset(const std::filesystem::path& path) = 0;
+        virtual lfs_compat::expected<void, std::string> loadCheckpointForTraining(const std::filesystem::path& path) = 0;
         virtual void consolidateModels() = 0;
         virtual void clearScene() = 0;
 

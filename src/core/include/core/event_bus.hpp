@@ -11,7 +11,7 @@
 #include <memory>
 #include <mutex>
 #include <print>
-#include <source_location>
+#include "core/source_location_compat.hpp"
 #include <sstream>
 #include <typeindex>
 #include <unordered_map>

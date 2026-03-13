@@ -7,7 +7,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::training {
 
@@ -83,8 +83,8 @@ namespace lfs::training {
             local.swap(pending_callbacks_);
         }
 
-        if (cudaSetDevice(0) != cudaSuccess) {
-            spdlog::error("cudaSetDevice failed in hook drain");
+        if (musaSetDevice(0) != musaSuccess) {
+            spdlog::error("musaSetDevice failed in hook drain");
             return;
         }
 

@@ -20,17 +20,17 @@
 
 namespace nvimgcodec {
 
-    CUdevice get_stream_device(cudaStream_t stream) {
-        cudaError_t last_error = cudaGetLastError();
-        if (last_error != cudaSuccess) {
+    CUdevice get_stream_device(musaStream_t stream) {
+        musaError_t last_error = musaGetLastError();
+        if (last_error != musaSuccess) {
             std::stringstream ss;
-            ss << "Unhandled CUDA error: " << cudaGetErrorName(last_error) << " " << cudaGetErrorString(last_error);
+            ss << "Unhandled CUDA error: " << musaGetErrorName(last_error) << " " << musaGetErrorString(last_error);
             throw std::runtime_error(ss.str());
         }
 
         if (stream == 0 || stream == cudaStreamLegacy || stream == cudaStreamPerThread) {
             int dev = 0;
-            if (cudaGetDevice(&dev) != cudaSuccess) {
+            if (musaGetDevice(&dev) != musaSuccess) {
                 throw std::runtime_error("Unable to get device id");
             }
             CUdevice device_handle;
@@ -66,7 +66,7 @@ namespace nvimgcodec {
 
     // Check if the device (and current driver) associated with the given stream
     // can use asynchronous memory allocations and deallocations
-    bool can_use_async_mem_ops(cudaStream_t stream) {
+    bool can_use_async_mem_ops(musaStream_t stream) {
         CUdevice stream_device_handle = get_stream_device(stream);
         int attribute_res_val;
         CUresult result = cuDeviceGetAttribute(&attribute_res_val, CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED, stream_device_handle);
@@ -76,14 +76,14 @@ namespace nvimgcodec {
         return false;
     }
 
-    // Retrieve the device id associated with the cudaStream_t
-    int get_stream_device_id(cudaStream_t stream) {
+    // Retrieve the device id associated with the musaStream_t
+    int get_stream_device_id(musaStream_t stream) {
         static thread_local std::unordered_map<CUdevice, int> handle_to_device_id;
         CUdevice stream_device_handle = get_stream_device(stream);
         auto it = handle_to_device_id.find(stream_device_handle);
         if (it == handle_to_device_id.end()) {
             int device_count;
-            if (cudaGetDeviceCount(&device_count) != cudaSuccess) {
+            if (musaGetDeviceCount(&device_count) != musaSuccess) {
                 throw std::runtime_error("Unable to get device count");
             }
             for (int device_ordinal = 0; device_ordinal < device_count; ++device_ordinal) {

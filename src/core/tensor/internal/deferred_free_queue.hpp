@@ -6,7 +6,7 @@
 #include "core/logger.hpp"
 #include <atomic>
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <mutex>
 #include <vector>
 
@@ -35,7 +35,7 @@ namespace lfs::core {
             cleanup_event_pool();
         }
 
-        void defer_free(void* ptr, size_t size, cudaStream_t stream, FreeCallback callback) {
+        void defer_free(void* ptr, size_t size, musaStream_t stream, FreeCallback callback) {
             if (!ptr)
                 return;
             if (shutdown_.load(std::memory_order_acquire)) {
@@ -43,17 +43,17 @@ namespace lfs::core {
                 return;
             }
 
-            cudaEvent_t event = acquire_event();
+            musaEvent_t event = acquire_event();
             if (!event) {
-                cudaStreamSynchronize(stream);
+                musaStreamSynchronize(stream);
                 callback(ptr, size);
                 return;
             }
 
-            cudaError_t err = cudaEventRecord(event, stream);
-            if (err != cudaSuccess) {
+            musaError_t err = musaEventRecord(event, stream);
+            if (err != musaSuccess) {
                 release_event(event);
-                cudaStreamSynchronize(stream);
+                musaStreamSynchronize(stream);
                 callback(ptr, size);
                 return;
             }
@@ -79,17 +79,17 @@ namespace lfs::core {
                 size_t i = 0;
                 while (i < pending_.size() && (max_items == 0 || count < max_items)) {
                     const auto& item = pending_[i];
-                    const cudaError_t err = cudaEventQuery(item.event);
-                    if (err == cudaSuccess) {
+                    const musaError_t err = musaEventQuery(item.event);
+                    if (err == musaSuccess) {
                         to_free.push_back(item);
                         release_event(item.event);
                         pending_[i] = pending_.back();
                         pending_.pop_back();
                         ++count;
-                    } else if (err == cudaErrorNotReady) {
+                    } else if (err == musaErrorNotReady) {
                         ++i;
                     } else {
-                        LOG_WARN("cudaEventQuery failed: {}", cudaGetErrorString(err));
+                        LOG_WARN("musaEventQuery failed: {}", musaGetErrorString(err));
                         ++i;
                     }
                 }
@@ -114,7 +114,7 @@ namespace lfs::core {
                 pending_.clear();
             }
 
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
 
             for (const auto& item : to_free) {
                 release_event(item.event);
@@ -147,7 +147,7 @@ namespace lfs::core {
         struct PendingFree {
             void* ptr;
             size_t size;
-            cudaEvent_t event;
+            musaEvent_t event;
             FreeCallback callback;
         };
 
@@ -163,9 +163,9 @@ namespace lfs::core {
         void initialize_event_pool() {
             std::lock_guard<std::mutex> lock(event_pool_mutex_);
             for (size_t i = 0; i < EVENT_POOL_SIZE; i++) {
-                cudaEvent_t event;
-                cudaError_t err = cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
-                if (err == cudaSuccess) {
+                musaEvent_t event;
+                musaError_t err = musaEventCreateWithFlags(&event, musaEventDisableTiming);
+                if (err == musaSuccess) {
                     event_pool_.push_back(event);
                 }
             }
@@ -174,39 +174,39 @@ namespace lfs::core {
 
         void cleanup_event_pool() {
             std::lock_guard<std::mutex> lock(event_pool_mutex_);
-            for (cudaEvent_t event : event_pool_) {
-                cudaEventDestroy(event);
+            for (musaEvent_t event : event_pool_) {
+                musaEventDestroy(event);
             }
             event_pool_.clear();
         }
 
-        cudaEvent_t acquire_event() {
+        musaEvent_t acquire_event() {
             std::lock_guard<std::mutex> lock(event_pool_mutex_);
             if (event_pool_.empty()) {
-                cudaEvent_t event;
-                if (cudaEventCreateWithFlags(&event, cudaEventDisableTiming) == cudaSuccess) {
+                musaEvent_t event;
+                if (musaEventCreateWithFlags(&event, musaEventDisableTiming) == musaSuccess) {
                     return event;
                 }
                 return nullptr;
             }
-            cudaEvent_t event = event_pool_.back();
+            musaEvent_t event = event_pool_.back();
             event_pool_.pop_back();
             return event;
         }
 
-        void release_event(cudaEvent_t event) {
+        void release_event(musaEvent_t event) {
             std::lock_guard<std::mutex> lock(event_pool_mutex_);
             if (event_pool_.size() < EVENT_POOL_SIZE * 2) {
                 event_pool_.push_back(event);
             } else {
-                cudaEventDestroy(event);
+                musaEventDestroy(event);
             }
         }
 
         std::vector<PendingFree> pending_;
         mutable std::mutex queue_mutex_;
 
-        std::vector<cudaEvent_t> event_pool_;
+        std::vector<musaEvent_t> event_pool_;
         std::mutex event_pool_mutex_;
 
         std::atomic<bool> shutdown_{false};

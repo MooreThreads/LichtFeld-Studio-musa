@@ -1,0 +1,211 @@
+/* SPDX-FileCopyrightText: 2025 LichtFeld Studio Authors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Compatibility shim for std::expected (C++23).
+ * Uses a detail namespace to avoid conflicting with the deprecated
+ * std::unexpected() function from <exception>.
+ */
+
+#ifndef LFS_EXPECTED_COMPAT_H_
+#define LFS_EXPECTED_COMPAT_H_
+
+#include <utility>
+#include <type_traits>
+#include <stdexcept>
+
+namespace lfs_compat {
+
+template <typename E>
+class unexpected {
+public:
+    constexpr unexpected(const unexpected&) = default;
+    constexpr unexpected(unexpected&&) = default;
+    unexpected& operator=(const unexpected&) = default;
+    unexpected& operator=(unexpected&&) = default;
+
+    template <typename Err,
+              typename std::enable_if<
+                  !std::is_same<typename std::decay<Err>::type, unexpected>::value &&
+                  std::is_constructible<E, Err>::value, int>::type = 0>
+    constexpr explicit unexpected(Err&& e) : val_(std::forward<Err>(e)) {}
+
+    constexpr const E& error() const& noexcept { return val_; }
+    constexpr E& error() & noexcept { return val_; }
+    constexpr E&& error() && noexcept { return static_cast<E&&>(val_); }
+
+private:
+    E val_;
+};
+
+template <typename E>
+unexpected(E) -> unexpected<E>;
+
+template <typename T, typename E>
+class expected {
+public:
+    using value_type = T;
+    using error_type = E;
+    using unexpected_type = unexpected<E>;
+
+    template <typename U = T,
+              typename std::enable_if<std::is_default_constructible<U>::value, int>::type = 0>
+    expected() : has_val_(true) { new (&val_) T(); }
+
+    expected(const T& v) : has_val_(true) { new (&val_) T(v); }
+    expected(T&& v) : has_val_(true) { new (&val_) T(std::move(v)); }
+
+    // Converting constructor: allow implicit conversion from U to expected<T,E>
+    // when U is convertible to T (but is not T itself, not expected, not unexpected)
+    template <typename U,
+              typename std::enable_if<
+                  std::is_convertible<U, T>::value &&
+                  !std::is_same<typename std::decay<U>::type, expected>::value &&
+                  !std::is_same<typename std::decay<U>::type, T>::value, int>::type = 0>
+    expected(U&& v) : has_val_(true) { new (&val_) T(std::forward<U>(v)); }
+
+    expected(const unexpected<E>& u) : has_val_(false) { new (&err_) E(u.error()); }
+    expected(unexpected<E>&& u) : has_val_(false) { new (&err_) E(std::move(u).error()); }
+
+    template <typename G,
+              typename std::enable_if<std::is_constructible<E, const G&>::value, int>::type = 0>
+    expected(const unexpected<G>& u) : has_val_(false) { new (&err_) E(u.error()); }
+    template <typename G,
+              typename std::enable_if<std::is_constructible<E, G>::value, int>::type = 0>
+    expected(unexpected<G>&& u) : has_val_(false) { new (&err_) E(std::move(u).error()); }
+
+    expected(const expected& o) : has_val_(o.has_val_) {
+        if (has_val_) new (&val_) T(o.val_);
+        else new (&err_) E(o.err_);
+    }
+    expected(expected&& o) noexcept : has_val_(o.has_val_) {
+        if (has_val_) new (&val_) T(std::move(o.val_));
+        else new (&err_) E(std::move(o.err_));
+    }
+    expected& operator=(const expected& o) {
+        if (this != &o) {
+            destroy();
+            has_val_ = o.has_val_;
+            if (has_val_) new (&val_) T(o.val_);
+            else new (&err_) E(o.err_);
+        }
+        return *this;
+    }
+    expected& operator=(expected&& o) noexcept {
+        if (this != &o) {
+            destroy();
+            has_val_ = o.has_val_;
+            if (has_val_) new (&val_) T(std::move(o.val_));
+            else new (&err_) E(std::move(o.err_));
+        }
+        return *this;
+    }
+    ~expected() { destroy(); }
+
+    bool has_value() const noexcept { return has_val_; }
+    explicit operator bool() const noexcept { return has_val_; }
+
+    T& value() & {
+        if (!has_val_) throw std::runtime_error("expected: no value");
+        return val_;
+    }
+    const T& value() const& {
+        if (!has_val_) throw std::runtime_error("expected: no value");
+        return val_;
+    }
+    T&& value() && {
+        if (!has_val_) throw std::runtime_error("expected: no value");
+        return std::move(val_);
+    }
+
+    T& operator*() & noexcept { return val_; }
+    const T& operator*() const& noexcept { return val_; }
+    T&& operator*() && noexcept { return std::move(val_); }
+
+    T* operator->() noexcept { return &val_; }
+    const T* operator->() const noexcept { return &val_; }
+
+    const E& error() const& noexcept { return err_; }
+    E& error() & noexcept { return err_; }
+    E&& error() && noexcept { return std::move(err_); }
+
+    template <typename U>
+    T value_or(U&& default_val) const& {
+        return has_val_ ? val_ : static_cast<T>(std::forward<U>(default_val));
+    }
+
+private:
+    void destroy() {
+        if (has_val_) val_.~T();
+        else err_.~E();
+    }
+    bool has_val_;
+    union {
+        T val_;
+        E err_;
+    };
+};
+
+template <typename E>
+class expected<void, E> {
+public:
+    using value_type = void;
+    using error_type = E;
+    using unexpected_type = unexpected<E>;
+
+    expected() noexcept : has_val_(true), dummy_{} {}
+    expected(const unexpected<E>& u) : has_val_(false) { new (&err_) E(u.error()); }
+    expected(unexpected<E>&& u) : has_val_(false) { new (&err_) E(std::move(u).error()); }
+
+    template <typename G,
+              typename std::enable_if<std::is_constructible<E, const G&>::value, int>::type = 0>
+    expected(const unexpected<G>& u) : has_val_(false) { new (&err_) E(u.error()); }
+    template <typename G,
+              typename std::enable_if<std::is_constructible<E, G>::value, int>::type = 0>
+    expected(unexpected<G>&& u) : has_val_(false) { new (&err_) E(std::move(u).error()); }
+
+    expected(const expected& o) : has_val_(o.has_val_) {
+        if (!has_val_) new (&err_) E(o.err_);
+    }
+    expected(expected&& o) noexcept : has_val_(o.has_val_) {
+        if (!has_val_) new (&err_) E(std::move(o.err_));
+    }
+    expected& operator=(const expected& o) {
+        if (this != &o) {
+            if (!has_val_) err_.~E();
+            has_val_ = o.has_val_;
+            if (!has_val_) new (&err_) E(o.err_);
+        }
+        return *this;
+    }
+    expected& operator=(expected&& o) noexcept {
+        if (this != &o) {
+            if (!has_val_) err_.~E();
+            has_val_ = o.has_val_;
+            if (!has_val_) new (&err_) E(std::move(o.err_));
+        }
+        return *this;
+    }
+    ~expected() { if (!has_val_) err_.~E(); }
+
+    bool has_value() const noexcept { return has_val_; }
+    explicit operator bool() const noexcept { return has_val_; }
+
+    void value() const {
+        if (!has_val_) throw std::runtime_error("expected<void>: no value");
+    }
+
+    const E& error() const& noexcept { return err_; }
+    E& error() & noexcept { return err_; }
+    E&& error() && noexcept { return std::move(err_); }
+
+private:
+    bool has_val_;
+    union {
+        char dummy_;
+        E err_;
+    };
+};
+
+} // namespace lfs_compat
+
+#endif // LFS_EXPECTED_COMPAT_H_

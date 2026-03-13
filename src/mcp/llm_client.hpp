@@ -55,20 +55,20 @@ namespace lfs::mcp {
         void set_model(const std::string& model);
         void set_base_url(const std::string& url);
 
-        std::expected<LLMResponse, std::string> complete(const LLMRequest& request);
+        lfs_compat::expected<LLMResponse, std::string> complete(const LLMRequest& request);
 
         std::future<LLMResponse> complete_async(const LLMRequest& request);
 
         bool is_configured() const;
 
-        static std::expected<std::string, std::string> load_api_key_from_env();
+        static lfs_compat::expected<std::string, std::string> load_api_key_from_env();
 
     private:
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };
 
-    std::expected<LLMResponse, std::string> ask_training_advisor(
+    lfs_compat::expected<LLMResponse, std::string> ask_training_advisor(
         LLMClient& client,
         int iteration,
         float loss,

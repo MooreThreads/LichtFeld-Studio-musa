@@ -168,7 +168,7 @@ namespace lfs::vis {
 
         // Apply pre-loaded dataset to scene (for async loading)
         // The LoadResult comes from background thread, scene modification happens on main thread
-        std::expected<void, std::string> applyLoadedDataset(
+        lfs_compat::expected<void, std::string> applyLoadedDataset(
             const std::filesystem::path& path,
             const lfs::core::param::TrainingParameters& params,
             lfs::io::LoadResult&& load_result);

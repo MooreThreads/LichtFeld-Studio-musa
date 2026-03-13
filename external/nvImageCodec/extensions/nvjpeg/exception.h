@@ -29,7 +29,7 @@ const char* getErrorString(nvjpegStatus_t);
 class NvJpegException : public std::exception {
 public:
     static NvJpegException FromNvJpegError(nvjpegStatus_t status, const std::string& where);
-    static NvJpegException FromCUDAError(cudaError_t status, const std::string& where);
+    static NvJpegException FromCUDAError(musaError_t status, const std::string& where);
 
     inline virtual ~NvJpegException() throw() {}
 

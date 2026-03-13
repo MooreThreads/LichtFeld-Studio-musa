@@ -25,28 +25,28 @@ namespace lfs::mcp {
     public:
         static TrainingContext& instance();
 
-        std::expected<void, std::string> load_dataset(
+        lfs_compat::expected<void, std::string> load_dataset(
             const std::filesystem::path& path,
             const core::param::TrainingParameters& params);
 
-        std::expected<void, std::string> load_checkpoint(
+        lfs_compat::expected<void, std::string> load_checkpoint(
             const std::filesystem::path& path);
 
-        std::expected<void, std::string> save_checkpoint(
+        lfs_compat::expected<void, std::string> save_checkpoint(
             const std::filesystem::path& path);
 
-        std::expected<void, std::string> save_ply(
+        lfs_compat::expected<void, std::string> save_ply(
             const std::filesystem::path& path);
 
-        std::expected<std::string, std::string> render_to_base64(
+        lfs_compat::expected<std::string, std::string> render_to_base64(
             int camera_index = 0,
             int width = 0,
             int height = 0);
 
-        std::expected<core::Tensor, std::string> compute_screen_positions(
+        lfs_compat::expected<core::Tensor, std::string> compute_screen_positions(
             int camera_index = 0);
 
-        std::expected<void, std::string> start_training();
+        lfs_compat::expected<void, std::string> start_training();
         void stop_training();
         void pause_training();
         void resume_training();

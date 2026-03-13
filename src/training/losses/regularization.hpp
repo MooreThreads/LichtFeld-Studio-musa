@@ -32,7 +32,7 @@ namespace lfs::training::losses {
          * @return loss_tensor (GPU) or error - loss stays on GPU!
          * @note Accumulates gradients directly to scaling_raw_grad
          */
-        static std::expected<lfs::core::Tensor, std::string> forward(
+        static lfs_compat::expected<lfs::core::Tensor, std::string> forward(
             const lfs::core::Tensor& scaling_raw,
             lfs::core::Tensor& scaling_raw_grad,
             const Params& params);
@@ -60,7 +60,7 @@ namespace lfs::training::losses {
          * @return loss_tensor (GPU) or error - loss stays on GPU!
          * @note Accumulates gradients directly to opacity_raw_grad
          */
-        static std::expected<lfs::core::Tensor, std::string> forward(
+        static lfs_compat::expected<lfs::core::Tensor, std::string> forward(
             const lfs::core::Tensor& opacity_raw,
             lfs::core::Tensor& opacity_raw_grad,
             const Params& params);

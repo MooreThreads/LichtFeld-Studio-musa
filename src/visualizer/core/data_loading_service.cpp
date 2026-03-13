@@ -113,7 +113,7 @@ namespace lfs::vis {
         return ext == ".resume";
     }
 
-    std::expected<void, std::string> DataLoadingService::loadPLY(const std::filesystem::path& path) {
+    lfs_compat::expected<void, std::string> DataLoadingService::loadPLY(const std::filesystem::path& path) {
         LOG_TIMER("LoadPLY");
 
         try {
@@ -134,7 +134,7 @@ namespace lfs::vis {
         }
     }
 
-    std::expected<void, std::string> DataLoadingService::loadSOG(const std::filesystem::path& path) {
+    lfs_compat::expected<void, std::string> DataLoadingService::loadSOG(const std::filesystem::path& path) {
         LOG_TIMER("LoadSOG");
 
         try {
@@ -155,7 +155,7 @@ namespace lfs::vis {
         }
     }
 
-    std::expected<void, std::string> DataLoadingService::loadSplatFile(const std::filesystem::path& path) {
+    lfs_compat::expected<void, std::string> DataLoadingService::loadSplatFile(const std::filesystem::path& path) {
         LOG_TIMER("LoadSplatFile");
 
         try {
@@ -235,7 +235,7 @@ namespace lfs::vis {
         }
     }
 
-    std::expected<void, std::string> DataLoadingService::loadDataset(const std::filesystem::path& path) {
+    lfs_compat::expected<void, std::string> DataLoadingService::loadDataset(const std::filesystem::path& path) {
         LOG_TIMER("LoadDataset");
 
         LOG_INFO("Loading dataset from: {}", lfs::core::path_to_utf8(path));
@@ -243,7 +243,7 @@ namespace lfs::vis {
         // Validate parameters
         if (params_.dataset.data_path.empty() && path.empty()) {
             LOG_ERROR("No dataset path specified");
-            return std::unexpected("No dataset path specified");
+            return lfs_compat::unexpected("No dataset path specified");
         }
 
         // Load through scene manager (it emits DatasetLoadCompleted event on success/failure)
@@ -264,7 +264,7 @@ namespace lfs::vis {
         }
     }
 
-    std::expected<void, std::string> DataLoadingService::loadCheckpointForTraining(
+    lfs_compat::expected<void, std::string> DataLoadingService::loadCheckpointForTraining(
         const std::filesystem::path& checkpoint_path,
         const std::filesystem::path& dataset_path,
         const std::filesystem::path& output_path) {
@@ -283,7 +283,7 @@ namespace lfs::vis {
         } catch (const std::exception& e) {
             const std::string error = std::format("Checkpoint load failed: {}", e.what());
             LOG_ERROR("{}", error);
-            return std::unexpected(error);
+            return lfs_compat::unexpected(error);
         }
     }
 

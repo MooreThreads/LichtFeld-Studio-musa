@@ -76,7 +76,7 @@ namespace lfs::rendering {
                                                 "coordinate_axes.geom", "coordinate_axes.frag", false);
         if (!result) {
             LOG_ERROR("Failed to load coordinate axes shader: {}", result.error().what());
-            return std::unexpected(result.error().what());
+            return lfs_compat::unexpected(result.error().what());
         }
         shader_ = std::move(*result);
 
@@ -84,13 +84,13 @@ namespace lfs::rendering {
         auto vao_result = create_vao();
         if (!vao_result) {
             LOG_ERROR("Failed to create VAO: {}", vao_result.error());
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         }
 
         auto vbo_result = create_vbo();
         if (!vbo_result) {
             LOG_ERROR("Failed to create VBO: {}", vbo_result.error());
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         }
         vbo_ = std::move(*vbo_result);
 

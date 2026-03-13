@@ -39,7 +39,7 @@ namespace lfs::rendering {
         if (request.viewport_size.x <= 0 || request.viewport_size.y <= 0 ||
             request.viewport_size.x > 16384 || request.viewport_size.y > 16384) {
             LOG_ERROR("Invalid viewport dimensions: {}x{}", request.viewport_size.x, request.viewport_size.y);
-            return std::unexpected("Invalid viewport dimensions");
+            return lfs_compat::unexpected("Invalid viewport dimensions");
         }
 
         // Point cloud rendering mode
@@ -59,13 +59,13 @@ namespace lfs::rendering {
                 request.background_color.r,
                 request.background_color.g,
                 request.background_color.b};
-            cudaMemcpy(bg_data, bg_values, 3 * sizeof(float), cudaMemcpyHostToDevice);
+            musaMemcpy(bg_data, bg_values, 3 * sizeof(float), musaMemcpyHostToDevice);
         }
 
         // Create camera for this frame
         auto cam_result = createCamera(request);
         if (!cam_result) {
-            return std::unexpected(cam_result.error());
+            return lfs_compat::unexpected(cam_result.error());
         }
         lfs::core::Camera cam = std::move(*cam_result);
 
@@ -254,7 +254,7 @@ namespace lfs::rendering {
 
         } catch (const std::exception& e) {
             LOG_ERROR("Rasterization failed: {}", e.what());
-            return std::unexpected(std::format("Rasterization failed: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Rasterization failed: {}", e.what()));
         }
     }
 
@@ -269,7 +269,7 @@ namespace lfs::rendering {
             LOG_DEBUG("Initializing point cloud renderer");
             if (auto result = point_cloud_renderer_->initialize(); !result) {
                 LOG_ERROR("Failed to initialize point cloud renderer: {}", result.error());
-                return std::unexpected(std::format("Failed to initialize point cloud renderer: {}",
+                return lfs_compat::unexpected(std::format("Failed to initialize point cloud renderer: {}",
                                                    result.error()));
             }
         }
@@ -331,7 +331,7 @@ namespace lfs::rendering {
         ensureFBOSize(request.viewport_size.x, request.viewport_size.y);
         if (persistent_fbo_ == 0) {
             LOG_ERROR("Failed to setup persistent framebuffer");
-            return std::unexpected("Failed to setup persistent framebuffer");
+            return lfs_compat::unexpected("Failed to setup persistent framebuffer");
         }
 
         // Set viewport to match the request size
@@ -346,7 +346,7 @@ namespace lfs::rendering {
                                                             request.equirectangular, request.point_cloud_crop_params);
                 !result) {
                 LOG_ERROR("Point cloud rendering failed: {}", result.error());
-                return std::unexpected(std::format("Point cloud rendering failed: {}", result.error()));
+                return lfs_compat::unexpected(std::format("Point cloud rendering failed: {}", result.error()));
             }
         }
 
@@ -420,7 +420,7 @@ namespace lfs::rendering {
                 } else {
                     LOG_ERROR("Failed to map PBO for readback");
                     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-                    return std::unexpected("Failed to map PBO for readback");
+                    return lfs_compat::unexpected("Failed to map PBO for readback");
                 }
 
                 glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
@@ -458,7 +458,7 @@ namespace lfs::rendering {
             LOG_DEBUG("Initializing point cloud renderer");
             if (auto result = point_cloud_renderer_->initialize(); !result) {
                 LOG_ERROR("Failed to initialize point cloud renderer: {}", result.error());
-                return std::unexpected(std::format("Failed to initialize point cloud renderer: {}",
+                return lfs_compat::unexpected(std::format("Failed to initialize point cloud renderer: {}",
                                                    result.error()));
             }
         }
@@ -526,7 +526,7 @@ namespace lfs::rendering {
         ensureFBOSize(request.viewport_size.x, request.viewport_size.y);
         if (persistent_fbo_ == 0) {
             LOG_ERROR("Failed to setup persistent framebuffer");
-            return std::unexpected("Failed to setup persistent framebuffer");
+            return lfs_compat::unexpected("Failed to setup persistent framebuffer");
         }
 
         // Set viewport to match the request size
@@ -540,7 +540,7 @@ namespace lfs::rendering {
                                                             {}, nullptr, request.equirectangular, request.point_cloud_crop_params);
                 !result) {
                 LOG_ERROR("Raw point cloud rendering failed: {}", result.error());
-                return std::unexpected(std::format("Raw point cloud rendering failed: {}", result.error()));
+                return lfs_compat::unexpected(std::format("Raw point cloud rendering failed: {}", result.error()));
             }
         }
 
@@ -611,7 +611,7 @@ namespace lfs::rendering {
                 } else {
                     LOG_ERROR("Failed to map PBO for readback");
                     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-                    return std::unexpected("Failed to map PBO for readback");
+                    return lfs_compat::unexpected("Failed to map PBO for readback");
                 }
 
                 glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
@@ -671,7 +671,7 @@ namespace lfs::rendering {
 
         if (!result.valid || !result.image.is_valid()) {
             LOG_ERROR("Invalid render result for upload");
-            return std::unexpected("Invalid render result");
+            return lfs_compat::unexpected("Invalid render result");
         }
 
         if (renderer.isInteropEnabled() && result.image.device() == lfs::core::Device::CUDA) {
@@ -709,14 +709,14 @@ namespace lfs::rendering {
         // CPU fallback
         if (result.image.ndim() != 3) {
             LOG_ERROR("CPU upload requires rank-3 image tensor, got {}", result.image.ndim());
-            return std::unexpected("CPU upload requires rank-3 image tensor");
+            return lfs_compat::unexpected("CPU upload requires rank-3 image tensor");
         }
 
         const auto cpu_layout = detectImageLayout(result.image);
         if (cpu_layout == ImageLayout::Unknown) {
             LOG_ERROR("CPU upload unsupported image layout: shape=[{}, {}, {}]",
                       result.image.size(0), result.image.size(1), result.image.size(2));
-            return std::unexpected("CPU upload unsupported image layout");
+            return lfs_compat::unexpected("CPU upload unsupported image layout");
         }
 
         Tensor image_hwc = (cpu_layout == ImageLayout::HWC)
@@ -735,7 +735,7 @@ namespace lfs::rendering {
             !image.ptr<unsigned char>()) {
             LOG_ERROR("CPU upload dimension mismatch: {}x{} vs {}x{}",
                       image.size(1), image.size(0), viewport_size.x, viewport_size.y);
-            return std::unexpected("Image dimensions mismatch or invalid data");
+            return lfs_compat::unexpected("Image dimensions mismatch or invalid data");
         }
 
         if (auto upload_result = renderer.uploadData(image.ptr<unsigned char>(),
@@ -795,7 +795,7 @@ namespace lfs::rendering {
                 -1);
         } catch (const std::exception& e) {
             LOG_ERROR("Failed to create camera: {}", e.what());
-            return std::unexpected(std::format("Failed to create camera: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to create camera: {}", e.what()));
         }
     }
 

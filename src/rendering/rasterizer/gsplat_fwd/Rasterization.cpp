@@ -10,7 +10,7 @@
 
 #include <cassert>
 #include <cstdio>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_fwd {
 
@@ -50,7 +50,7 @@ namespace gsplat_fwd {
         float* alphas,
         int32_t* last_ids,
         float* median_depths,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         GSPLAT_CHECK_CUDA_PTR(means, "means");
         GSPLAT_CHECK_CUDA_PTR(quats, "quats");
         GSPLAT_CHECK_CUDA_PTR(scales, "scales");
@@ -143,7 +143,7 @@ namespace gsplat_fwd {
         int num_visibility_nodes,
         const int* visible_indices,
         RasterizeWithSHResult& result,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         GSPLAT_CHECK_CUDA_PTR(means, "means");
         GSPLAT_CHECK_CUDA_PTR(quats, "quats");
         GSPLAT_CHECK_CUDA_PTR(scales, "scales");

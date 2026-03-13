@@ -7,7 +7,7 @@
 #include "python/python_runtime.hpp"
 
 #include <cstring>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <dlpack/dlpack.h>
 #include <nanobind/stl/optional.h>
 #include <sstream>
@@ -234,7 +234,7 @@ namespace lfs::python {
 
     void PyTensor::sync() const {
         if (tensor_.device() == Device::CUDA) {
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
     }
 
@@ -1240,7 +1240,7 @@ namespace lfs::python {
 
     nb::capsule PyTensor::dlpack(nb::object stream) const {
         if (tensor_.device() == Device::CUDA && stream.is_none()) {
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         auto* ctx = new DLPackContext(tensor_);

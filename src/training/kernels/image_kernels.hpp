@@ -2,7 +2,7 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::training::kernels {
 

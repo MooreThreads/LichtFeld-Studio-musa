@@ -11,13 +11,13 @@
 #include <expected>
 #include <string>
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::vis::selection {
 
     inline constexpr size_t LOCKED_GROUPS_WORDS = 8;
 
-    inline std::expected<uint32_t*, std::string> upload_locked_group_mask(const core::Scene& scene,
+    inline lfs_compat::expected<uint32_t*, std::string> upload_locked_group_mask(const core::Scene& scene,
                                                                           core::Tensor& device_mask) {
         if (!device_mask.is_valid() ||
             device_mask.device() != core::Device::CUDA ||
@@ -33,12 +33,12 @@ namespace lfs::vis::selection {
             }
         }
 
-        if (const auto err = cudaMemcpy(device_mask.ptr<uint32_t>(),
+        if (const auto err = musaMemcpy(device_mask.ptr<uint32_t>(),
                                         locked_bitmask.data(),
                                         sizeof(locked_bitmask),
-                                        cudaMemcpyHostToDevice);
-            err != cudaSuccess) {
-            return std::unexpected(cudaGetErrorString(err));
+                                        musaMemcpyHostToDevice);
+            err != musaSuccess) {
+            return lfs_compat::unexpected(musaGetErrorString(err));
         }
 
         return device_mask.ptr<uint32_t>();

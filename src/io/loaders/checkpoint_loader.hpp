@@ -38,13 +38,13 @@ namespace lfs::io {
         /**
          * @brief Load checkpoint header only (for inspection without full load)
          */
-        static std::expected<lfs::core::CheckpointHeader, std::string> loadHeader(
+        static lfs_compat::expected<lfs::core::CheckpointHeader, std::string> loadHeader(
             const std::filesystem::path& path);
 
         /**
          * @brief Get iteration number from checkpoint without loading data
          */
-        static std::expected<int, std::string> getIteration(
+        static lfs_compat::expected<int, std::string> getIteration(
             const std::filesystem::path& path);
     };
 

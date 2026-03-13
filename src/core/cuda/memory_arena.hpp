@@ -6,8 +6,8 @@
 
 #include <atomic>
 #include <chrono>
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <musa.h>
+#include <musa_runtime.h>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -65,7 +65,7 @@ namespace lfs::core {
 
     private:
         struct PhysicalChunk {
-            CUmemGenericAllocationHandle handle = 0;
+            MUmemGenericAllocationHandle handle = 0;
             size_t offset = 0;
             size_t size = 0;
             bool is_mapped = false;
@@ -73,7 +73,7 @@ namespace lfs::core {
 
         struct Arena {
             // VMM specific
-            CUdeviceptr d_ptr = 0;             // Virtual base address
+            MUdeviceptr d_ptr = 0;             // Virtual base address
             size_t virtual_size = 0;           // Total virtual space
             size_t committed_size = 0;         // Actually committed physical memory
             size_t granularity = 0;            // Allocation granularity

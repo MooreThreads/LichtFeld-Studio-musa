@@ -5,7 +5,7 @@
 #pragma once
 
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -28,7 +28,7 @@ namespace gsplat_lfs {
         int32_t* tiles_per_gauss, // [C, N] or [nnz] optional (for first pass)
         int64_t* isect_ids,       // [n_isects] optional (for second pass)
         int32_t* flatten_ids,     // [n_isects] optional (for second pass)
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void launch_intersect_offset_kernel(
         // inputs
@@ -39,7 +39,7 @@ namespace gsplat_lfs {
         uint32_t tile_height,
         // outputs
         int32_t* offsets, // [C, tile_height, tile_width]
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void radix_sort_double_buffer(
         int64_t n_isects,
@@ -49,12 +49,12 @@ namespace gsplat_lfs {
         int32_t* flatten_ids,
         int64_t* isect_ids_sorted,
         int32_t* flatten_ids_sorted,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void compute_cumsum_gpu(
         const int32_t* input,
         int64_t* output,
         uint32_t n_elements,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace gsplat_lfs

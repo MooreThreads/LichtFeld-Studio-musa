@@ -1240,7 +1240,7 @@ namespace lfs::vis::editor {
                 });
             }
 
-            std::ranges::sort(edits, [](const ResolvedEdit& lhs, const ResolvedEdit& rhs) {
+            std::sort(edits.begin(), edits.end(), [](const ResolvedEdit& lhs, const ResolvedEdit& rhs) {
                 if (lhs.start != rhs.start) {
                     return lhs.start < rhs.start;
                 }

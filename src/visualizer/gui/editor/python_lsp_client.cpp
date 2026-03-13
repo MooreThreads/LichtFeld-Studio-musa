@@ -1183,7 +1183,7 @@ namespace lfs::vis::editor {
                 }
             }
 
-            std::ranges::sort(completion.items, [](const CompletionItem& lhs, const CompletionItem& rhs) {
+            std::sort(completion.items.begin(), completion.items.end(), [](const CompletionItem& lhs, const CompletionItem& rhs) {
                 if (lhs.sort_text != rhs.sort_text) {
                     return lhs.sort_text < rhs.sort_text;
                 }

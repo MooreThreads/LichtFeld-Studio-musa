@@ -6,7 +6,7 @@
 
 #include "Common.h"
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <tuple>
 
 namespace gsplat_lfs {
@@ -23,7 +23,7 @@ namespace gsplat_lfs {
         int64_t total_elements, // total batch size
         int32_t K,              // number of SH coefficients
         float* colors,          // [..., 3] output (pre-allocated)
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void spherical_harmonics_bwd(
         uint32_t K,
@@ -36,7 +36,7 @@ namespace gsplat_lfs {
         bool compute_v_dirs,
         float* v_coeffs, // [..., K, 3] output
         float* v_dirs,   // [..., 3] optional output
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Tile Intersection
@@ -50,7 +50,7 @@ namespace gsplat_lfs {
     };
 
     // Note: isect_ids and flatten_ids are allocated internally
-    // Caller must free them with cudaFree when done
+    // Caller must free them with musaFree when done
     IntersectTileResult intersect_tile(
         const float* means2d,        // [C, N, 2]
         const int32_t* radii,        // [C, N, 2]
@@ -64,7 +64,7 @@ namespace gsplat_lfs {
         uint32_t tile_height,
         bool sort,
         int32_t* tiles_per_gauss_out, // [C, N] pre-allocated output
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void intersect_offset(
         const int64_t* isect_ids, // [n_isects]
@@ -73,7 +73,7 @@ namespace gsplat_lfs {
         uint32_t tile_width,
         uint32_t tile_height,
         int32_t* isect_offsets, // [C, tile_height, tile_width] output
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Quaternion to Rotation Matrix
@@ -83,7 +83,7 @@ namespace gsplat_lfs {
         const float* quats, // [N, 4]
         int64_t N,
         float* rotmats, // [N, 3, 3] output
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Relocation (MCMC densification)
@@ -96,7 +96,7 @@ namespace gsplat_lfs {
         const float* binoms, // [n_max, n_max]
         int64_t N,
         int32_t n_max,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void add_noise(
         float* raw_opacities, // [N] - modified in-place
@@ -106,7 +106,7 @@ namespace gsplat_lfs {
         float* means,         // [N, 3] - modified in-place
         int64_t N,
         float current_lr,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // View Direction Computation for SH
@@ -118,7 +118,7 @@ namespace gsplat_lfs {
         uint32_t C,
         uint32_t N,
         float* dirs, // [C, N, 3] output
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Projection - Unscented Transform for 3DGS
@@ -154,7 +154,7 @@ namespace gsplat_lfs {
         float* depths,        // [C, N]
         float* conics,        // [C, N, 3]
         float* compensations, // [C, N] optional
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Rasterization - Forward
@@ -195,7 +195,7 @@ namespace gsplat_lfs {
         float* renders,    // [C, image_height, image_width, channels]
         float* alphas,     // [C, image_height, image_width, 1]
         int32_t* last_ids, // [C, image_height, image_width]
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // Rasterization - Backward
@@ -246,7 +246,7 @@ namespace gsplat_lfs {
         float* v_opacities,                   // [C, N]
         float* densification_info,            // [2, N] flattened or nullptr
         const float* densification_error_map, // [H, W] or nullptr
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     //=========================================================================
     // High-level API: Fully fused rasterization with SH evaluation
@@ -266,7 +266,7 @@ namespace gsplat_lfs {
         int32_t* tile_offsets;    // [C, tile_height, tile_width]
         int32_t* last_ids;        // [C, H, W]
         float* compensations;     // [C, N] optional (can be nullptr)
-        // These are allocated internally - caller must free with cudaFree:
+        // These are allocated internally - caller must free with musaFree:
         int64_t* isect_ids;   // [n_isects]
         int32_t* flatten_ids; // [n_isects]
         int32_t n_isects;
@@ -310,7 +310,7 @@ namespace gsplat_lfs {
         const float* thin_prism_coeffs, // optional
         // outputs (result struct with pre-allocated buffers)
         RasterizeWithSHResult& result,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void rasterize_from_world_with_sh_bwd(
         // Gaussian parameters
@@ -370,6 +370,6 @@ namespace gsplat_lfs {
         float* v_sh_coeffs,                   // [N, K, 3]
         float* densification_info,            // [2, N] flattened or nullptr
         const float* densification_error_map, // [H, W] or nullptr
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace gsplat_lfs

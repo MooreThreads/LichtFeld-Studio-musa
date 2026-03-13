@@ -26,23 +26,23 @@ namespace lfs::io::video {
         VideoEncoder(VideoEncoder&&) noexcept;
         VideoEncoder& operator=(VideoEncoder&&) noexcept;
 
-        [[nodiscard]] std::expected<void, std::string> open(
+        [[nodiscard]] lfs_compat::expected<void, std::string> open(
             const std::filesystem::path& output_path,
             const VideoExportOptions& options) override;
 
         // Write RGBA frame from CPU memory
-        [[nodiscard]] std::expected<void, std::string> writeFrame(
+        [[nodiscard]] lfs_compat::expected<void, std::string> writeFrame(
             std::span<const uint8_t> rgba_data,
             int width,
             int height);
 
-        [[nodiscard]] std::expected<void, std::string> writeFrameGpu(
+        [[nodiscard]] lfs_compat::expected<void, std::string> writeFrameGpu(
             const void* rgba_gpu_ptr,
             int width,
             int height,
             void* cuda_stream = nullptr) override;
 
-        [[nodiscard]] std::expected<void, std::string> close() override;
+        [[nodiscard]] lfs_compat::expected<void, std::string> close() override;
 
         [[nodiscard]] bool isOpen() const;
 

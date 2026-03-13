@@ -3,7 +3,7 @@
 
 #pragma once
 #include "core/tensor.hpp"
-#include "lfs/kernels/bilateral_grid.cuh"
+#include "lfs/kernels/bilateral_grid.muh"
 #include <cmath>
 #include <istream>
 #include <ostream>

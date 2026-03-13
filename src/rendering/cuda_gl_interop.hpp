@@ -6,7 +6,7 @@
 
 #include "config.h"
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <memory>
 #include <optional>
 
@@ -22,14 +22,14 @@ namespace lfs {
         const float* colors,
         float* output,
         int num_points,
-        cudaStream_t stream);
+        musaStream_t stream);
 
     // Fused float->RGBA8 conversion writing directly to GL surface
     void launchFloatImageToRGBA8Surface(
         const float* input,
-        cudaSurfaceObject_t output,
+        musaSurfaceObject_t output,
         int width, int height, int channels, bool is_chw,
-        cudaStream_t stream);
+        musaStream_t stream);
 #endif
 } // namespace lfs
 

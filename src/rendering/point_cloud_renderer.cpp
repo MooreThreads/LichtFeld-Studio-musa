@@ -25,7 +25,7 @@ namespace lfs::rendering {
                                                 "point_cloud.geom", "point_cloud.frag", false);
         if (!result) {
             LOG_ERROR("Failed to load point cloud shader: {}", result.error().what());
-            return std::unexpected(result.error().what());
+            return lfs_compat::unexpected(result.error().what());
         }
         shader_ = std::move(*result);
 
@@ -45,27 +45,27 @@ namespace lfs::rendering {
         auto vao_result = create_vao();
         if (!vao_result) {
             LOG_ERROR("Failed to create VAO: {}", vao_result.error());
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         }
 
         auto vbo_result = create_vbo();
         if (!vbo_result) {
             LOG_ERROR("Failed to create VBO: {}", vbo_result.error());
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         }
         cube_vbo_ = std::move(*vbo_result);
 
         auto ebo_result = create_vbo(); // EBO is also a buffer
         if (!ebo_result) {
             LOG_ERROR("Failed to create EBO: {}", ebo_result.error());
-            return std::unexpected(ebo_result.error());
+            return lfs_compat::unexpected(ebo_result.error());
         }
         cube_ebo_ = std::move(*ebo_result);
 
         auto instance_result = create_vbo();
         if (!instance_result) {
             LOG_ERROR("Failed to create instance VBO: {}", instance_result.error());
-            return std::unexpected(instance_result.error());
+            return lfs_compat::unexpected(instance_result.error());
         }
         instance_vbo_ = std::move(*instance_result);
 
@@ -166,7 +166,7 @@ namespace lfs::rendering {
                                                     const bool equirectangular,
                                                     const PointCloudCropParams& crop_params) {
         if (!initialized_) {
-            return std::unexpected("Renderer not initialized");
+            return lfs_compat::unexpected("Renderer not initialized");
         }
 
         LOG_TIMER_TRACE("PointCloudRenderer::renderInternal");
@@ -177,7 +177,7 @@ namespace lfs::rendering {
         current_point_count_ = num_points;
 
         if (num_points > MAX_POINT_COUNT) {
-            return std::unexpected("Point count exceeds limit");
+            return lfs_compat::unexpected("Point count exceeds limit");
         }
 
         // Build interleaved GPU buffer: [pos(3f), color(3f), transform_index(1f)]
@@ -212,7 +212,7 @@ namespace lfs::rendering {
             }
             if (use_interop_ && interop_buffer_) {
                 if (auto map_result = interop_buffer_->mapBuffer(); map_result) {
-                    cudaMemcpy(*map_result, interleaved_cache_.data_ptr(), buffer_size, cudaMemcpyDeviceToDevice);
+                    musaMemcpy(*map_result, interleaved_cache_.data_ptr(), buffer_size, musaMemcpyDeviceToDevice);
                     if (auto result = interop_buffer_->unmapBuffer(); !result) {
                         LOG_DEBUG("Failed to unmap buffer: {}", result.error());
                     }
@@ -271,7 +271,7 @@ namespace lfs::rendering {
         }
 
         if (!cube_vao_ || cube_vao_.get() == 0)
-            return std::unexpected("Invalid cube VAO");
+            return lfs_compat::unexpected("Invalid cube VAO");
         if (current_point_count_ == 0)
             return {};
 
@@ -279,7 +279,7 @@ namespace lfs::rendering {
         glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0, static_cast<GLsizei>(current_point_count_));
 
         if (const GLenum err = glGetError(); err != GL_NO_ERROR) {
-            return std::unexpected(std::format("OpenGL error: 0x{:x}", err));
+            return lfs_compat::unexpected(std::format("OpenGL error: 0x{:x}", err));
         }
         return {};
     }

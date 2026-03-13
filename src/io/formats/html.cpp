@@ -132,12 +132,12 @@ namespace lfs::io {
 
         // Check disk space for output file
         if (auto space_check = check_disk_space(options.output_path, estimated_size, 1.1f); !space_check) {
-            return std::unexpected(space_check.error());
+            return lfs_compat::unexpected(space_check.error());
         }
 
         // Verify path is writable
         if (auto writable_check = verify_writable(options.output_path); !writable_check) {
-            return std::unexpected(writable_check.error());
+            return lfs_compat::unexpected(writable_check.error());
         }
 
         const auto temp_sog = std::filesystem::temp_directory_path() / "lfs_html_export_temp.sog";

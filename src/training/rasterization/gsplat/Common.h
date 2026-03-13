@@ -8,12 +8,30 @@
 #include <cstdint>
 #include <cstdio>
 
-// cuda.h defines CUDA_VERSION which GLM needs to detect CUDA version properly
-// Must be included before any GLM headers
-#include <cuda.h>
-#include <cuda_runtime.h>
+// GLM needs __CUDACC__ to annotate functions with __host__ __device__.
+// MUSA's mcc defines __MUSACC__ instead, so we fake it for GLM.
+#ifndef __CUDACC__
+#define __CUDACC__
+#define _LFS_FAKED_CUDACC
+#endif
+#ifndef CUDA_VERSION
+#define CUDA_VERSION 11020
+#define _LFS_FAKED_CUDA_VERSION
+#endif
+
+#include <musa.h>
+#include <musa_runtime.h>
 
 #include <glm/gtc/type_ptr.hpp>
+
+#ifdef _LFS_FAKED_CUDACC
+#undef __CUDACC__
+#undef _LFS_FAKED_CUDACC
+#endif
+#ifdef _LFS_FAKED_CUDA_VERSION
+#undef CUDA_VERSION
+#undef _LFS_FAKED_CUDA_VERSION
+#endif
 
 //
 // Camera Types (at global scope for compatibility with Cameras.cuh)
@@ -66,15 +84,15 @@ namespace gsplat_lfs {
 #endif
 
 // CUB wrapper that handles temporary storage allocation
-// Uses cudaMalloc instead of PyTorch caching allocator
+// Uses musaMalloc instead of PyTorch caching allocator
 #define CUB_WRAPPER_LFS(func, ...)                           \
     do {                                                     \
         size_t temp_storage_bytes = 0;                       \
         func(nullptr, temp_storage_bytes, __VA_ARGS__);      \
         void* temp_storage = nullptr;                        \
-        cudaMalloc(&temp_storage, temp_storage_bytes);       \
+        musaMalloc(&temp_storage, temp_storage_bytes);       \
         func(temp_storage, temp_storage_bytes, __VA_ARGS__); \
-        cudaFree(temp_storage);                              \
+        musaFree(temp_storage);                              \
     } while (false)
 
     //

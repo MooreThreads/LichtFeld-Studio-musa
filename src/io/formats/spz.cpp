@@ -132,7 +132,7 @@ namespace lfs::io {
         }
     } // namespace
 
-    std::expected<SplatData, std::string> load_spz(const std::filesystem::path& filepath) {
+    lfs_compat::expected<SplatData, std::string> load_spz(const std::filesystem::path& filepath) {
         auto start = std::chrono::high_resolution_clock::now();
 
         LOG_INFO("Loading SPZ file: {}", lfs::core::path_to_utf8(filepath));
@@ -143,7 +143,7 @@ namespace lfs::io {
         auto cloud = spz::loadSpz(lfs::core::path_to_utf8(filepath), options);
 
         if (cloud.numPoints == 0) {
-            return std::unexpected(std::format("Failed to load SPZ file: {}", lfs::core::path_to_utf8(filepath)));
+            return lfs_compat::unexpected(std::format("Failed to load SPZ file: {}", lfs::core::path_to_utf8(filepath)));
         }
 
         LOG_DEBUG("SPZ loaded: {} points, SH degree {}", cloud.numPoints, cloud.shDegree);

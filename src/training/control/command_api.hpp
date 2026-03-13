@@ -111,7 +111,7 @@ namespace lfs::training {
         [[nodiscard]] std::vector<LossHistoryPoint> loss_history() const;
         void clear_loss_history();
 
-        std::expected<void, std::string> execute(const Command& cmd);
+        lfs_compat::expected<void, std::string> execute(const Command& cmd);
 
         // Enqueue a command to be executed later on the training thread.
         void enqueue_command(const Command& cmd);
@@ -123,17 +123,17 @@ namespace lfs::training {
     private:
         CommandCenter();
 
-        std::expected<void, std::string> exec_model(const Command& cmd, TrainingSnapshot& view);
-        std::expected<void, std::string> exec_optimizer(const Command& cmd, TrainingSnapshot& view);
-        std::expected<void, std::string> exec_session(const Command& cmd, TrainingSnapshot& view);
+        lfs_compat::expected<void, std::string> exec_model(const Command& cmd, TrainingSnapshot& view);
+        lfs_compat::expected<void, std::string> exec_optimizer(const Command& cmd, TrainingSnapshot& view);
+        lfs_compat::expected<void, std::string> exec_session(const Command& cmd, TrainingSnapshot& view);
 
         // Helpers
-        static std::expected<core::Tensor, std::string> build_row_mask(const Selection& sel, std::size_t rows, core::Device device);
-        static std::expected<void, std::string> apply_set(core::Tensor& tensor, const core::Tensor& mask_rows, const ArgValue& value);
-        static std::expected<void, std::string> apply_scale(core::Tensor& tensor, const core::Tensor& mask_rows, double factor);
-        static std::expected<void, std::string> apply_clamp(core::Tensor& tensor, const core::Tensor& mask_rows, const std::optional<double>& minv, const std::optional<double>& maxv);
+        static lfs_compat::expected<core::Tensor, std::string> build_row_mask(const Selection& sel, std::size_t rows, core::Device device);
+        static lfs_compat::expected<void, std::string> apply_set(core::Tensor& tensor, const core::Tensor& mask_rows, const ArgValue& value);
+        static lfs_compat::expected<void, std::string> apply_scale(core::Tensor& tensor, const core::Tensor& mask_rows, double factor);
+        static lfs_compat::expected<void, std::string> apply_clamp(core::Tensor& tensor, const core::Tensor& mask_rows, const std::optional<double>& minv, const std::optional<double>& maxv);
 
-        static std::expected<core::Tensor*, std::string> resolve_attribute(lfs::core::SplatData& model, const std::string& name, size_t& row_dim_out);
+        static lfs_compat::expected<core::Tensor*, std::string> resolve_attribute(lfs::core::SplatData& model, const std::string& name, size_t& row_dim_out);
 
         // Registry
         std::vector<OperationInfo> ops_;

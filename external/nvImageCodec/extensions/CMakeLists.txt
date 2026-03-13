@@ -14,9 +14,9 @@
 # limitations under the License.
 
 if (BUILD_NVJPEG2K_EXT)
-    add_subdirectory(nvjpeg2k)
+ add_subdirectory(nvjpeg2k)
 endif()
 
 if(BUILD_NVJPEG_EXT)
-    add_subdirectory(nvjpeg)
+ add_subdirectory(nvjpeg)
 endif()

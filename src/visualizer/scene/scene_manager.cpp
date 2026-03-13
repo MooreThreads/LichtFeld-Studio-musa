@@ -41,7 +41,7 @@ namespace lfs::vis {
 
         template <typename TRenderable>
         [[nodiscard]] bool containsRenderableNode(const std::vector<TRenderable>& renderables, const core::NodeId node_id) {
-            return std::ranges::any_of(renderables, [node_id](const auto& item) { return item.node_id == node_id; });
+            return std::any_of(renderables.begin(), renderables.end(), [node_id](const auto& item) { return item.node_id == node_id; });
         }
     } // namespace
 
@@ -1462,7 +1462,7 @@ namespace lfs::vis {
         }
     }
 
-    std::expected<void, std::string> SceneManager::applyLoadedDataset(
+    lfs_compat::expected<void, std::string> SceneManager::applyLoadedDataset(
         const std::filesystem::path& path,
         const lfs::core::param::TrainingParameters& params,
         lfs::io::LoadResult&& load_result) {
@@ -1482,7 +1482,7 @@ namespace lfs::vis {
 
             auto apply_result = lfs::training::applyLoadResultToScene(dataset_params, scene_, std::move(load_result));
             if (!apply_result) {
-                return std::unexpected(apply_result.error());
+                return lfs_compat::unexpected(apply_result.error());
             }
 
             if (scene_.hasTrainingData()) {
@@ -1490,7 +1490,7 @@ namespace lfs::vis {
                 trainer->setParams(dataset_params);
 
                 if (!services().trainerOrNull()) {
-                    return std::unexpected("No trainer manager");
+                    return lfs_compat::unexpected("No trainer manager");
                 }
                 services().trainerOrNull()->setScene(&scene_);
                 services().trainerOrNull()->setTrainer(std::move(trainer));
@@ -1524,7 +1524,7 @@ namespace lfs::vis {
 
         } catch (const std::exception& e) {
             LOG_ERROR("applyLoadedDataset failed: {}", e.what());
-            return std::unexpected(e.what());
+            return lfs_compat::unexpected(e.what());
         }
     }
 

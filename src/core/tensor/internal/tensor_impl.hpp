@@ -10,7 +10,7 @@
 #include <chrono>
 #include <concepts>
 #include <cstring>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <functional>
 #include <initializer_list>
 #include <limits>
@@ -291,7 +291,7 @@ namespace lfs::core {
             bool is_aligned_128 = false; // 128-byte alignment for cache line optimization
 
             // CUDA stream for async execution (assigned round-robin from StreamPool)
-            cudaStream_t stream = nullptr;
+            musaStream_t stream = nullptr;
 
             // Debug tracking - when true, operations on this tensor are logged
             bool tracked = false;
@@ -1051,8 +1051,8 @@ namespace lfs::core {
         bool is_aligned_128() const { return state_->is_aligned_128; }
 
         // Stream accessor (for async CUDA operations)
-        cudaStream_t stream() const { return state_->stream; }
-        void set_stream(cudaStream_t stream) { state_->stream = stream; }
+        musaStream_t stream() const { return state_->stream; }
+        void set_stream(musaStream_t stream) { state_->stream = stream; }
 
         // Debug tracking - mark tensor to trace all operations it's involved in
         bool is_tracked() const { return state_->tracked; }
@@ -1093,7 +1093,7 @@ namespace lfs::core {
         // Memory operations
         Tensor clone() const;      // Deep copy
         Tensor contiguous() const; // Materialize to contiguous if strided
-        Tensor to(Device device, cudaStream_t stream = nullptr) const;
+        Tensor to(Device device, musaStream_t stream = nullptr) const;
         Tensor to(DataType dtype) const;
         bool is_contiguous() const { return is_contiguous_; }
 
@@ -1697,7 +1697,7 @@ namespace lfs::core {
             const char* data_ptr = static_cast<const char*>(data_) + storage_offset_ * dtype_size(dtype_);
 
             if (device_ == Device::CUDA) {
-                cudaMemcpy(&value, data_ptr, sizeof(T), cudaMemcpyDeviceToHost);
+                musaMemcpy(&value, data_ptr, sizeof(T), musaMemcpyDeviceToHost);
             } else {
                 value = *static_cast<const T*>(static_cast<const void*>(data_ptr));
             }
@@ -1961,7 +1961,7 @@ namespace lfs::core {
         // Other in-place operations
         Tensor& zero_();
         Tensor& fill_(float value);
-        Tensor& fill_(float value, cudaStream_t stream); // Stream-aware version (no sync)
+        Tensor& fill_(float value, musaStream_t stream); // Stream-aware version (no sync)
         Tensor& copy_from(const Tensor& other);
         Tensor& copy_(const Tensor& src) { return copy_from(src); }
         Tensor& uniform_(float low = 0.0f, float high = 1.0f);
@@ -2110,10 +2110,10 @@ namespace lfs::core {
                 T value{};
                 size_t type_size = dtype_size(tensor_->dtype());
                 const void* src_ptr = static_cast<const char*>(tensor_->data_ptr()) + row_index_ * type_size;
-                cudaError_t err = cudaMemcpy(&value, src_ptr, sizeof(T), cudaMemcpyDeviceToHost);
-                if (err != cudaSuccess) {
+                musaError_t err = musaMemcpy(&value, src_ptr, sizeof(T), musaMemcpyDeviceToHost);
+                if (err != musaSuccess) {
                     throw std::runtime_error(
-                        std::string("CUDA memcpy failed in TensorRowProxy::item_as(): ") + cudaGetErrorString(err));
+                        std::string("CUDA memcpy failed in TensorRowProxy::item_as(): ") + musaGetErrorString(err));
                 }
                 return value;
             } else {

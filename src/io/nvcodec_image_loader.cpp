@@ -8,14 +8,14 @@
 #include "core/logger.hpp"
 #include "core/path_utils.hpp"
 #include "core/tensor.hpp"
-#include "cuda/image_format_kernels.cuh"
+#include "cuda/image_format_kernels.muh"
 
 #include <algorithm>
 #include <condition_variable>
 #include <cstdlib>
 #include <cstring>
-#include <cuda.h> // For CUcontext, cuCtxGetCurrent, cuCtxSetCurrent
-#include <cuda_runtime.h>
+#include <musa.h> // For CUcontext, cuCtxGetCurrent, cuCtxSetCurrent
+#include <musa_runtime.h>
 #include <fstream>
 #include <mutex>
 #include <nvimgcodec.h>
@@ -81,19 +81,19 @@ namespace lfs::io {
         // Log comprehensive GPU and driver information
         void log_gpu_diagnostics() {
             int device_count = 0;
-            cudaError_t err = cudaGetDeviceCount(&device_count);
+            musaError_t err = musaGetDeviceCount(&device_count);
 
-            if (err != cudaSuccess) {
-                LOG_ERROR("[nvImageCodec Diagnostics] cudaGetDeviceCount failed: {} ({})",
-                          cudaGetErrorString(err), static_cast<int>(err));
+            if (err != musaSuccess) {
+                LOG_ERROR("[nvImageCodec Diagnostics] musaGetDeviceCount failed: {} ({})",
+                          musaGetErrorString(err), static_cast<int>(err));
                 return;
             }
 
             LOG_INFO("[nvImageCodec Diagnostics] CUDA device count: {}", device_count);
 
             for (int i = 0; i < device_count; ++i) {
-                cudaDeviceProp prop;
-                if (cudaGetDeviceProperties(&prop, i) == cudaSuccess) {
+                musaDeviceProp prop;
+                if (musaGetDeviceProperties(&prop, i) == musaSuccess) {
                     LOG_INFO("[nvImageCodec Diagnostics] GPU {}: {} (SM {}.{}, {} MB, compute capability {}.{})",
                              i, prop.name, prop.major, prop.minor,
                              static_cast<int>(prop.totalGlobalMem / (1024 * 1024)),
@@ -115,14 +115,14 @@ namespace lfs::io {
 
             // Log CUDA driver version
             int driver_version = 0;
-            if (cudaDriverGetVersion(&driver_version) == cudaSuccess) {
+            if (musaDriverGetVersion(&driver_version) == musaSuccess) {
                 LOG_INFO("[nvImageCodec Diagnostics] CUDA driver version: {}.{}",
                          driver_version / 1000, (driver_version % 1000) / 10);
             }
 
             // Log CUDA runtime version
             int runtime_version = 0;
-            if (cudaRuntimeGetVersion(&runtime_version) == cudaSuccess) {
+            if (musaRuntimeGetVersion(&runtime_version) == musaSuccess) {
                 LOG_INFO("[nvImageCodec Diagnostics] CUDA runtime version: {}.{}",
                          runtime_version / 1000, (runtime_version % 1000) / 10);
             }
@@ -220,8 +220,8 @@ namespace lfs::io {
 
         bool check_nvimgcodec_availability_fast() {
             int device_count = 0;
-            cudaError_t err = cudaGetDeviceCount(&device_count);
-            if (err != cudaSuccess || device_count == 0) {
+            musaError_t err = musaGetDeviceCount(&device_count);
+            if (err != musaSuccess || device_count == 0) {
                 return false;
             }
 
@@ -264,10 +264,10 @@ namespace lfs::io {
             log_gpu_diagnostics();
 
             int device_count = 0;
-            cudaError_t err = cudaGetDeviceCount(&device_count);
-            if (err != cudaSuccess || device_count == 0) {
+            musaError_t err = musaGetDeviceCount(&device_count);
+            if (err != musaSuccess || device_count == 0) {
                 LOG_ERROR("[nvImageCodec Diagnostics] CUDA not available: {} (device_count={})",
-                          cudaGetErrorString(err), device_count);
+                          musaGetErrorString(err), device_count);
                 LOG_INFO("[nvImageCodec Diagnostics] === nvImageCodec UNAVAILABLE (no CUDA) ===");
                 return false;
             }
@@ -625,7 +625,7 @@ namespace lfs::io {
         LOG_DEBUG("Image info: {}x{} -> {}x{} (resize_factor={}, max_width={})",
                   src_width, src_height, target_width, target_height, resize_factor, max_width);
 
-        cudaSetDevice(impl_->device_id);
+        musaSetDevice(impl_->device_id);
 
         using namespace lfs::core;
         Tensor uint8_tensor;
@@ -668,7 +668,7 @@ namespace lfs::io {
         output_info.buffer_kind = NVIMGCODEC_IMAGE_BUFFER_KIND_STRIDED_DEVICE;
         output_info.buffer = gpu_uint8_buffer;
         output_info.buffer_size = decoded_size;
-        output_info.cuda_stream = static_cast<cudaStream_t>(cuda_stream);
+        output_info.cuda_stream = static_cast<musaStream_t>(cuda_stream);
 
         status = nvimgcodecImageCreate(impl_->instance, &nv_image, &output_info);
         if (status != NVIMGCODEC_STATUS_SUCCESS) {
@@ -726,10 +726,10 @@ namespace lfs::io {
         if (needs_resize) {
             if (is_grayscale) {
                 output_tensor = lanczos_resize_grayscale(uint8_tensor, target_height, target_width,
-                                                         LANCZOS_KERNEL_SIZE, static_cast<cudaStream_t>(cuda_stream));
+                                                         LANCZOS_KERNEL_SIZE, static_cast<musaStream_t>(cuda_stream));
             } else {
                 output_tensor = lanczos_resize(uint8_tensor, target_height, target_width,
-                                               LANCZOS_KERNEL_SIZE, static_cast<cudaStream_t>(cuda_stream));
+                                               LANCZOS_KERNEL_SIZE, static_cast<musaStream_t>(cuda_stream));
             }
         } else {
             if (is_grayscale) {
@@ -739,7 +739,7 @@ namespace lfs::io {
                 cuda::launch_uint8_hw_to_float32_hw(
                     reinterpret_cast<const uint8_t*>(uint8_tensor.data_ptr()),
                     reinterpret_cast<float*>(output_tensor.data_ptr()),
-                    H, W, static_cast<cudaStream_t>(cuda_stream));
+                    H, W, static_cast<musaStream_t>(cuda_stream));
             } else {
                 const auto shape = uint8_tensor.shape();
                 const size_t H = shape[0], W = shape[1], C = shape[2];
@@ -747,12 +747,12 @@ namespace lfs::io {
                 cuda::launch_uint8_hwc_to_float32_chw(
                     reinterpret_cast<const uint8_t*>(uint8_tensor.data_ptr()),
                     reinterpret_cast<float*>(output_tensor.data_ptr()),
-                    H, W, C, static_cast<cudaStream_t>(cuda_stream));
+                    H, W, C, static_cast<musaStream_t>(cuda_stream));
             }
         }
 
-        if (const cudaError_t err = cudaDeviceSynchronize(); err != cudaSuccess) {
-            throw std::runtime_error(std::string("CUDA sync failed: ") + cudaGetErrorString(err));
+        if (const musaError_t err = musaDeviceSynchronize(); err != musaSuccess) {
+            throw std::runtime_error(std::string("CUDA sync failed: ") + musaGetErrorString(err));
         }
         uint8_tensor = Tensor();
 
@@ -796,7 +796,7 @@ namespace lfs::io {
 
         CUcontext saved_context = nullptr;
         cuCtxGetCurrent(&saved_context);
-        cudaSetDevice(impl_->device_id);
+        musaSetDevice(impl_->device_id);
 
         std::vector<nvimgcodecCodeStream_t> code_streams(batch_size);
         std::vector<nvimgcodecImageInfo_t> image_infos(batch_size);
@@ -853,7 +853,7 @@ namespace lfs::io {
             output_info.buffer_kind = NVIMGCODEC_IMAGE_BUFFER_KIND_STRIDED_DEVICE;
             output_info.buffer = uint8_tensors[i].data_ptr();
             output_info.buffer_size = static_cast<size_t>(height) * width * 3;
-            output_info.cuda_stream = static_cast<cudaStream_t>(cuda_stream);
+            output_info.cuda_stream = static_cast<musaStream_t>(cuda_stream);
 
             const auto status = nvimgcodecImageCreate(impl_->instance, &nv_images[i], &output_info);
             if (status != NVIMGCODEC_STATUS_SUCCESS) {
@@ -926,7 +926,7 @@ namespace lfs::io {
             results.push_back(std::move(output));
         }
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         uint8_tensors.clear();
 
         if (saved_context) {
@@ -961,7 +961,7 @@ namespace lfs::io {
 
         CUcontext saved_context = nullptr;
         cuCtxGetCurrent(&saved_context);
-        cudaSetDevice(impl_->device_id);
+        musaSetDevice(impl_->device_id);
 
         std::vector<nvimgcodecCodeStream_t> code_streams(batch_size);
         std::vector<nvimgcodecImageInfo_t> image_infos(batch_size);
@@ -1018,7 +1018,7 @@ namespace lfs::io {
             out_info.buffer = uint8_tensors[i].data_ptr();
             out_info.buffer_size = uint8_tensors[i].bytes();
             out_info.buffer_kind = NVIMGCODEC_IMAGE_BUFFER_KIND_STRIDED_DEVICE;
-            out_info.cuda_stream = static_cast<cudaStream_t>(cuda_stream);
+            out_info.cuda_stream = static_cast<musaStream_t>(cuda_stream);
 
             const auto status = nvimgcodecImageCreate(impl_->instance, &nv_images[i], &out_info);
             if (status != NVIMGCODEC_STATUS_SUCCESS) {
@@ -1090,7 +1090,7 @@ namespace lfs::io {
             results.push_back(std::move(output));
         }
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         uint8_tensors.clear();
 
         if (saved_context) {
@@ -1154,7 +1154,7 @@ namespace lfs::io {
         image_info.buffer_kind = NVIMGCODEC_IMAGE_BUFFER_KIND_STRIDED_DEVICE;
         image_info.buffer = hwc_uint8.data_ptr();
         image_info.buffer_size = height * width * 3;
-        image_info.cuda_stream = static_cast<cudaStream_t>(cuda_stream);
+        image_info.cuda_stream = static_cast<musaStream_t>(cuda_stream);
 
         nvimgcodecImage_t nv_image;
         auto status = nvimgcodecImageCreate(impl_->instance, &nv_image, &image_info);
@@ -1267,7 +1267,7 @@ namespace lfs::io {
         image_info.buffer_kind = NVIMGCODEC_IMAGE_BUFFER_KIND_STRIDED_DEVICE;
         image_info.buffer = hw_uint8.data_ptr();
         image_info.buffer_size = height * width;
-        image_info.cuda_stream = static_cast<cudaStream_t>(cuda_stream);
+        image_info.cuda_stream = static_cast<musaStream_t>(cuda_stream);
 
         nvimgcodecImage_t nv_image;
         auto status = nvimgcodecImageCreate(impl_->instance, &nv_image, &image_info);
@@ -1373,7 +1373,7 @@ namespace lfs::io {
             image_info.buffer_kind = NVIMGCODEC_IMAGE_BUFFER_KIND_STRIDED_DEVICE;
             image_info.buffer = gpu_ptrs[i];
             image_info.buffer_size = frame_size;
-            image_info.cuda_stream = static_cast<cudaStream_t>(cuda_stream);
+            image_info.cuda_stream = static_cast<musaStream_t>(cuda_stream);
 
             auto status = nvimgcodecImageCreate(impl_->instance, &nv_images[i], &image_info);
             if (status != NVIMGCODEC_STATUS_SUCCESS) {

@@ -15,14 +15,14 @@ namespace lfs::io::video {
     public:
         virtual ~IVideoEncoder() = default;
 
-        [[nodiscard]] virtual std::expected<void, std::string> open(
+        [[nodiscard]] virtual lfs_compat::expected<void, std::string> open(
             const std::filesystem::path& output_path,
             const VideoExportOptions& options) = 0;
 
-        [[nodiscard]] virtual std::expected<void, std::string> writeFrameGpu(
+        [[nodiscard]] virtual lfs_compat::expected<void, std::string> writeFrameGpu(
             const void* rgba_gpu_ptr, int width, int height, void* cuda_stream = nullptr) = 0;
 
-        [[nodiscard]] virtual std::expected<void, std::string> close() = 0;
+        [[nodiscard]] virtual lfs_compat::expected<void, std::string> close() = 0;
     };
 
 } // namespace lfs::io::video

@@ -70,7 +70,7 @@ namespace lfs::rendering {
     Result<void> ScreenQuadRenderer::render(std::shared_ptr<Shader> shader) const {
         if (!shader) {
             LOG_ERROR("Shader is null");
-            return std::unexpected("Shader is null");
+            return lfs_compat::unexpected("Shader is null");
         }
 
         LOG_TIMER_TRACE("ScreenQuadRenderer::render");
@@ -86,7 +86,7 @@ namespace lfs::rendering {
         } catch (const std::exception& e) {
             shader->unbind();
             LOG_ERROR("Failed to set uniform: {}", e.what());
-            return std::unexpected(std::format("Failed to set uniform: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to set uniform: {}", e.what()));
         }
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -155,7 +155,7 @@ namespace lfs::rendering {
     Result<void> ScreenQuadRenderer::uploadData(const unsigned char* image, int width_, int height_) {
         if (!framebuffer) {
             LOG_ERROR("Framebuffer not initialized");
-            return std::unexpected("Framebuffer not initialized");
+            return lfs_compat::unexpected("Framebuffer not initialized");
         }
 
         LOG_TRACE("Uploading image data: {}x{}", width_, height_);
@@ -200,7 +200,7 @@ namespace lfs::rendering {
     Result<void> ScreenQuadRenderer::uploadDepth(const float* depth_data, int width, int height) {
         if (!framebuffer) {
             LOG_ERROR("Framebuffer not initialized");
-            return std::unexpected("Framebuffer not initialized");
+            return lfs_compat::unexpected("Framebuffer not initialized");
         }
 
         LOG_TRACE("Uploading depth data: {}x{}", width, height);
@@ -211,7 +211,7 @@ namespace lfs::rendering {
     Result<void> ScreenQuadRenderer::uploadDepthFromCUDA(const Tensor& cuda_depth, int width, int height) {
         if (!framebuffer) {
             LOG_ERROR("Framebuffer not initialized");
-            return std::unexpected("Framebuffer not initialized");
+            return lfs_compat::unexpected("Framebuffer not initialized");
         }
 
         LOG_TRACE("Uploading depth from CUDA: {}x{}", width, height);
@@ -236,7 +236,7 @@ namespace lfs::rendering {
             depth_cpu.size(1) != static_cast<size_t>(width)) {
             LOG_ERROR("Depth tensor size mismatch: expected {}x{}, got {}x{}",
                       height, width, depth_cpu.size(0), depth_cpu.size(1));
-            return std::unexpected("Depth tensor size mismatch");
+            return lfs_compat::unexpected("Depth tensor size mismatch");
         }
 
         framebuffer->uploadDepth(depth_cpu.ptr<float>(), width, height);

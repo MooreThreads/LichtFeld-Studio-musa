@@ -10,7 +10,6 @@
         "avcodec",
         "avformat",
         "swscale",
-        "nvcodec",
         "x264"
       ]
     },

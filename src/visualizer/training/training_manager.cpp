@@ -11,7 +11,7 @@
 #include "python/python_runtime.hpp"
 #include "training/training_setup.hpp"
 #include <cstring>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <stdexcept>
 
 namespace lfs::vis {

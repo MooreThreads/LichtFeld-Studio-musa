@@ -1,0 +1,23 @@
+/* SPDX-FileCopyrightText: 2025 LichtFeld Studio Authors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Compatibility shim: provides std::format via fmt library.
+ * GCC 11 / Clang 14 (mcc) do not have <format>. This file is placed
+ * on the include path ahead of the system headers so that
+ * #include <format> finds this shim instead of failing.
+ */
+
+#ifndef LFS_FORMAT_COMPAT_H_
+#define LFS_FORMAT_COMPAT_H_
+
+#include <fmt/format.h>
+#include <fmt/core.h>
+
+namespace std {
+    using fmt::format;
+    using fmt::format_string;
+    using fmt::vformat;
+    using fmt::make_format_args;
+}
+
+#endif // LFS_FORMAT_COMPAT_H_

@@ -19,14 +19,14 @@ namespace lfs::training {
     class StrategyFactory {
     public:
         using Creator = std::function<
-            std::expected<std::unique_ptr<IStrategy>, std::string>(core::SplatData&)>;
+            lfs_compat::expected<std::unique_ptr<IStrategy>, std::string>(core::SplatData&)>;
 
         static StrategyFactory& instance();
 
         bool register_creator(const std::string& name, Creator creator);
         bool unregister(const std::string& name);
 
-        [[nodiscard]] std::expected<std::unique_ptr<IStrategy>, std::string>
+        [[nodiscard]] lfs_compat::expected<std::unique_ptr<IStrategy>, std::string>
         create(const std::string& name, core::SplatData& model) const;
 
         [[nodiscard]] bool has(const std::string& name) const;

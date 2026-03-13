@@ -25,7 +25,7 @@ namespace lfs::vis {
         }
     } // namespace
 
-    std::expected<void, std::string> ParameterManager::ensureLoaded() {
+    lfs_compat::expected<void, std::string> ParameterManager::ensureLoaded() {
         if (loaded_)
             return {};
 

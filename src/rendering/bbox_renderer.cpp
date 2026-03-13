@@ -47,7 +47,7 @@ namespace lfs::rendering {
         auto result = load_shader("bounding_box", "bounding_box.vert", "bounding_box.frag", false);
         if (!result) {
             LOG_ERROR("Failed to load bounding box shader: {}", result.error().what());
-            return std::unexpected(result.error().what());
+            return lfs_compat::unexpected(result.error().what());
         }
         shader_ = std::move(*result);
 
@@ -55,20 +55,20 @@ namespace lfs::rendering {
         auto vao_result = create_vao();
         if (!vao_result) {
             LOG_ERROR("Failed to create VAO: {}", vao_result.error());
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         }
 
         auto vbo_result = create_vbo();
         if (!vbo_result) {
             LOG_ERROR("Failed to create VBO: {}", vbo_result.error());
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         }
         vbo_ = std::move(*vbo_result);
 
         auto ebo_result = create_vbo(); // EBO is also a buffer
         if (!ebo_result) {
             LOG_ERROR("Failed to create EBO: {}", ebo_result.error());
-            return std::unexpected(ebo_result.error());
+            return lfs_compat::unexpected(ebo_result.error());
         }
         ebo_ = std::move(*ebo_result);
 
@@ -125,7 +125,7 @@ namespace lfs::rendering {
     Result<void> RenderBoundingBox::setupVertexData() {
         if (!initialized_ || !vao_) {
             LOG_ERROR("Bounding box not initialized");
-            return std::unexpected("Bounding box not initialized");
+            return lfs_compat::unexpected("Bounding box not initialized");
         }
 
         LOG_TIMER_TRACE("RenderBoundingBox::setupVertexData");
@@ -145,7 +145,7 @@ namespace lfs::rendering {
     Result<void> RenderBoundingBox::render(const glm::mat4& view, const glm::mat4& projection) {
         if (!initialized_ || !shader_.valid() || !vao_) {
             LOG_ERROR("Bounding box renderer not initialized");
-            return std::unexpected("Bounding box renderer not initialized");
+            return lfs_compat::unexpected("Bounding box renderer not initialized");
         }
 
         LOG_TIMER_TRACE("RenderBoundingBox::render");

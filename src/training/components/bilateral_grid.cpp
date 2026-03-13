@@ -99,7 +99,7 @@ namespace lfs::training {
             const int w = static_cast<int>(shape[2]);
             auto grad_rgb = lfs::core::Tensor::empty({3, shape[1], shape[2]}, lfs::core::Device::CUDA);
 
-            cudaMemsetAsync(grad_buffer_.ptr<float>(), 0, grid_slice_size * sizeof(float), nullptr);
+            musaMemsetAsync(grad_buffer_.ptr<float>(), 0, grid_slice_size * sizeof(float), nullptr);
             kernels::launch_bilateral_grid_slice_backward_chw(
                 grid_ptr, rgb.ptr<float>(), grad_output.ptr<float>(),
                 grad_buffer_.ptr<float>(), grad_rgb.ptr<float>(),
@@ -150,7 +150,7 @@ namespace lfs::training {
     }
 
     void BilateralGrid::zero_grad() {
-        cudaMemsetAsync(accumulated_grads_.ptr<float>(), 0,
+        musaMemsetAsync(accumulated_grads_.ptr<float>(), 0,
                         accumulated_grads_.numel() * sizeof(float), nullptr);
     }
 

@@ -8,13 +8,13 @@
 #include <expected>
 #include <format>
 #include <memory>
-#include <source_location>
+#include "core/source_location_compat.hpp"
 #include <string>
 
 namespace lfs::rendering {
 
     template <typename T>
-    using Result = std::expected<T, std::string>;
+    using Result = lfs_compat::expected<T, std::string>;
 
     struct ShaderError {
         std::string message;
@@ -24,7 +24,7 @@ namespace lfs::rendering {
     };
 
     template <typename T>
-    using ShaderResult = std::expected<T, ShaderError>;
+    using ShaderResult = lfs_compat::expected<T, ShaderError>;
 
     class ManagedShader {
         std::shared_ptr<Shader> shader_;
@@ -44,7 +44,7 @@ namespace lfs::rendering {
                          std::source_location loc = std::source_location::current()) {
             if (!shader_) {
                 LOG_ERROR("Null shader '{}' when setting '{}'", name_, uniform);
-                return std::unexpected(std::format("Shader '{}' is not initialized", name_));
+                return lfs_compat::unexpected(std::format("Shader '{}' is not initialized", name_));
             }
 
             try {
@@ -52,11 +52,11 @@ namespace lfs::rendering {
                 return {};
             } catch (const std::exception& e) {
                 LOG_ERROR("Failed to set '{}' on shader '{}': {}", uniform, name_, e.what());
-                return std::unexpected(std::format("Shader '{}': Failed to set '{}': {}",
+                return lfs_compat::unexpected(std::format("Shader '{}': Failed to set '{}': {}",
                                                    name_, uniform, e.what()));
             } catch (...) {
                 LOG_ERROR("Unknown exception setting '{}' on shader '{}'", uniform, name_);
-                return std::unexpected(std::format("Shader '{}': Unknown error setting '{}'",
+                return lfs_compat::unexpected(std::format("Shader '{}': Unknown error setting '{}'",
                                                    name_, uniform));
             }
         }

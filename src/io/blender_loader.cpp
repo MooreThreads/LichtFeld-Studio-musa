@@ -16,7 +16,7 @@
 
 namespace lfs::io {
 
-    std::expected<LoadResult, std::string> BlenderLoader::load(
+    lfs_compat::expected<LoadResult, std::string> BlenderLoader::load(
         const std::filesystem::path& path,
         const LoadOptions& options) {
 

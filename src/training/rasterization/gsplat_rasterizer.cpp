@@ -9,12 +9,12 @@
 #include "training/kernels/grad_alpha.hpp"
 #include <array>
 #include <cassert>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <spdlog/spdlog.h>
 
 namespace lfs::training {
 
-    std::expected<std::pair<RenderOutput, GsplatRasterizeContext>, std::string> gsplat_rasterize_forward(
+    lfs_compat::expected<std::pair<RenderOutput, GsplatRasterizeContext>, std::string> gsplat_rasterize_forward(
         core::Camera& viewpoint_camera,
         core::SplatData& gaussian_model,
         core::Tensor& bg_color,
@@ -88,7 +88,7 @@ namespace lfs::training {
             }
         }
 
-        const cudaStream_t fwd_stream = means.stream();
+        const musaStream_t fwd_stream = means.stream();
 
         // Keep K tensor cached and update values in-place to avoid per-call allocations.
         thread_local core::Tensor cached_K_tensor;
@@ -100,11 +100,11 @@ namespace lfs::training {
             k00, 0.0f, k02,
             0.0f, k11, k12,
             0.0f, 0.0f, 1.0f};
-        cudaMemcpyAsync(
+        musaMemcpyAsync(
             cached_K_tensor.ptr<float>(),
             K_host.data(),
             sizeof(float) * K_host.size(),
-            cudaMemcpyHostToDevice,
+            musaMemcpyHostToDevice,
             fwd_stream);
         K_tensor = cached_K_tensor;
 
@@ -388,11 +388,11 @@ namespace lfs::training {
             cached_alpha_chw = core::Tensor::empty(alpha_shape, core::Device::CUDA, core::DataType::Float32);
         }
         cached_alpha_chw.set_stream(fwd_stream);
-        cudaMemcpyAsync(
+        musaMemcpyAsync(
             cached_alpha_chw.ptr<float>(),
             render_alphas_ptr_out,
             static_cast<size_t>(H) * static_cast<size_t>(W) * sizeof(float),
-            cudaMemcpyDeviceToDevice,
+            musaMemcpyDeviceToDevice,
             fwd_stream);
         render_output.alpha = cached_alpha_chw;
 
@@ -407,11 +407,11 @@ namespace lfs::training {
                 cached_depth_chw = core::Tensor::empty(depth_shape, core::Device::CUDA, core::DataType::Float32);
             }
             cached_depth_chw.set_stream(fwd_stream);
-            cudaMemcpyAsync(
+            musaMemcpyAsync(
                 cached_depth_chw.ptr<float>(),
                 depth_hwc.ptr<float>(),
                 static_cast<size_t>(H) * static_cast<size_t>(W) * sizeof(float),
-                cudaMemcpyDeviceToDevice,
+                musaMemcpyDeviceToDevice,
                 fwd_stream);
 
             render_output.depth = cached_depth_chw;
@@ -508,7 +508,7 @@ namespace lfs::training {
         const uint32_t H = ctx.image_height;
         const uint32_t W = ctx.image_width;
         const uint32_t channels = ctx.channels;
-        const cudaStream_t stream = ctx.means.stream();
+        const musaStream_t stream = ctx.means.stream();
 
         // Calculate sizes for arena allocation
         auto align = [](size_t size, size_t alignment = 128) {
@@ -546,11 +546,11 @@ namespace lfs::training {
         auto* v_sh_coeffs_ptr = reinterpret_cast<float*>(bwd_ptr);
 
         // Zero the gradient buffers
-        cudaMemsetAsync(v_means_ptr, 0, N * 3 * sizeof(float), stream);
-        cudaMemsetAsync(v_quats_ptr, 0, N * 4 * sizeof(float), stream);
-        cudaMemsetAsync(v_scales_ptr, 0, N * 3 * sizeof(float), stream);
-        cudaMemsetAsync(v_opacities_ptr, 0, N * sizeof(float), stream);
-        cudaMemsetAsync(v_sh_coeffs_ptr, 0, N * K * 3 * sizeof(float), stream);
+        musaMemsetAsync(v_means_ptr, 0, N * 3 * sizeof(float), stream);
+        musaMemsetAsync(v_quats_ptr, 0, N * 4 * sizeof(float), stream);
+        musaMemsetAsync(v_scales_ptr, 0, N * 3 * sizeof(float), stream);
+        musaMemsetAsync(v_opacities_ptr, 0, N * sizeof(float), stream);
+        musaMemsetAsync(v_sh_coeffs_ptr, 0, N * K * 3 * sizeof(float), stream);
 
         // Prepare grad_render_colors [1, H, W, channels] - permute from CHW to HWC using custom kernel
         // This avoids memory pool allocation from tensor permute().contiguous()
@@ -562,7 +562,7 @@ namespace lfs::training {
                 static_cast<int>(channels), static_cast<int>(H), static_cast<int>(W),
                 stream);
         } else {
-            cudaMemsetAsync(v_render_colors_ptr, 0, H * W * channels * sizeof(float), stream);
+            musaMemsetAsync(v_render_colors_ptr, 0, H * W * channels * sizeof(float), stream);
         }
 
         // Prepare grad_render_alphas [H, W] - squeeze from [1, H, W] using custom kernel
@@ -575,7 +575,7 @@ namespace lfs::training {
                 static_cast<int>(H), static_cast<int>(W),
                 stream);
         } else {
-            cudaMemsetAsync(v_render_alphas_ptr, 0, H * W * sizeof(float), stream);
+            musaMemsetAsync(v_render_alphas_ptr, 0, H * W * sizeof(float), stream);
         }
 
         UnscentedTransformParameters ut_params;
@@ -761,10 +761,10 @@ namespace lfs::training {
 
         // Free internally allocated buffers from forward
         if (ctx.isect_ids_ptr != nullptr) {
-            cudaFree(ctx.isect_ids_ptr);
+            musaFree(ctx.isect_ids_ptr);
         }
         if (ctx.flatten_ids_ptr != nullptr) {
-            cudaFree(ctx.flatten_ids_ptr);
+            musaFree(ctx.flatten_ids_ptr);
         }
 
         // End arena frame to release memory from forward pass

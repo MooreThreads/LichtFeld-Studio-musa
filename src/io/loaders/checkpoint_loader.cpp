@@ -140,16 +140,16 @@ namespace lfs::io {
         return 15; // Higher priority than PLY since it contains more info
     }
 
-    std::expected<lfs::core::CheckpointHeader, std::string> CheckpointLoader::loadHeader(
+    lfs_compat::expected<lfs::core::CheckpointHeader, std::string> CheckpointLoader::loadHeader(
         const std::filesystem::path& path) {
         return lfs::core::load_checkpoint_header(path);
     }
 
-    std::expected<int, std::string> CheckpointLoader::getIteration(
+    lfs_compat::expected<int, std::string> CheckpointLoader::getIteration(
         const std::filesystem::path& path) {
         auto header = loadHeader(path);
         if (!header) {
-            return std::unexpected(header.error());
+            return lfs_compat::unexpected(header.error());
         }
         return header->iteration;
     }

@@ -76,9 +76,9 @@ namespace nvimgcodec {
 
 #define CHECK_CUDA(call)                                                       \
     {                                                                          \
-        cudaError_t _e = (call);                                               \
-        if (_e != cudaSuccess) {                                               \
-            cudaGetLastError(); /* clean that error for any further calls */   \
+        musaError_t _e = (call);                                               \
+        if (_e != musaSuccess) {                                               \
+            musaGetLastError(); /* clean that error for any further calls */   \
             std::stringstream _error;                                          \
             _error << "CUDA Runtime failure: '#" << std::to_string(_e) << "'"; \
             FatalError(CUDA_CALL_ERROR, _error.str());                         \
@@ -97,9 +97,9 @@ namespace nvimgcodec {
 
 #define LOG_CUDA_ERROR(call)                                                            \
     {                                                                                   \
-        cudaError_t _e = (call);                                                        \
-        if (_e != cudaSuccess) {                                                        \
-            cudaGetLastError(); /* clean that error for any further calls */            \
+        musaError_t _e = (call);                                                        \
+        if (_e != musaSuccess) {                                                        \
+            musaGetLastError(); /* clean that error for any further calls */            \
             std::stringstream _error;                                                   \
             std::cerr << "CUDA Runtime failure: '#" << std::to_string(_e) << std::endl; \
         }                                                                               \

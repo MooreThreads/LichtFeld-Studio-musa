@@ -5,7 +5,7 @@
 #pragma once
 
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -17,7 +17,7 @@ namespace gsplat_lfs {
         int64_t n_elements,
         int32_t K,
         float* colors, // [..., 3]
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     void launch_spherical_harmonics_bwd_kernel(
         uint32_t degrees_to_use,
@@ -30,6 +30,6 @@ namespace gsplat_lfs {
         bool compute_v_dirs,
         float* v_coeffs, // [..., K, 3]
         float* v_dirs,   // [..., 3] optional
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace gsplat_lfs

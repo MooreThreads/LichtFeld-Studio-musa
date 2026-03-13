@@ -119,8 +119,8 @@ namespace nvimgcodec {
                 stream = nullptr;
                 event = nullptr;
             } else {
-                CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
-                CHECK_CUDA(cudaEventCreate(&event));
+                CHECK_CUDA(musaStreamCreateWithFlags(&stream, musaStreamNonBlocking));
+                CHECK_CUDA(musaEventCreate(&event));
             }
             pinned_buffers.resize(2);
             device_buffers.resize(2);
@@ -139,11 +139,11 @@ namespace nvimgcodec {
         PerThread& operator=(PerThread&& other) noexcept {
             if (this != &other) {
                 if (event) {
-                    LOG_CUDA_ERROR(cudaEventDestroy(event));
+                    LOG_CUDA_ERROR(musaEventDestroy(event));
                 }
 
                 if (stream) {
-                    LOG_CUDA_ERROR(cudaStreamDestroy(stream));
+                    LOG_CUDA_ERROR(musaStreamDestroy(stream));
                 }
 
                 stream = std::exchange(other.stream, nullptr);
@@ -159,19 +159,19 @@ namespace nvimgcodec {
             pinned_buffers.clear();
             device_buffers.clear();
             if (event) {
-                LOG_CUDA_ERROR(cudaEventDestroy(event));
+                LOG_CUDA_ERROR(musaEventDestroy(event));
                 event = nullptr;
             }
             if (stream) {
-                LOG_CUDA_ERROR(cudaStreamDestroy(stream));
+                LOG_CUDA_ERROR(musaStreamDestroy(stream));
                 stream = nullptr;
             }
         }
 
-        cudaStream_t stream;
-        cudaEvent_t event;
+        musaStream_t stream;
+        musaEvent_t event;
         std::vector<std::pair<int, nvimgcodecProcessingStatus_t>> processed_samples;
-        std::set<cudaStream_t> user_streams; // reusable temporary buffers
+        std::set<musaStream_t> user_streams; // reusable temporary buffers
         std::vector<PinnedBuffer> pinned_buffers;
         std::vector<DeviceBuffer> device_buffers;
         size_t pinned_buffer_idx = 0;
@@ -203,7 +203,7 @@ namespace nvimgcodec {
               options_(options ? options : ""),
               executor_(std::move(GetExecutor(exec_params, logger))) {
             if (exec_params_.device_id == NVIMGCODEC_DEVICE_CURRENT) {
-                CHECK_CUDA(cudaGetDevice(&exec_params_.device_id));
+                CHECK_CUDA(musaGetDevice(&exec_params_.device_id));
             }
 
             auto backend = exec_params->backends;
@@ -364,10 +364,10 @@ namespace nvimgcodec {
             if (t.user_streams.find(user_cuda_stream) == t.user_streams.end()) {
                 if (!exec_params_.skip_pre_sync) {
                     nvtx3::scoped_range marker{"sync"};
-                    NVIMGCODEC_LOG_TRACE(logger_, "cudaEventRecord(" << t.event << ", " << user_cuda_stream << ")");
-                    CHECK_CUDA(cudaEventRecord(t.event, user_cuda_stream));
-                    NVIMGCODEC_LOG_TRACE(logger_, "cudaStreamWaitEvent(" << t.stream << ", " << t.event << ")");
-                    CHECK_CUDA(cudaStreamWaitEvent(t.stream, t.event));
+                    NVIMGCODEC_LOG_TRACE(logger_, "musaEventRecord(" << t.event << ", " << user_cuda_stream << ")");
+                    CHECK_CUDA(musaEventRecord(t.event, user_cuda_stream));
+                    NVIMGCODEC_LOG_TRACE(logger_, "musaStreamWaitEvent(" << t.stream << ", " << t.event << ")");
+                    CHECK_CUDA(musaStreamWaitEvent(t.stream, t.event));
                 }
                 t.user_streams.insert(user_cuda_stream);
             }
@@ -380,13 +380,13 @@ namespace nvimgcodec {
                 nvtx3::scoped_range marker{"sync"};
                 for (auto user_cuda_stream : t.user_streams) {
                     // this captures the state of t.stream in the cuda event t.event
-                    NVIMGCODEC_LOG_DEBUG(logger_, tid << ": cudaEventRecord(" << t.event << ", " << t.stream << ")");
-                    CHECK_CUDA(cudaEventRecord(t.event, t.stream));
+                    NVIMGCODEC_LOG_DEBUG(logger_, tid << ": musaEventRecord(" << t.event << ", " << t.stream << ")");
+                    CHECK_CUDA(musaEventRecord(t.event, t.stream));
                     // this is so that any post processing on image waits for t.event_ i.e. decoding to finish,
                     // without this the post-processing tasks such as encoding, would not know that decoding has finished on this
                     // particular image
-                    NVIMGCODEC_LOG_TRACE(logger_, tid << ": cudaStreamWaitEvent(" << user_cuda_stream << ", " << t.event << ")");
-                    CHECK_CUDA(cudaStreamWaitEvent(user_cuda_stream, t.event));
+                    NVIMGCODEC_LOG_TRACE(logger_, tid << ": musaStreamWaitEvent(" << user_cuda_stream << ", " << t.event << ")");
+                    CHECK_CUDA(musaStreamWaitEvent(user_cuda_stream, t.event));
                 }
                 t.user_streams.clear();
             }

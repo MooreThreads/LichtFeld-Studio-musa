@@ -77,9 +77,9 @@ namespace nvjpeg {
             const nvimgcodecExecutionParams_t* exec_params_;
             PinnedBuffer pinned_buffer_;
 
-            cudaEvent_t event_;
+            musaEvent_t event_;
             nvjpegEncoderState_t state_;
-            std::optional<cudaStream_t> stream_;
+            std::optional<musaStream_t> stream_;
 
             PerThreadResources(const nvimgcodecFrameworkDesc_t* framework, const char* plugin_id, nvjpegHandle_t handle,
                                const nvimgcodecExecutionParams_t* exec_params)
@@ -92,13 +92,13 @@ namespace nvjpeg {
                   state_(nullptr)
 
             {
-                XM_CHECK_CUDA(cudaEventCreate(&event_));
+                XM_CHECK_CUDA(musaEventCreate(&event_));
             }
 
-            nvjpegEncoderState_t& state(cudaStream_t cuda_stream) {
+            nvjpegEncoderState_t& state(musaStream_t cuda_stream) {
                 if (stream_ != cuda_stream) {
                     if (stream_) { // should not really happen but just in case
-                        XM_CHECK_CUDA(cudaStreamSynchronize(stream_.value()));
+                        XM_CHECK_CUDA(musaStreamSynchronize(stream_.value()));
                         XM_NVJPEG_LOG_DESTROY(nvjpegEncoderStateDestroy(state_));
                     }
                     XM_CHECK_NVJPEG(nvjpegEncoderStateCreate(handle_, &state_, cuda_stream));
@@ -112,7 +112,7 @@ namespace nvjpeg {
                     XM_NVJPEG_LOG_DESTROY(nvjpegEncoderStateDestroy(state_));
                 }
                 if (event_) {
-                    XM_CUDA_LOG_DESTROY(cudaEventDestroy(event_));
+                    XM_CUDA_LOG_DESTROY(musaEventDestroy(event_));
                 }
             }
         };
@@ -436,8 +436,8 @@ namespace nvjpeg {
                                                   image_info.plane_info[0].width, image_info.plane_info[0].height, image_info.cuda_stream));
             }
 
-            XM_CHECK_CUDA(cudaEventRecord(t.event_, image_info.cuda_stream));
-            XM_CHECK_CUDA(cudaEventSynchronize(t.event_));
+            XM_CHECK_CUDA(musaEventRecord(t.event_, image_info.cuda_stream));
+            XM_CHECK_CUDA(musaEventSynchronize(t.event_));
 
             size_t length;
             XM_CHECK_NVJPEG(nvjpegEncodeRetrieveBitstream(handle_, state, NULL, &length, image_info.cuda_stream));
@@ -446,7 +446,7 @@ namespace nvjpeg {
             XM_CHECK_NVJPEG(nvjpegEncodeRetrieveBitstream(
                 handle_, state, static_cast<uint8_t*>(t.pinned_buffer_.data), &length, image_info.cuda_stream));
 
-            XM_CHECK_CUDA(cudaStreamSynchronize(image_info.cuda_stream));
+            XM_CHECK_CUDA(musaStreamSynchronize(image_info.cuda_stream));
 
             nvimgcodecIoStreamDesc_t* io_stream = code_stream->io_stream;
             size_t output_size;

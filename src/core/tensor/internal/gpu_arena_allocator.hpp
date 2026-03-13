@@ -6,7 +6,7 @@
 #include "core/logger.hpp"
 #include "offset_allocator.hpp"
 #include <atomic>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -18,10 +18,10 @@ namespace lfs::core {
      *
      * Pre-allocates a large GPU buffer (8GB default) and uses OffsetAllocator
      * to perform fast O(1) sub-allocations from this arena. This eliminates
-     * the overhead of cudaMalloc/cudaFree for medium-sized tensors.
+     * the overhead of musaMalloc/musaFree for medium-sized tensors.
      *
      * Performance comparison:
-     * - cudaMalloc: ~0.15-0.6 ms per call
+     * - musaMalloc: ~0.15-0.6 ms per call
      * - Arena allocation: ~0.001 ms per call (150-600× faster!)
      *
      * Memory overhead:
@@ -32,7 +32,7 @@ namespace lfs::core {
      *
      * Usage strategy:
      * - Small/medium tensors (<100MB): Use arena allocator
-     * - Large tensors (≥100MB): Use cudaMallocAsync pool (avoid fragmentation)
+     * - Large tensors (≥100MB): Use musaMallocAsync pool (avoid fragmentation)
      *
      * Thread safety: Protected by mutex
      */
@@ -111,10 +111,10 @@ namespace lfs::core {
             // CRITICAL: Synchronize device before returning memory to pool!
             // Without this, CUDA operations may still be using this memory when we reuse it.
             // This prevents use-after-free bugs that cause "illegal memory access" errors.
-            cudaError_t err = cudaDeviceSynchronize();
-            if (err != cudaSuccess) {
-                LOG_WARN("cudaDeviceSynchronize failed in arena deallocate: {}",
-                         cudaGetErrorString(err));
+            musaError_t err = musaDeviceSynchronize();
+            if (err != musaSuccess) {
+                LOG_WARN("musaDeviceSynchronize failed in arena deallocate: {}",
+                         musaGetErrorString(err));
                 // Continue anyway - better to potentially reuse memory than leak it
             }
 
@@ -216,11 +216,11 @@ namespace lfs::core {
             }
 
             // Allocate GPU memory for arena
-            cudaError_t err = cudaMalloc(&gpu_base_, size_bytes);
-            if (err != cudaSuccess) {
+            musaError_t err = musaMalloc(&gpu_base_, size_bytes);
+            if (err != musaSuccess) {
                 LOG_ERROR("Failed to allocate {:.2f} GB GPU arena: {}",
                           size_bytes / (1024.0 * 1024.0 * 1024.0),
-                          cudaGetErrorString(err));
+                          musaGetErrorString(err));
                 gpu_base_ = nullptr;
                 arena_size_ = 0;
                 return;
@@ -248,9 +248,9 @@ namespace lfs::core {
             allocator_.reset();
 
             if (gpu_base_) {
-                cudaError_t err = cudaFree(gpu_base_);
-                if (err != cudaSuccess) {
-                    LOG_ERROR("Failed to free GPU arena: {}", cudaGetErrorString(err));
+                musaError_t err = musaFree(gpu_base_);
+                if (err != musaSuccess) {
+                    LOG_ERROR("Failed to free GPU arena: {}", musaGetErrorString(err));
                 }
                 gpu_base_ = nullptr;
             }

@@ -21,7 +21,7 @@
 #include "visualizer/selection/selection_group_mask.hpp"
 
 #include <algorithm>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <fstream>
 #include <limits>
 #include <sstream>
@@ -134,7 +134,7 @@ namespace lfs::mcp {
             return device_buffer;
         }
 
-        std::expected<int, std::string> pick_headless_ring_gaussian(
+        lfs_compat::expected<int, std::string> pick_headless_ring_gaussian(
             const core::Camera& camera,
             const core::SplatData& model,
             const float x,
@@ -146,25 +146,25 @@ namespace lfs::mcp {
 
             const auto cleanup = [&]() {
                 if (hovered_depth_id_device) {
-                    cudaFree(hovered_depth_id_device);
+                    musaFree(hovered_depth_id_device);
                     hovered_depth_id_device = nullptr;
                 }
                 if (hovered_depth_id_host) {
-                    cudaFreeHost(hovered_depth_id_host);
+                    musaFreeHost(hovered_depth_id_host);
                     hovered_depth_id_host = nullptr;
                 }
             };
 
-            if (cudaMalloc(&hovered_depth_id_device, sizeof(unsigned long long)) != cudaSuccess) {
-                return std::unexpected("Failed to allocate ring hover buffer");
+            if (musaMalloc(&hovered_depth_id_device, sizeof(unsigned long long)) != musaSuccess) {
+                return lfs_compat::unexpected("Failed to allocate ring hover buffer");
             }
-            if (cudaMallocHost(&hovered_depth_id_host, sizeof(unsigned long long)) != cudaSuccess) {
+            if (musaMallocHost(&hovered_depth_id_host, sizeof(unsigned long long)) != musaSuccess) {
                 cleanup();
-                return std::unexpected("Failed to allocate ring hover readback buffer");
+                return lfs_compat::unexpected("Failed to allocate ring hover readback buffer");
             }
-            if (cudaMemset(hovered_depth_id_device, 0xFF, sizeof(unsigned long long)) != cudaSuccess) {
+            if (musaMemset(hovered_depth_id_device, 0xFF, sizeof(unsigned long long)) != musaSuccess) {
                 cleanup();
-                return std::unexpected("Failed to reset ring hover buffer");
+                return lfs_compat::unexpected("Failed to reset ring hover buffer");
             }
 
             try {
@@ -209,13 +209,13 @@ namespace lfs::mcp {
                 (void)alpha;
             } catch (const std::exception& e) {
                 cleanup();
-                return std::unexpected(std::string("Ring pick render failed: ") + e.what());
+                return lfs_compat::unexpected(std::string("Ring pick render failed: ") + e.what());
             }
 
-            if (cudaMemcpy(hovered_depth_id_host, hovered_depth_id_device,
-                           sizeof(unsigned long long), cudaMemcpyDeviceToHost) != cudaSuccess) {
+            if (musaMemcpy(hovered_depth_id_host, hovered_depth_id_device,
+                           sizeof(unsigned long long), musaMemcpyDeviceToHost) != musaSuccess) {
                 cleanup();
-                return std::unexpected("Failed to read back ring hover result");
+                return lfs_compat::unexpected("Failed to read back ring hover result");
             }
 
             constexpr auto NO_HOVERED_RESULT = std::numeric_limits<unsigned long long>::max();
@@ -223,13 +223,13 @@ namespace lfs::mcp {
             cleanup();
 
             if (packed == NO_HOVERED_RESULT) {
-                return std::unexpected("No hovered gaussian");
+                return lfs_compat::unexpected("No hovered gaussian");
             }
 
             return static_cast<int>(packed & 0xFFFFFFFFu);
         }
 
-        std::expected<int64_t, std::string> apply_headless_selection(
+        lfs_compat::expected<int64_t, std::string> apply_headless_selection(
             core::Scene& scene,
             core::Tensor& locked_groups_device_mask,
             std::array<core::Tensor, 2>& selection_output_buffers,
@@ -239,12 +239,12 @@ namespace lfs::mcp {
 
             auto selection_mask = ensure_cuda_bool_mask(raw_selection);
             if (!selection_mask.is_valid()) {
-                return std::unexpected("Invalid selection mask");
+                return lfs_compat::unexpected("Invalid selection mask");
             }
 
             auto locked_groups = vis::selection::upload_locked_group_mask(scene, locked_groups_device_mask);
             if (!locked_groups) {
-                return std::unexpected(locked_groups.error());
+                return lfs_compat::unexpected(locked_groups.error());
             }
 
             const auto existing_mask = scene.getSelectionMask();
@@ -283,7 +283,7 @@ namespace lfs::mcp {
         shutdown();
     }
 
-    std::expected<void, std::string> TrainingContext::load_dataset(
+    lfs_compat::expected<void, std::string> TrainingContext::load_dataset(
         const std::filesystem::path& path,
         const core::param::TrainingParameters& params) {
 
@@ -298,12 +298,12 @@ namespace lfs::mcp {
 
         if (auto result = training::loadTrainingDataIntoScene(params_, *scene_); !result) {
             scene_.reset();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         if (auto result = training::initializeTrainingModel(params_, *scene_); !result) {
             scene_.reset();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         trainer_ = std::make_unique<training::Trainer>(*scene_);
@@ -311,14 +311,14 @@ namespace lfs::mcp {
         if (auto result = trainer_->initialize(params_); !result) {
             trainer_.reset();
             scene_.reset();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         LOG_INFO("MCP: Loaded dataset from {}", path.string());
         return {};
     }
 
-    std::expected<void, std::string> TrainingContext::load_checkpoint(
+    lfs_compat::expected<void, std::string> TrainingContext::load_checkpoint(
         const std::filesystem::path& path) {
 
         std::lock_guard lock(mutex_);
@@ -327,18 +327,18 @@ namespace lfs::mcp {
 
         auto header_result = core::load_checkpoint_header(path);
         if (!header_result) {
-            return std::unexpected(header_result.error());
+            return lfs_compat::unexpected(header_result.error());
         }
 
         auto params_result = core::load_checkpoint_params(path);
         if (!params_result) {
-            return std::unexpected(params_result.error());
+            return lfs_compat::unexpected(params_result.error());
         }
         params_ = std::move(*params_result);
 
         auto splat_result = core::load_checkpoint_splat_data(path);
         if (!splat_result) {
-            return std::unexpected(splat_result.error());
+            return lfs_compat::unexpected(splat_result.error());
         }
 
         scene_ = std::make_shared<core::Scene>();
@@ -351,20 +351,20 @@ namespace lfs::mcp {
         if (auto result = trainer_->initialize(params_); !result) {
             trainer_.reset();
             scene_.reset();
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         LOG_INFO("MCP: Loaded checkpoint from {}", path.string());
         return {};
     }
 
-    std::expected<void, std::string> TrainingContext::save_checkpoint(
+    lfs_compat::expected<void, std::string> TrainingContext::save_checkpoint(
         const std::filesystem::path& path) {
 
         std::lock_guard lock(mutex_);
 
         if (!trainer_) {
-            return std::unexpected("No training session to save");
+            return lfs_compat::unexpected("No training session to save");
         }
 
         auto result = training::save_checkpoint(
@@ -375,38 +375,38 @@ namespace lfs::mcp {
             nullptr);
 
         if (!result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         LOG_INFO("MCP: Saved checkpoint to {}", path.string());
         return {};
     }
 
-    std::expected<void, std::string> TrainingContext::save_ply(
+    lfs_compat::expected<void, std::string> TrainingContext::save_ply(
         const std::filesystem::path& path) {
 
         std::lock_guard lock(mutex_);
 
         if (!scene_) {
-            return std::unexpected("No scene to save");
+            return lfs_compat::unexpected("No scene to save");
         }
 
         auto* model = scene_->getTrainingModel();
         if (!model) {
-            return std::unexpected("No model to save");
+            return lfs_compat::unexpected("No model to save");
         }
 
         io::PlySaveOptions options{.output_path = path, .binary = true};
         auto result = io::save_ply(*model, options);
         if (!result) {
-            return std::unexpected(result.error().message);
+            return lfs_compat::unexpected(result.error().message);
         }
 
         LOG_INFO("MCP: Saved PLY to {}", path.string());
         return {};
     }
 
-    std::expected<std::string, std::string> TrainingContext::render_to_base64(
+    lfs_compat::expected<std::string, std::string> TrainingContext::render_to_base64(
         int camera_index,
         int width,
         int height) {
@@ -414,17 +414,17 @@ namespace lfs::mcp {
         std::lock_guard lock(mutex_);
 
         if (!scene_) {
-            return std::unexpected("No scene loaded");
+            return lfs_compat::unexpected("No scene loaded");
         }
 
         auto* model = scene_->getTrainingModel();
         if (!model) {
-            return std::unexpected("No model to render");
+            return lfs_compat::unexpected("No model to render");
         }
 
         auto cameras = scene_->getAllCameras();
         if (cameras.empty()) {
-            return std::unexpected("No cameras available");
+            return lfs_compat::unexpected("No cameras available");
         }
 
         if (camera_index < 0 || camera_index >= static_cast<int>(cameras.size())) {
@@ -433,7 +433,7 @@ namespace lfs::mcp {
 
         auto& camera = cameras[camera_index];
         if (!camera) {
-            return std::unexpected("Failed to get camera");
+            return lfs_compat::unexpected("Failed to get camera");
         }
 
         core::Tensor bg = core::Tensor::zeros({3}, core::Device::CUDA);
@@ -448,7 +448,7 @@ namespace lfs::mcp {
 
             std::ifstream file(temp_path, std::ios::binary | std::ios::ate);
             if (!file) {
-                return std::unexpected("Failed to read rendered image");
+                return lfs_compat::unexpected("Failed to read rendered image");
             }
 
             const auto size = file.tellg();
@@ -456,34 +456,34 @@ namespace lfs::mcp {
 
             std::vector<uint8_t> buffer(size);
             if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
-                return std::unexpected("Failed to read image data");
+                return lfs_compat::unexpected("Failed to read image data");
             }
 
             std::filesystem::remove(temp_path);
 
             return base64_encode(buffer);
         } catch (const std::exception& e) {
-            return std::unexpected(std::string("Render failed: ") + e.what());
+            return lfs_compat::unexpected(std::string("Render failed: ") + e.what());
         }
     }
 
-    std::expected<core::Tensor, std::string> TrainingContext::compute_screen_positions(
+    lfs_compat::expected<core::Tensor, std::string> TrainingContext::compute_screen_positions(
         int camera_index) {
 
         std::lock_guard lock(mutex_);
 
         if (!scene_) {
-            return std::unexpected("No scene loaded");
+            return lfs_compat::unexpected("No scene loaded");
         }
 
         auto* model = scene_->getTrainingModel();
         if (!model) {
-            return std::unexpected("No model loaded");
+            return lfs_compat::unexpected("No model loaded");
         }
 
         auto cameras = scene_->getAllCameras();
         if (cameras.empty()) {
-            return std::unexpected("No cameras available");
+            return lfs_compat::unexpected("No cameras available");
         }
 
         if (camera_index < 0 || camera_index >= static_cast<int>(cameras.size())) {
@@ -492,7 +492,7 @@ namespace lfs::mcp {
 
         auto& camera = cameras[camera_index];
         if (!camera) {
-            return std::unexpected("Failed to get camera");
+            return lfs_compat::unexpected("Failed to get camera");
         }
 
         core::Tensor bg = core::Tensor::zeros({3}, core::Device::CUDA);
@@ -510,19 +510,19 @@ namespace lfs::mcp {
 
             return screen_positions;
         } catch (const std::exception& e) {
-            return std::unexpected(std::string("Screen position computation failed: ") + e.what());
+            return lfs_compat::unexpected(std::string("Screen position computation failed: ") + e.what());
         }
     }
 
-    std::expected<void, std::string> TrainingContext::start_training() {
+    lfs_compat::expected<void, std::string> TrainingContext::start_training() {
         std::lock_guard lock(mutex_);
 
         if (!trainer_) {
-            return std::unexpected("No trainer initialized");
+            return lfs_compat::unexpected("No trainer initialized");
         }
 
         if (training_thread_) {
-            return std::unexpected("Training already running");
+            return lfs_compat::unexpected("Training already running");
         }
 
         training_thread_ = std::make_unique<std::jthread>([this](std::stop_token stop) {

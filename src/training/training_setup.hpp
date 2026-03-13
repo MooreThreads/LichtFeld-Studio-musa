@@ -31,7 +31,7 @@ namespace lfs::training {
      * @param scene Scene to populate with training data
      * @return Error message on failure
      */
-    std::expected<void, std::string> loadTrainingDataIntoScene(
+    lfs_compat::expected<void, std::string> loadTrainingDataIntoScene(
         const lfs::core::param::TrainingParameters& params,
         lfs::core::Scene& scene);
 
@@ -47,7 +47,7 @@ namespace lfs::training {
      * @param scene Scene containing the POINTCLOUD node
      * @return Error message on failure
      */
-    std::expected<void, std::string> initializeTrainingModel(
+    lfs_compat::expected<void, std::string> initializeTrainingModel(
         const lfs::core::param::TrainingParameters& params,
         lfs::core::Scene& scene);
 
@@ -60,11 +60,11 @@ namespace lfs::training {
      * @param params Training parameters (including data path)
      * @return Error message on failure
      */
-    std::expected<void, std::string> validateDatasetPath(
+    lfs_compat::expected<void, std::string> validateDatasetPath(
         const lfs::core::param::TrainingParameters& params);
 
     /// Apply pre-loaded data to scene (for async loading)
-    std::expected<void, std::string> applyLoadResultToScene(
+    lfs_compat::expected<void, std::string> applyLoadResultToScene(
         const lfs::core::param::TrainingParameters& params,
         lfs::core::Scene& scene,
         lfs::io::LoadResult&& load_result);

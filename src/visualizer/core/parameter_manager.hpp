@@ -17,7 +17,7 @@ namespace lfs::vis {
     // Session defaults set once at startup (CLI > --config > JSON), current params are user-editable.
     class LFS_VIS_API ParameterManager {
     public:
-        std::expected<void, std::string> ensureLoaded();
+        lfs_compat::expected<void, std::string> ensureLoaded();
 
         [[nodiscard]] lfs::core::param::OptimizationParameters& getCurrentParams(std::string_view strategy);
         [[nodiscard]] const lfs::core::param::OptimizationParameters& getCurrentParams(std::string_view strategy) const;

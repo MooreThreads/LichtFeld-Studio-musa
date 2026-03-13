@@ -142,11 +142,11 @@ namespace nvimgcodec {
             return false;
         }
         assert(info.buffer_size == input_info.buffer_size);
-        auto copy_direction = d2h ? cudaMemcpyDeviceToHost : cudaMemcpyHostToDevice;
-        NVIMGCODEC_LOG_DEBUG(logger_, "cudaMemcpyAsync " << (d2h ? "D2H" : "H2D") << " stream=" << info.cuda_stream);
-        CHECK_CUDA(cudaMemcpyAsync(info.buffer, input_info.buffer, info.buffer_size, copy_direction, info.cuda_stream));
+        auto copy_direction = d2h ? musaMemcpyDeviceToHost : musaMemcpyHostToDevice;
+        NVIMGCODEC_LOG_DEBUG(logger_, "musaMemcpyAsync " << (d2h ? "D2H" : "H2D") << " stream=" << info.cuda_stream);
+        CHECK_CUDA(musaMemcpyAsync(info.buffer, input_info.buffer, info.buffer_size, copy_direction, info.cuda_stream));
         if (d2h)
-            CHECK_CUDA(cudaStreamSynchronize(info.cuda_stream));
+            CHECK_CUDA(musaStreamSynchronize(info.cuda_stream));
         return true;
     }
 

@@ -12,9 +12,9 @@
 
 namespace lfs::rendering {
 
-    // Error handling with std::expected (C++23)
+    // Error handling with lfs_compat::expected (C++23)
     template <typename T>
-    using Result = std::expected<T, std::string>;
+    using Result = lfs_compat::expected<T, std::string>;
 
     // Concept for renderable objects (C++20)
     template <typename T>

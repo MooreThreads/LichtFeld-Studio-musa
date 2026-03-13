@@ -8,10 +8,12 @@
 #include "core/logger.hpp"
 #include "core/path_utils.hpp"
 #include "core/tensor.hpp"
+#ifdef LFS_HAS_NVCODEC
 #include "io/nvcodec_image_loader.hpp"
+#endif
 
 #include <algorithm>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <fstream>
 #include <random>
 
@@ -488,11 +490,13 @@ namespace lfs::io {
     lfs::core::Tensor CacheLoader::load_cached_image(const std::filesystem::path& path, const LoadParams& params) {
         using namespace lfs::core;
 
+#ifdef LFS_HAS_NVCODEC
         determine_nv_image_codec();
 
         if (nv_image_codec_available_ == NvImageCodecMode::Available && is_jpeg_format(path)) {
             return load_jpeg_with_hardware_decode(path, params);
         }
+#endif
 
         determine_cache_mode(path, params);
 
@@ -555,6 +559,7 @@ namespace lfs::io {
         }
     }
 
+#ifdef LFS_HAS_NVCODEC
     namespace {
 
         NvCodecImageLoader& get_nvcodec_loader() {
@@ -570,6 +575,10 @@ namespace lfs::io {
             });
             return *instance;
         }
+    } // anonymous namespace
+#endif // LFS_HAS_NVCODEC
+
+    namespace {
 
         lfs::core::Tensor decode_with_cpu_fallback(const std::filesystem::path& path, const LoadParams& params) {
             using namespace lfs::core;
@@ -595,6 +604,7 @@ namespace lfs::io {
         constexpr int CACHE_JPEG_QUALITY = 100;
     }
 
+#ifdef LFS_HAS_NVCODEC
     lfs::core::Tensor CacheLoader::load_jpeg_with_hardware_decode(
         const std::filesystem::path& path, const LoadParams& params) {
         using namespace lfs::core;
@@ -645,7 +655,7 @@ namespace lfs::io {
                         static_cast<int>(tensor.shape()[2]),
                         static_cast<int>(tensor.shape()[1]));
                     tensor = lfs::core::undistort_image(
-                        tensor, scaled, static_cast<cudaStream_t>(params.cuda_stream));
+                        tensor, scaled, static_cast<musaStream_t>(params.cuda_stream));
                 }
 
                 bool should_cache = false;
@@ -723,5 +733,16 @@ namespace lfs::io {
             LOG_WARN("[CacheLoader] Check diagnostic logs above for details on why nvImageCodec is unavailable");
         }
     }
+#else // !LFS_HAS_NVCODEC
+    lfs::core::Tensor CacheLoader::load_jpeg_with_hardware_decode(
+        const std::filesystem::path& path, const LoadParams& params) {
+        // nvcodec not available - always use CPU fallback
+        return decode_with_cpu_fallback(path, params);
+    }
+
+    void CacheLoader::determine_nv_image_codec() {
+        nv_image_codec_available_ = NvImageCodecMode::UnAvailable;
+    }
+#endif // LFS_HAS_NVCODEC
 
 } // namespace lfs::io

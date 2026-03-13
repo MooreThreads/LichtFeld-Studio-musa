@@ -1096,48 +1096,48 @@ namespace lfs::vis {
         pending_dataset_path_ = params.dataset.data_path;
     }
 
-    std::expected<void, std::string> VisualizerImpl::loadPLY(const std::filesystem::path& path) {
+    lfs_compat::expected<void, std::string> VisualizerImpl::loadPLY(const std::filesystem::path& path) {
         LOG_TIMER("LoadPLY");
 
         // Ensure full initialization before loading PLY
         // This will only initialize once due to the guard in initialize()
         if (!initialize()) {
-            return std::unexpected("Failed to initialize visualizer");
+            return lfs_compat::unexpected("Failed to initialize visualizer");
         }
 
         LOG_INFO("Loading PLY file: {}", lfs::core::path_to_utf8(path));
         return data_loader_->loadPLY(path);
     }
 
-    std::expected<void, std::string> VisualizerImpl::addSplatFile(const std::filesystem::path& path) {
+    lfs_compat::expected<void, std::string> VisualizerImpl::addSplatFile(const std::filesystem::path& path) {
         if (!initialize()) {
-            return std::unexpected("Failed to initialize visualizer");
+            return lfs_compat::unexpected("Failed to initialize visualizer");
         }
         try {
             data_loader_->addSplatFileToScene(path);
             return {};
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Failed to add splat file: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to add splat file: {}", e.what()));
         }
     }
 
-    std::expected<void, std::string> VisualizerImpl::loadDataset(const std::filesystem::path& path) {
+    lfs_compat::expected<void, std::string> VisualizerImpl::loadDataset(const std::filesystem::path& path) {
         LOG_TIMER("LoadDataset");
 
         if (!initialize()) {
-            return std::unexpected("Failed to initialize visualizer");
+            return lfs_compat::unexpected("Failed to initialize visualizer");
         }
 
         LOG_INFO("Loading dataset: {}", lfs::core::path_to_utf8(path));
         return data_loader_->loadDataset(path);
     }
 
-    std::expected<void, std::string> VisualizerImpl::loadCheckpointForTraining(const std::filesystem::path& path) {
+    lfs_compat::expected<void, std::string> VisualizerImpl::loadCheckpointForTraining(const std::filesystem::path& path) {
         LOG_TIMER("LoadCheckpointForTraining");
 
         // Ensure full initialization before loading checkpoint
         if (!initialize()) {
-            return std::unexpected("Failed to initialize visualizer");
+            return lfs_compat::unexpected("Failed to initialize visualizer");
         }
 
         LOG_INFO("Loading checkpoint for training: {}", lfs::core::path_to_utf8(path));

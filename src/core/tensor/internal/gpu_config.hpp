@@ -1,3 +1,8 @@
+// Map MUSA device arch macro to CUDA's for conditional device code
+#if defined(__MUSA_ARCH__) && !defined(__CUDA_ARCH__)
+#define __CUDA_ARCH__ __MUSA_ARCH__
+#endif
+
 /* SPDX-FileCopyrightText: 2025 LichtFeld Studio Authors
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
@@ -8,7 +13,7 @@
 #pragma once
 
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::core {
 
@@ -33,11 +38,11 @@ namespace lfs::core {
         static const GPUConfig& get() {
             static GPUConfig config = []() {
                 GPUConfig cfg;
-                cudaDeviceProp prop;
+                musaDeviceProp prop;
 
                 // Query device 0 (can be extended for multi-GPU)
-                cudaError_t err = cudaGetDeviceProperties(&prop, 0);
-                if (err != cudaSuccess) {
+                musaError_t err = musaGetDeviceProperties(&prop, 0);
+                if (err != musaSuccess) {
                     // Fallback to safe defaults
                     cfg.sm_count = 108; // Assume A100/H100 for safety
                     cfg.max_threads_per_sm = 2048;

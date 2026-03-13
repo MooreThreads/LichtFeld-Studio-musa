@@ -6,7 +6,7 @@
 
 #include "Common.h"
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -49,7 +49,7 @@ namespace gsplat_lfs {
         float* renders,    // [C, image_height, image_width, CDIM]
         float* alphas,     // [C, image_height, image_width, 1]
         int32_t* last_ids, // [C, image_height, image_width]
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /////////////////////////////////////////////////
     // rasterize_to_pixels_from_world_3dgs - Backward
@@ -100,7 +100,7 @@ namespace gsplat_lfs {
         float* v_opacities,                   // [C, N]
         float* densification_info,            // [2, N] flattened or nullptr
         const float* densification_error_map, // [H, W] or nullptr
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
     /////////////////////////////////////////////////
     // rasterize_to_indices_3dgs
@@ -129,6 +129,6 @@ namespace gsplat_lfs {
         int32_t* chunk_cnts,   // [C, image_height, image_width] optional
         int32_t* gaussian_ids, // [n_elems] optional
         int32_t* pixel_ids,    // [n_elems] optional
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace gsplat_lfs

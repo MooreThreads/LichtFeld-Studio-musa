@@ -13,7 +13,9 @@
 #include "core/logger.hpp"
 #include "core/scene.hpp"
 #include "core/tensor.hpp"
+#ifdef LFS_HAS_NVCODEC
 #include "io/nvcodec_image_loader.hpp"
+#endif
 #include "rendering/cuda_gl_interop.hpp"
 
 #include <stb_image.h>
@@ -28,8 +30,10 @@
 namespace lfs::vis::gui {
 
     struct PreviewTextureCache {
+#ifdef LFS_HAS_NVCODEC
         std::unique_ptr<lfs::io::NvCodecImageLoader> nvcodec;
         bool nvcodec_init_failed = false;
+#endif
         std::unordered_map<Rml::TextureHandle, std::unique_ptr<lfs::rendering::CudaGLInteropTexture>> textures;
     };
 
@@ -155,6 +159,7 @@ namespace lfs::vis::gui {
 
     Rml::TextureHandle RmlRenderInterface::load_preview_texture(Rml::Vector2i& dimensions,
                                                                 const Rml::String& source) {
+#ifdef LFS_HAS_NVCODEC
         assert(preview_cache_);
         const auto params = parse_preview_url(source);
         if (params.path.empty())
@@ -229,6 +234,12 @@ namespace lfs::vis::gui {
 
         preview_cache_->textures[handle] = std::move(interop);
         return handle;
+#else
+        // nvcodec not available - preview textures not supported
+        (void)dimensions;
+        (void)source;
+        return 0;
+#endif // LFS_HAS_NVCODEC
     }
 
 } // namespace lfs::vis::gui

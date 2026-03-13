@@ -9,6 +9,13 @@
 #include "core/tensor.hpp"
 #include <cmath>
 #include <string>
+#ifdef __MUSACC__
+#include <fmt/format.h>
+namespace lfs::core::debug::detail { using fmt::format; }
+#else
+#include <format>
+namespace lfs::core::debug::detail { using std::format; }
+#endif
 
 namespace lfs::core::debug {
 
@@ -26,10 +33,10 @@ namespace lfs::core::debug {
 
         [[nodiscard]] std::string to_string() const {
             if (is_valid()) {
-                return std::format("valid (min={:.6f}, max={:.6f}, mean={:.6f})",
+                return detail::format("valid (min={:.6f}, max={:.6f}, mean={:.6f})",
                                    min_val, max_val, mean_val);
             }
-            return std::format("INVALID (nan={}, inf={}, min={:.6f}, max={:.6f})",
+            return detail::format("INVALID (nan={}, inf={}, min={:.6f}, max={:.6f})",
                                nan_count, inf_count, min_val, max_val);
         }
     };
@@ -75,7 +82,7 @@ namespace lfs::core::debug {
                 return "shape mismatch";
             if (!dtypes_match)
                 return "dtype mismatch";
-            return std::format("max_diff={:.6e}, mean_diff={:.6e}, diff_count={}/{}",
+            return detail::format("max_diff={:.6e}, mean_diff={:.6e}, diff_count={}/{}",
                                max_abs_diff, mean_abs_diff, num_different, total_elements);
         }
     };
@@ -102,7 +109,7 @@ namespace lfs::core::debug {
         bool is_cuda = false;
 
         [[nodiscard]] std::string to_string() const {
-            return std::format("shape={}, dtype={}, device={}, min={:.4f}, max={:.4f}, mean={:.4f}, std={:.4f}",
+            return detail::format("shape={}, dtype={}, device={}, min={:.4f}, max={:.4f}, mean={:.4f}, std={:.4f}",
                                shape.str(), dtype_name(dtype), is_cuda ? "cuda" : "cpu", min, max, mean, std);
         }
     };

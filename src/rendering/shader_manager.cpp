@@ -23,7 +23,7 @@ namespace lfs::rendering {
     Result<void> ManagedShader::bind() {
         if (!shader_) {
             LOG_ERROR("Shader '{}' not initialized", name_);
-            return std::unexpected(std::format("Shader '{}' not initialized", name_));
+            return lfs_compat::unexpected(std::format("Shader '{}' not initialized", name_));
         }
 
         try {
@@ -34,22 +34,22 @@ namespace lfs::rendering {
             if (current_program != static_cast<GLint>(shader_->programID())) {
                 LOG_ERROR("Failed to bind shader '{}': expected {}, got {}",
                           name_, shader_->programID(), current_program);
-                return std::unexpected(std::format("Failed to bind shader '{}': program mismatch", name_));
+                return lfs_compat::unexpected(std::format("Failed to bind shader '{}': program mismatch", name_));
             }
             return {};
         } catch (const std::exception& e) {
             LOG_ERROR("Exception binding shader '{}': {}", name_, e.what());
-            return std::unexpected(std::format("Failed to bind shader '{}': {}", name_, e.what()));
+            return lfs_compat::unexpected(std::format("Failed to bind shader '{}': {}", name_, e.what()));
         } catch (...) {
             LOG_ERROR("Unknown exception binding shader '{}'", name_);
-            return std::unexpected(std::format("Failed to bind shader '{}': unknown exception", name_));
+            return lfs_compat::unexpected(std::format("Failed to bind shader '{}': unknown exception", name_));
         }
     }
 
     Result<void> ManagedShader::unbind() {
         if (!shader_) {
             LOG_ERROR("Shader '{}' not initialized", name_);
-            return std::unexpected(std::format("Shader '{}' not initialized", name_));
+            return lfs_compat::unexpected(std::format("Shader '{}' not initialized", name_));
         }
 
         try {
@@ -57,10 +57,10 @@ namespace lfs::rendering {
             return {};
         } catch (const std::exception& e) {
             LOG_ERROR("Exception unbinding shader '{}': {}", name_, e.what());
-            return std::unexpected(std::format("Failed to unbind shader '{}': {}", name_, e.what()));
+            return lfs_compat::unexpected(std::format("Failed to unbind shader '{}': {}", name_, e.what()));
         } catch (...) {
             LOG_ERROR("Unknown exception unbinding shader '{}'", name_);
-            return std::unexpected(std::format("Failed to unbind shader '{}': unknown exception", name_));
+            return lfs_compat::unexpected(std::format("Failed to unbind shader '{}': unknown exception", name_));
         }
     }
 
@@ -123,25 +123,25 @@ namespace lfs::rendering {
 
             if (!std::filesystem::exists(vert_path)) {
                 LOG_ERROR("Vertex shader not found: {}", vert_path.string());
-                return std::unexpected(ShaderError{
+                return lfs_compat::unexpected(ShaderError{
                     std::format("Vertex shader not found: {}", vert_path.string()), loc});
             }
 
             if (!std::filesystem::exists(frag_path)) {
                 LOG_ERROR("Fragment shader not found: {}", frag_path.string());
-                return std::unexpected(ShaderError{
+                return lfs_compat::unexpected(ShaderError{
                     std::format("Fragment shader not found: {}", frag_path.string()), loc});
             }
 
             if (std::filesystem::file_size(vert_path) == 0) {
                 LOG_ERROR("Vertex shader empty: {}", vert_path.string());
-                return std::unexpected(ShaderError{
+                return lfs_compat::unexpected(ShaderError{
                     std::format("Vertex shader empty: {}", vert_path.string()), loc});
             }
 
             if (std::filesystem::file_size(frag_path) == 0) {
                 LOG_ERROR("Fragment shader empty: {}", frag_path.string());
-                return std::unexpected(ShaderError{
+                return lfs_compat::unexpected(ShaderError{
                     std::format("Fragment shader empty: {}", frag_path.string()), loc});
             }
 
@@ -155,7 +155,7 @@ namespace lfs::rendering {
             const GLuint program_id = shader->programID();
             if (program_id == 0) {
                 LOG_ERROR("Shader '{}' has invalid program ID", name);
-                return std::unexpected(ShaderError{
+                return lfs_compat::unexpected(ShaderError{
                     std::format("Shader '{}' has invalid program ID", name), loc});
             }
 
@@ -164,11 +164,11 @@ namespace lfs::rendering {
 
         } catch (const std::exception& e) {
             LOG_ERROR("Failed to load shader '{}': {}", name, e.what());
-            return std::unexpected(ShaderError{
+            return lfs_compat::unexpected(ShaderError{
                 std::format("Failed to load shader '{}': {}", name, e.what()), loc});
         } catch (...) {
             LOG_ERROR("Failed to load shader '{}': unknown exception", name);
-            return std::unexpected(ShaderError{
+            return lfs_compat::unexpected(ShaderError{
                 std::format("Failed to load shader '{}': unknown exception", name), loc});
         }
     }
@@ -188,19 +188,19 @@ namespace lfs::rendering {
 
             if (!std::filesystem::exists(vert_path)) {
                 LOG_ERROR("Vertex shader not found: {}", vert_path.string());
-                return std::unexpected(ShaderError{
+                return lfs_compat::unexpected(ShaderError{
                     std::format("Vertex shader not found: {}", vert_path.string()), loc});
             }
 
             if (!std::filesystem::exists(geom_path)) {
                 LOG_ERROR("Geometry shader not found: {}", geom_path.string());
-                return std::unexpected(ShaderError{
+                return lfs_compat::unexpected(ShaderError{
                     std::format("Geometry shader not found: {}", geom_path.string()), loc});
             }
 
             if (!std::filesystem::exists(frag_path)) {
                 LOG_ERROR("Fragment shader not found: {}", frag_path.string());
-                return std::unexpected(ShaderError{
+                return lfs_compat::unexpected(ShaderError{
                     std::format("Fragment shader not found: {}", frag_path.string()), loc});
             }
 
@@ -215,7 +215,7 @@ namespace lfs::rendering {
             const GLuint program_id = shader->programID();
             if (program_id == 0) {
                 LOG_ERROR("Shader '{}' has invalid program ID", name);
-                return std::unexpected(ShaderError{
+                return lfs_compat::unexpected(ShaderError{
                     std::format("Shader '{}' has invalid program ID", name), loc});
             }
 
@@ -224,11 +224,11 @@ namespace lfs::rendering {
 
         } catch (const std::exception& e) {
             LOG_ERROR("Failed to load shader '{}': {}", name, e.what());
-            return std::unexpected(ShaderError{
+            return lfs_compat::unexpected(ShaderError{
                 std::format("Failed to load shader '{}': {}", name, e.what()), loc});
         } catch (...) {
             LOG_ERROR("Failed to load shader '{}': unknown exception", name);
-            return std::unexpected(ShaderError{
+            return lfs_compat::unexpected(ShaderError{
                 std::format("Failed to load shader '{}': unknown exception", name), loc});
         }
     }

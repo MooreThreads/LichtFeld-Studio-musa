@@ -4165,7 +4165,7 @@ namespace lfs::python {
                     .binary = true,
                     .async = false};
 
-                lfs::io::Result<void> result = std::unexpected(
+                lfs::io::Result<void> result = lfs_compat::unexpected(
                     lfs::io::Error{lfs::io::ErrorCode::INTERNAL_ERROR, "uninitialized"});
                 switch (node->type) {
                 case lfs::core::NodeType::POINTCLOUD: {

@@ -20,14 +20,14 @@
 namespace lfs::core {
     namespace param {
         namespace {
-            std::expected<nlohmann::json, std::string> read_json_file(const std::filesystem::path& path) {
+            lfs_compat::expected<nlohmann::json, std::string> read_json_file(const std::filesystem::path& path) {
                 if (!std::filesystem::exists(path)) {
-                    return std::unexpected(std::format("Config file not found: {}", path_to_utf8(path)));
+                    return lfs_compat::unexpected(std::format("Config file not found: {}", path_to_utf8(path)));
                 }
 
                 std::ifstream file;
                 if (!open_file_for_read(path, file)) {
-                    return std::unexpected(std::format("Cannot open config: {}", path_to_utf8(path)));
+                    return lfs_compat::unexpected(std::format("Cannot open config: {}", path_to_utf8(path)));
                 }
 
                 try {
@@ -35,7 +35,7 @@ namespace lfs::core {
                     buffer << file.rdbuf();
                     return nlohmann::json::parse(buffer.str());
                 } catch (const nlohmann::json::parse_error& e) {
-                    return std::unexpected(std::format("JSON parse error in {}: {}", path_to_utf8(path), e.what()));
+                    return lfs_compat::unexpected(std::format("JSON parse error in {}: {}", path_to_utf8(path), e.what()));
                 }
             }
         } // namespace
@@ -420,10 +420,10 @@ namespace lfs::core {
             return params;
         }
 
-        std::expected<OptimizationParameters, std::string> read_optim_params_from_json(const std::filesystem::path& path) {
+        lfs_compat::expected<OptimizationParameters, std::string> read_optim_params_from_json(const std::filesystem::path& path) {
             auto json_result = read_json_file(path);
             if (!json_result) {
-                return std::unexpected(json_result.error());
+                return lfs_compat::unexpected(json_result.error());
             }
 
             const auto& json = *json_result;
@@ -433,11 +433,11 @@ namespace lfs::core {
             try {
                 return OptimizationParameters::from_json(opt_json);
             } catch (const std::exception& e) {
-                return std::unexpected(std::format("Error parsing optimization parameters: {}", e.what()));
+                return lfs_compat::unexpected(std::format("Error parsing optimization parameters: {}", e.what()));
             }
         }
 
-        std::expected<void, std::string> save_training_parameters_to_json(
+        lfs_compat::expected<void, std::string> save_training_parameters_to_json(
             const TrainingParameters& params,
             const std::filesystem::path& output_path) {
             try {
@@ -459,14 +459,14 @@ namespace lfs::core {
                                                            : output_path / "training_config.json";
                 std::ofstream file;
                 if (!open_file_for_write(filepath, file)) {
-                    return std::unexpected(std::format("Cannot write: {}", path_to_utf8(filepath)));
+                    return lfs_compat::unexpected(std::format("Cannot write: {}", path_to_utf8(filepath)));
                 }
 
                 file << json.dump(4);
                 LOG_INFO("Saved config: {}", path_to_utf8(filepath));
                 return {};
             } catch (const std::exception& e) {
-                return std::unexpected(std::format("Error saving training parameters: {}", e.what()));
+                return lfs_compat::unexpected(std::format("Error saving training parameters: {}", e.what()));
             }
         }
 

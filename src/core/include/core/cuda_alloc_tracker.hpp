@@ -6,7 +6,7 @@
 #include "core/export.hpp"
 
 #include <cstddef>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -39,8 +39,8 @@ namespace lfs::core {
 
 #define TRACKED_CUDA_MALLOC(ptr, size, location)                                          \
     do {                                                                                  \
-        cudaError_t err = cudaMalloc(ptr, size);                                          \
-        if (err == cudaSuccess) {                                                         \
+        musaError_t err = musaMalloc(ptr, size);                                          \
+        if (err == musaSuccess) {                                                         \
             lfs::core::CudaAllocTracker::instance().record_alloc(*(ptr), size, location); \
         }                                                                                 \
     } while (0)
@@ -48,7 +48,7 @@ namespace lfs::core {
 #define TRACKED_CUDA_FREE(ptr)                                    \
     do {                                                          \
         lfs::core::CudaAllocTracker::instance().record_free(ptr); \
-        cudaFree(ptr);                                            \
+        musaFree(ptr);                                            \
     } while (0)
 
 } // namespace lfs::core

@@ -5,7 +5,7 @@
 #pragma once
 
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -13,6 +13,6 @@ namespace gsplat_lfs {
         const float* quats, // [N, 4]
         int64_t N,
         float* rotmats, // [N, 3, 3]
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace gsplat_lfs

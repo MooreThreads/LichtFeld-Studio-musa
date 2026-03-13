@@ -4,8 +4,10 @@
 
 #include "video_frame_extractor.hpp"
 #include "core/include/core/logger.hpp"
+#ifdef LFS_HAS_NVCODEC
 #include "nvcodec_image_loader.hpp"
-#include "video/color_convert.cuh"
+#endif
+#include "video/color_convert.muh"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -16,7 +18,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <stb_image_write.h>
 
 #include <fstream>
@@ -83,7 +85,9 @@ namespace lfs::io {
             uint8_t* gpu_batch_buffer = nullptr;
             uint8_t* gpu_rgb_buffer = nullptr;
             uint8_t* cpu_contiguous_buffer = nullptr;
+#ifdef LFS_HAS_NVCODEC
             std::unique_ptr<NvCodecImageLoader> nvcodec;
+#endif
             bool using_hw_decode = false;
 
             try {
@@ -258,16 +262,22 @@ namespace lfs::io {
                     }
                 }
 
+#ifdef LFS_HAS_NVCODEC
                 const bool use_gpu_jpeg =
                     params.format == ImageFormat::JPG && NvCodecImageLoader::is_available();
+#else
+                const bool use_gpu_jpeg = false;
+#endif
 
                 if (use_gpu_jpeg) {
+#ifdef LFS_HAS_NVCODEC
                     NvCodecImageLoader::Options opts;
                     nvcodec = std::make_unique<NvCodecImageLoader>(opts);
+#endif
 
-                    cudaError_t cuda_err =
-                        cudaMalloc(&gpu_batch_buffer, JPEG_BATCH_SIZE * frame_size);
-                    if (cuda_err != cudaSuccess) {
+                    musaError_t cuda_err =
+                        musaMalloc(&gpu_batch_buffer, JPEG_BATCH_SIZE * frame_size);
+                    if (cuda_err != musaSuccess) {
                         LOG_WARN("Failed to allocate GPU batch buffer, falling back to CPU");
                     }
 
@@ -275,8 +285,8 @@ namespace lfs::io {
                     // GPU NV12→RGB doesn't support scaling, so we fall back to CPU for scaled output
                     if (using_hw_decode && gpu_batch_buffer && !needs_scale) {
                         const size_t src_frame_size = static_cast<size_t>(src_width) * src_height * 3;
-                        cuda_err = cudaMalloc(&gpu_rgb_buffer, src_frame_size);
-                        if (cuda_err != cudaSuccess) {
+                        cuda_err = musaMalloc(&gpu_rgb_buffer, src_frame_size);
+                        if (cuda_err != musaSuccess) {
                             LOG_WARN("Failed to allocate GPU RGB buffer");
                             gpu_rgb_buffer = nullptr;
                         }
@@ -310,6 +320,7 @@ namespace lfs::io {
                     if (batch_gpu_ptrs.empty())
                         return;
 
+#ifdef LFS_HAS_NVCODEC
                     auto encoded = nvcodec->encode_batch_rgb_to_jpeg(batch_gpu_ptrs, out_width, out_height,
                                                                      params.jpg_quality);
 
@@ -318,6 +329,7 @@ namespace lfs::io {
                             write_jpeg_to_file(batch_filenames[i], encoded[i]);
                         }
                     }
+#endif
 
                     batch_gpu_ptrs.clear();
                     batch_filenames.clear();
@@ -345,15 +357,15 @@ namespace lfs::io {
                                              src_width, src_height, y_pitch, uv_pitch, nullptr);
 
                         void* dst_ptr = gpu_batch_buffer + batch_idx * frame_size;
-                        cudaMemcpyAsync(dst_ptr, gpu_rgb_buffer, frame_size,
-                                        cudaMemcpyDeviceToDevice, nullptr);
+                        musaMemcpyAsync(dst_ptr, gpu_rgb_buffer, frame_size,
+                                        musaMemcpyDeviceToDevice, nullptr);
 
                         batch_gpu_ptrs.push_back(dst_ptr);
                         batch_filenames.push_back(filename);
                         batch_idx++;
 
                         if (batch_idx >= JPEG_BATCH_SIZE) {
-                            cudaStreamSynchronize(nullptr);
+                            musaStreamSynchronize(nullptr);
                             flush_jpeg_batch();
                         }
                     } else {
@@ -383,8 +395,8 @@ namespace lfs::io {
 
                         if (gpu_encoding_enabled) {
                             void* dst_ptr = gpu_batch_buffer + batch_idx * frame_size;
-                            cudaMemcpy(dst_ptr, cpu_contiguous_buffer, frame_size,
-                                       cudaMemcpyHostToDevice);
+                            musaMemcpy(dst_ptr, cpu_contiguous_buffer, frame_size,
+                                       musaMemcpyHostToDevice);
 
                             batch_gpu_ptrs.push_back(dst_ptr);
                             batch_filenames.push_back(filename);
@@ -420,8 +432,8 @@ namespace lfs::io {
 
                     if (gpu_encoding_enabled) {
                         void* dst_ptr = gpu_batch_buffer + batch_idx * frame_size;
-                        cudaMemcpy(dst_ptr, cpu_contiguous_buffer, frame_size,
-                                   cudaMemcpyHostToDevice);
+                        musaMemcpy(dst_ptr, cpu_contiguous_buffer, frame_size,
+                                   musaMemcpyHostToDevice);
 
                         batch_gpu_ptrs.push_back(dst_ptr);
                         batch_filenames.push_back(filename);
@@ -499,7 +511,7 @@ namespace lfs::io {
 
                 if (gpu_encoding_enabled) {
                     if (full_gpu_pipeline) {
-                        cudaStreamSynchronize(nullptr);
+                        musaStreamSynchronize(nullptr);
                     }
                     flush_jpeg_batch();
                 }
@@ -518,9 +530,9 @@ namespace lfs::io {
                 avformat_close_input(&fmt_ctx);
                 delete[] cpu_contiguous_buffer;
                 if (gpu_rgb_buffer)
-                    cudaFree(gpu_rgb_buffer);
+                    musaFree(gpu_rgb_buffer);
                 if (gpu_batch_buffer)
-                    cudaFree(gpu_batch_buffer);
+                    musaFree(gpu_batch_buffer);
 
                 return true;
 
@@ -541,9 +553,9 @@ namespace lfs::io {
                     avformat_close_input(&fmt_ctx);
                 delete[] cpu_contiguous_buffer;
                 if (gpu_rgb_buffer)
-                    cudaFree(gpu_rgb_buffer);
+                    musaFree(gpu_rgb_buffer);
                 if (gpu_batch_buffer)
-                    cudaFree(gpu_batch_buffer);
+                    musaFree(gpu_batch_buffer);
 
                 error = e.what();
                 return false;

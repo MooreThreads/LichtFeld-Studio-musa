@@ -25,7 +25,7 @@ namespace lfs::core {
         int output_h,
         int output_w,
         int kernel_size = 2,
-        cudaStream_t cuda_stream = nullptr);
+        musaStream_t cuda_stream = nullptr);
 
     /**
      * High-quality Lanczos resampling for grayscale images on GPU
@@ -42,6 +42,6 @@ namespace lfs::core {
         int output_h,
         int output_w,
         int kernel_size = 2,
-        cudaStream_t cuda_stream = nullptr);
+        musaStream_t cuda_stream = nullptr);
 
 } // namespace lfs::core

@@ -55,10 +55,10 @@ namespace lfs::vis {
 
         void run() override;
         void setParameters(const lfs::core::param::TrainingParameters& params) override;
-        std::expected<void, std::string> loadPLY(const std::filesystem::path& path) override;
-        std::expected<void, std::string> addSplatFile(const std::filesystem::path& path) override;
-        std::expected<void, std::string> loadDataset(const std::filesystem::path& path) override;
-        std::expected<void, std::string> loadCheckpointForTraining(const std::filesystem::path& path) override;
+        lfs_compat::expected<void, std::string> loadPLY(const std::filesystem::path& path) override;
+        lfs_compat::expected<void, std::string> addSplatFile(const std::filesystem::path& path) override;
+        lfs_compat::expected<void, std::string> loadDataset(const std::filesystem::path& path) override;
+        lfs_compat::expected<void, std::string> loadCheckpointForTraining(const std::filesystem::path& path) override;
         void consolidateModels() override;
         void clearScene() override;
 

@@ -20,7 +20,7 @@
 #include "io/cache_image_loader.hpp"
 #include "io/exporter.hpp"
 #include "io/filesystem_utils.hpp"
-#include "lfs/kernels/ssim.cuh"
+#include "lfs/kernels/ssim.muh"
 #include "losses/losses.hpp"
 #include "optimizer/adam_optimizer.hpp"
 #include "python/runner.hpp"
@@ -35,7 +35,7 @@
 
 #include <atomic>
 #include <cmath>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <expected>
 #include <memory>
 #include <nvtx3/nvToolsExt.h>
@@ -82,7 +82,7 @@ namespace lfs::training {
 
         // Sync callback stream to avoid race conditions
         if (callback_stream_) {
-            cudaStreamSynchronize(callback_stream_);
+            musaStreamSynchronize(callback_stream_);
         }
         callback_busy_ = false;
 
@@ -112,7 +112,7 @@ namespace lfs::training {
         LOG_DEBUG("Trainer cleanup complete");
     }
 
-    std::expected<void, std::string> Trainer::initialize_bilateral_grid() {
+    lfs_compat::expected<void, std::string> Trainer::initialize_bilateral_grid() {
         if (!params_.optimization.use_bilateral_grid) {
             return {};
         }
@@ -137,11 +137,11 @@ namespace lfs::training {
 
             return {};
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Failed to init bilateral grid: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to init bilateral grid: {}", e.what()));
         }
     }
 
-    std::expected<void, std::string> Trainer::initialize_ppisp() {
+    lfs_compat::expected<void, std::string> Trainer::initialize_ppisp() {
         if (!params_.optimization.use_ppisp) {
             return {};
         }
@@ -164,17 +164,17 @@ namespace lfs::training {
 
             return {};
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Failed to init PPISP: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to init PPISP: {}", e.what()));
         }
     }
 
-    std::expected<void, std::string> Trainer::initialize_ppisp_controller() {
+    lfs_compat::expected<void, std::string> Trainer::initialize_ppisp_controller() {
         if (!params_.optimization.ppisp_use_controller || !params_.optimization.use_ppisp) {
             return {};
         }
 
         if (!ppisp_) {
-            return std::unexpected("PPISP must be initialized before controller");
+            return lfs_compat::unexpected("PPISP must be initialized before controller");
         }
 
         try {
@@ -206,25 +206,25 @@ namespace lfs::training {
 
             return {};
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Failed to init PPISP controller pool: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to init PPISP controller pool: {}", e.what()));
         }
     }
 
     // Compute photometric loss AND gradient manually
-    std::expected<std::pair<lfs::core::Tensor, lfs::core::Tensor>, std::string> Trainer::compute_photometric_loss_with_gradient(
+    lfs_compat::expected<std::pair<lfs::core::Tensor, lfs::core::Tensor>, std::string> Trainer::compute_photometric_loss_with_gradient(
         const lfs::core::Tensor& rendered,
         const lfs::core::Tensor& gt_image,
         const lfs::core::param::OptimizationParameters& opt_params) {
         lfs::training::losses::PhotometricLoss::Params params{.lambda_dssim = opt_params.lambda_dssim};
         auto result = photometric_loss_.forward(rendered, gt_image, params);
         if (!result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
         auto [loss_tensor, ctx] = *result;
         return std::make_pair(loss_tensor, ctx.grad_image);
     }
 
-    std::expected<void, std::string> Trainer::validate_masks() {
+    lfs_compat::expected<void, std::string> Trainer::validate_masks() {
         const auto& opt = params_.optimization;
         if (opt.mask_mode == lfs::core::param::MaskMode::None) {
             return {};
@@ -244,7 +244,7 @@ namespace lfs::training {
         }
 
         if (masks_found == 0) {
-            return std::unexpected(std::format(
+            return lfs_compat::unexpected(std::format(
                 "Mask mode enabled but no masks found in {}/masks/",
                 lfs::core::path_to_utf8(params_.dataset.data_path)));
         }
@@ -253,7 +253,7 @@ namespace lfs::training {
         return {};
     }
 
-    std::expected<Trainer::MaskLossResult, std::string> Trainer::compute_photometric_loss_with_mask(
+    lfs_compat::expected<Trainer::MaskLossResult, std::string> Trainer::compute_photometric_loss_with_mask(
         const lfs::core::Tensor& rendered,
         const lfs::core::Tensor& gt_image,
         const lfs::core::Tensor& mask,
@@ -310,7 +310,7 @@ namespace lfs::training {
             const lfs::training::losses::PhotometricLoss::Params params{.lambda_dssim = opt_params.lambda_dssim};
             auto result = photometric_loss_.forward(rendered, gt_image, params);
             if (!result) {
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
             auto [photo_loss, ctx] = *result;
             loss = photo_loss;
@@ -326,7 +326,7 @@ namespace lfs::training {
         } else {
             auto fallback = compute_photometric_loss_with_gradient(rendered, gt_image, opt_params);
             if (!fallback) {
-                return std::unexpected(fallback.error());
+                return lfs_compat::unexpected(fallback.error());
             }
             return MaskLossResult{.loss = fallback->first, .grad_image = fallback->second, .grad_alpha = {}};
         }
@@ -335,7 +335,7 @@ namespace lfs::training {
     }
 
     // Returns GPU tensor for loss - NO SYNC!
-    std::expected<lfs::core::Tensor, std::string> Trainer::compute_scale_reg_loss(
+    lfs_compat::expected<lfs::core::Tensor, std::string> Trainer::compute_scale_reg_loss(
         lfs::core::SplatData& splatData,
         AdamOptimizer& optimizer,
         const lfs::core::param::OptimizationParameters& opt_params) {
@@ -344,7 +344,7 @@ namespace lfs::training {
     }
 
     // Returns GPU tensor for loss - NO SYNC!
-    std::expected<lfs::core::Tensor, std::string> Trainer::compute_opacity_reg_loss(
+    lfs_compat::expected<lfs::core::Tensor, std::string> Trainer::compute_opacity_reg_loss(
         lfs::core::SplatData& splatData,
         AdamOptimizer& optimizer,
         const lfs::core::param::OptimizationParameters& opt_params) {
@@ -352,7 +352,7 @@ namespace lfs::training {
         return lfs::training::losses::OpacityRegularization::forward(splatData.opacity_raw(), optimizer.get_grad(ParamType::Opacity), params);
     }
 
-    std::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string>
+    lfs_compat::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string>
     Trainer::compute_sparsity_loss_forward(const int iter, const lfs::core::SplatData& splat_data) {
         if (!sparsity_optimizer_ || !sparsity_optimizer_->should_apply_loss(iter)) {
             auto zero = lfs::core::Tensor::zeros({1}, lfs::core::Device::CUDA, lfs::core::DataType::Float32);
@@ -361,7 +361,7 @@ namespace lfs::training {
 
         if (!sparsity_optimizer_->is_initialized()) {
             if (auto result = sparsity_optimizer_->initialize(splat_data.opacity_raw()); !result) {
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
             LOG_DEBUG("Sparsity optimizer initialized at iteration {}", iter);
         }
@@ -369,21 +369,21 @@ namespace lfs::training {
         return sparsity_optimizer_->compute_loss_forward(splat_data.opacity_raw());
     }
 
-    std::expected<void, std::string> Trainer::handle_sparsity_update(const int iter, lfs::core::SplatData& splat_data) {
+    lfs_compat::expected<void, std::string> Trainer::handle_sparsity_update(const int iter, lfs::core::SplatData& splat_data) {
         if (!sparsity_optimizer_ || !sparsity_optimizer_->should_update(iter)) {
             return {};
         }
         return sparsity_optimizer_->update_state(splat_data.opacity_raw());
     }
 
-    std::expected<void, std::string> Trainer::apply_sparsity_pruning(const int iter, lfs::core::SplatData& splat_data) {
+    lfs_compat::expected<void, std::string> Trainer::apply_sparsity_pruning(const int iter, lfs::core::SplatData& splat_data) {
         if (!sparsity_optimizer_ || !sparsity_optimizer_->should_prune(iter)) {
             return {};
         }
 
         auto mask_result = sparsity_optimizer_->get_prune_mask(splat_data.opacity_raw());
         if (!mask_result) {
-            return std::unexpected(mask_result.error());
+            return lfs_compat::unexpected(mask_result.error());
         }
 
         const int n_before = static_cast<int>(splat_data.size());
@@ -405,12 +405,12 @@ namespace lfs::training {
           provided_splits_(std::move(provided_splits)) {
         // Check CUDA availability
         int device_count = 0;
-        cudaError_t error = cudaGetDeviceCount(&device_count);
-        if (error != cudaSuccess || device_count == 0) {
+        musaError_t error = musaGetDeviceCount(&device_count);
+        if (error != musaSuccess || device_count == 0) {
             throw std::runtime_error("CUDA is not available – aborting.");
         }
 
-        cudaStreamCreateWithFlags(&callback_stream_, cudaStreamNonBlocking);
+        musaStreamCreateWithFlags(&callback_stream_, musaStreamNonBlocking);
 
         LOG_DEBUG("Trainer constructed with {} cameras", base_dataset_->get_cameras().size());
     }
@@ -418,12 +418,12 @@ namespace lfs::training {
     Trainer::Trainer(lfs::core::Scene& scene)
         : scene_(&scene) {
         int device_count = 0;
-        cudaError_t error = cudaGetDeviceCount(&device_count);
-        if (error != cudaSuccess || device_count == 0) {
+        musaError_t error = musaGetDeviceCount(&device_count);
+        if (error != musaSuccess || device_count == 0) {
             throw std::runtime_error("CUDA is not available – aborting.");
         }
 
-        cudaStreamCreateWithFlags(&callback_stream_, cudaStreamNonBlocking);
+        musaStreamCreateWithFlags(&callback_stream_, musaStreamNonBlocking);
 
         if (!scene.hasTrainingData()) {
             throw std::runtime_error("Scene has no cameras");
@@ -432,7 +432,7 @@ namespace lfs::training {
         LOG_DEBUG("Trainer constructed from Scene with {} cameras", scene.getAllCameras().size());
     }
 
-    std::expected<void, std::string> Trainer::initialize(const lfs::core::param::TrainingParameters& params) {
+    lfs_compat::expected<void, std::string> Trainer::initialize(const lfs::core::param::TrainingParameters& params) {
         // Thread-safe initialization using mutex
         std::lock_guard<std::mutex> lock(init_mutex_);
 
@@ -459,12 +459,12 @@ namespace lfs::training {
             if (scene_) {
                 source_cameras = scene_->getActiveCameras();
                 if (source_cameras.empty()) {
-                    return std::unexpected("Scene has no active cameras enabled for training");
+                    return lfs_compat::unexpected("Scene has no active cameras enabled for training");
                 }
             } else if (base_dataset_) {
                 source_cameras = base_dataset_->get_cameras();
             } else {
-                return std::unexpected("No camera source available");
+                return lfs_compat::unexpected("No camera source available");
             }
 
             // Handle dataset split based on evaluation flag
@@ -496,12 +496,12 @@ namespace lfs::training {
             if (scene_ && !strategy_) {
                 auto* model = scene_->getTrainingModel();
                 if (!model) {
-                    return std::unexpected("Scene has no training model set");
+                    return lfs_compat::unexpected("Scene has no training model set");
                 }
 
                 auto result = StrategyFactory::instance().create(params.optimization.strategy, *model);
                 if (!result) {
-                    return std::unexpected(result.error());
+                    return lfs_compat::unexpected(result.error());
                 }
                 strategy_ = std::move(*result);
                 LOG_DEBUG("Created {} strategy from Scene model", params.optimization.strategy);
@@ -522,22 +522,22 @@ namespace lfs::training {
 
             // Initialize bilateral grid if enabled
             if (auto result = initialize_bilateral_grid(); !result) {
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
 
             // Initialize PPISP if enabled
             if (auto result = initialize_ppisp(); !result) {
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
 
             // Initialize PPISP controller if enabled
             if (auto result = initialize_ppisp_controller(); !result) {
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
 
             // Validate masks if mask mode is enabled
             if (auto result = validate_masks(); !result) {
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
 
             // Apply undistortion to camera intrinsics (params already precomputed at load time)
@@ -659,7 +659,7 @@ namespace lfs::training {
             if (params_.resume_checkpoint.has_value()) {
                 auto resume_result = load_checkpoint(*params_.resume_checkpoint);
                 if (!resume_result) {
-                    return std::unexpected(std::format("Failed to resume from checkpoint: {}", resume_result.error()));
+                    return lfs_compat::unexpected(std::format("Failed to resume from checkpoint: {}", resume_result.error()));
                 }
                 LOG_INFO("Resumed training from checkpoint at iteration {}", *resume_result);
 
@@ -720,7 +720,7 @@ namespace lfs::training {
             if (!python_scripts_.empty()) {
                 auto py_result = lfs::python::run_scripts(python_scripts_);
                 if (!py_result) {
-                    return std::unexpected(std::format("Failed to run Python scripts: {}", py_result.error()));
+                    return lfs_compat::unexpected(std::format("Failed to run Python scripts: {}", py_result.error()));
                 }
             }
 
@@ -728,7 +728,7 @@ namespace lfs::training {
             LOG_INFO("Trainer initialization complete");
             return {};
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Failed to initialize trainer: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Failed to initialize trainer: {}", e.what()));
         }
     }
 
@@ -747,13 +747,13 @@ namespace lfs::training {
         lfs::core::image_io::BatchImageSaver::instance().wait_all();
 
         if (callback_stream_) {
-            cudaStreamSynchronize(callback_stream_);
-            cudaStreamDestroy(callback_stream_);
+            musaStreamSynchronize(callback_stream_);
+            musaStreamDestroy(callback_stream_);
             callback_stream_ = nullptr;
         }
         callback_busy_ = false;
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         strategy_.reset();
         bilateral_grid_.reset();
@@ -768,7 +768,7 @@ namespace lfs::training {
         // Release GPU memory pools back to system
         lfs::core::Tensor::trim_memory_pool();
         lfs::core::GlobalArenaManager::instance().get_arena().full_reset();
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         LOG_DEBUG("GPU memory released");
 
         initialized_ = false;
@@ -935,7 +935,7 @@ namespace lfs::training {
             bg_mix_buffer_ = lfs::core::Tensor::empty({3}, lfs::core::Device::CUDA, lfs::core::DataType::Float32);
         }
 
-        cudaMemcpyAsync(bg_mix_buffer_.ptr<float>(), result, sizeof(result), cudaMemcpyHostToDevice, bg_mix_buffer_.stream());
+        musaMemcpyAsync(bg_mix_buffer_.ptr<float>(), result, sizeof(result), musaMemcpyHostToDevice, bg_mix_buffer_.stream());
         return bg_mix_buffer_;
     }
 
@@ -1004,7 +1004,7 @@ namespace lfs::training {
         return random_bg_buffer_;
     }
 
-    std::expected<Trainer::StepResult, std::string> Trainer::train_step(
+    lfs_compat::expected<Trainer::StepResult, std::string> Trainer::train_step(
         int iter,
         lfs::core::Camera* cam,
         lfs::core::Tensor gt_image,
@@ -1013,15 +1013,15 @@ namespace lfs::training {
         try {
             if (params_.optimization.gut) {
                 if (cam->camera_model_type() == core::CameraModelType::ORTHO) {
-                    return std::unexpected("Training on cameras with ortho model is not supported yet.");
+                    return lfs_compat::unexpected("Training on cameras with ortho model is not supported yet.");
                 }
             } else if (!params_.optimization.undistort || !cam->is_undistort_prepared()) {
                 if (cam->radial_distortion().numel() != 0 ||
                     cam->tangential_distortion().numel() != 0) {
-                    return std::unexpected("Distorted images detected. Use --gut or --undistort to train on cameras with distortion.");
+                    return lfs_compat::unexpected("Distorted images detected. Use --gut or --undistort to train on cameras with distortion.");
                 }
                 if (cam->camera_model_type() != core::CameraModelType::PINHOLE) {
-                    return std::unexpected("Use --gut or --undistort to train on cameras with non-pinhole model.");
+                    return lfs_compat::unexpected("Use --gut or --undistort to train on cameras with non-pinhole model.");
                 }
             }
 
@@ -1189,7 +1189,7 @@ namespace lfs::training {
                     if (!rasterize_result) {
                         nvtxRangePop(); // rasterize_forward
                         nvtxRangePop(); // tile
-                        return std::unexpected(rasterize_result.error());
+                        return lfs_compat::unexpected(rasterize_result.error());
                     }
 
                     output = std::move(rasterize_result->first);
@@ -1215,7 +1215,7 @@ namespace lfs::training {
                                 // Already at maximum tiling - can't tile further, return error
                                 LOG_ERROR("OUT OF MEMORY at maximum tile mode (2x2). Cannot continue training.");
                                 LOG_ERROR("Arena error: {}", error);
-                                return std::unexpected(error);
+                                return lfs_compat::unexpected(error);
                             } else {
                                 // Upgrade to next tile mode
                                 TileMode new_mode = (tile_mode == TileMode::One) ? TileMode::Two : TileMode::Four;
@@ -1225,13 +1225,13 @@ namespace lfs::training {
                                 params_.optimization.tile_mode = static_cast<int>(new_mode);
 
                                 // Retry this step with new tile mode
-                                return std::unexpected("OOM_RETRY"); // Signal to retry the step
+                                return lfs_compat::unexpected("OOM_RETRY"); // Signal to retry the step
                             }
                         } else {
                             // Non-OOM error - propagate
                             nvtxRangePop();
                             nvtxRangePop();
-                            return std::unexpected(error);
+                            return lfs_compat::unexpected(error);
                         }
                     }
 
@@ -1260,11 +1260,11 @@ namespace lfs::training {
                             arena.end_frame(fast_ctx->forward_ctx.frame_id);
                         } else if (gsplat_ctx) {
                             if (gsplat_ctx->isect_ids_ptr != nullptr) {
-                                cudaFree(gsplat_ctx->isect_ids_ptr);
+                                musaFree(gsplat_ctx->isect_ids_ptr);
                                 gsplat_ctx->isect_ids_ptr = nullptr;
                             }
                             if (gsplat_ctx->flatten_ids_ptr != nullptr) {
-                                cudaFree(gsplat_ctx->flatten_ids_ptr);
+                                musaFree(gsplat_ctx->flatten_ids_ptr);
                                 gsplat_ctx->flatten_ids_ptr = nullptr;
                             }
                             arena.end_frame(gsplat_ctx->frame_id);
@@ -1312,7 +1312,7 @@ namespace lfs::training {
                             nvtxRangePop();
                             nvtxRangePop();
                             nvtxRangePop();
-                            return std::unexpected(result.error());
+                            return lfs_compat::unexpected(result.error());
                         }
                         tile_loss = result->loss;
                         tile_grad = result->grad_image;
@@ -1324,7 +1324,7 @@ namespace lfs::training {
                             nvtxRangePop();
                             nvtxRangePop();
                             nvtxRangePop();
-                            return std::unexpected(result.error());
+                            return lfs_compat::unexpected(result.error());
                         }
                         tile_loss = result->first;
                         tile_grad = result->second;
@@ -1400,7 +1400,7 @@ namespace lfs::training {
                         if (!result) {
                             nvtxRangePop();
                             nvtxRangePop();
-                            return std::unexpected(result.error());
+                            return lfs_compat::unexpected(result.error());
                         }
                         tile_loss = result->loss;
                         tile_grad = result->grad_image;
@@ -1411,7 +1411,7 @@ namespace lfs::training {
                         if (!result) {
                             nvtxRangePop();
                             nvtxRangePop();
-                            return std::unexpected(result.error());
+                            return lfs_compat::unexpected(result.error());
                         }
                         tile_loss = result->first;
                         tile_grad = result->second;
@@ -1547,7 +1547,7 @@ namespace lfs::training {
                     nvtxRangePush("compute_scale_reg_loss");
                     auto scale_loss_result = compute_scale_reg_loss(strategy_->get_model(), strategy_->get_optimizer(), params_.optimization);
                     if (!scale_loss_result) {
-                        return std::unexpected(scale_loss_result.error());
+                        return lfs_compat::unexpected(scale_loss_result.error());
                     }
                     loss_tensor_gpu = loss_tensor_gpu + *scale_loss_result;
                     nvtxRangePop();
@@ -1557,7 +1557,7 @@ namespace lfs::training {
                     nvtxRangePush("compute_opacity_reg_loss");
                     auto opacity_loss_result = compute_opacity_reg_loss(strategy_->get_model(), strategy_->get_optimizer(), params_.optimization);
                     if (!opacity_loss_result) {
-                        return std::unexpected(opacity_loss_result.error());
+                        return lfs_compat::unexpected(opacity_loss_result.error());
                     }
                     loss_tensor_gpu = loss_tensor_gpu + *opacity_loss_result;
                     nvtxRangePop();
@@ -1596,7 +1596,7 @@ namespace lfs::training {
                 auto sparsity_result = compute_sparsity_loss_forward(iter, strategy_->get_model());
                 if (!sparsity_result) {
                     nvtxRangePop();
-                    return std::unexpected(sparsity_result.error());
+                    return lfs_compat::unexpected(sparsity_result.error());
                 }
                 auto& [loss_tensor, ctx] = *sparsity_result;
                 sparsity_loss_gpu = std::move(loss_tensor);
@@ -1606,7 +1606,7 @@ namespace lfs::training {
                             ctx, 1.0f, strategy_->get_optimizer().get_grad(ParamType::Opacity));
                         !result) {
                         nvtxRangePop();
-                        return std::unexpected(result.error());
+                        return lfs_compat::unexpected(result.error());
                     }
                 }
                 nvtxRangePop();
@@ -1632,7 +1632,7 @@ namespace lfs::training {
                 loss_value = total_loss.item<float>();
 
                 if (std::isnan(loss_value) || std::isinf(loss_value)) {
-                    return std::unexpected(std::format("NaN/Inf loss at iteration {}", iter));
+                    return lfs_compat::unexpected(std::format("NaN/Inf loss at iteration {}", iter));
                 }
 
                 current_loss_ = loss_value;
@@ -1779,14 +1779,14 @@ namespace lfs::training {
                 return StepResult::Stop;
             }
         } catch (const std::exception& e) {
-            return std::unexpected(std::format("Training step failed: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Training step failed: {}", e.what()));
         }
     }
 
-    std::expected<void, std::string> Trainer::train(std::stop_token stop_token) {
+    lfs_compat::expected<void, std::string> Trainer::train(std::stop_token stop_token) {
         // Check if initialized
         if (!initialized_.load()) {
-            return std::unexpected("Trainer not initialized. Call initialize() before train()");
+            return lfs_compat::unexpected("Trainer not initialized. Call initialize() before train()");
         }
 
         is_running_ = false;
@@ -1881,11 +1881,11 @@ namespace lfs::training {
                 if (stop_token.stop_requested() || stop_requested_.load())
                     break;
                 if (callback_busy_.load(std::memory_order_acquire)) {
-                    const cudaError_t callback_status = cudaStreamQuery(callback_stream_);
-                    if (callback_status == cudaSuccess) {
+                    const musaError_t callback_status = musaStreamQuery(callback_stream_);
+                    if (callback_status == musaSuccess) {
                         callback_busy_.store(false, std::memory_order_release);
-                    } else if (callback_status != cudaErrorNotReady) {
-                        LOG_WARN("Callback stream query failed: {}", cudaGetErrorString(callback_status));
+                    } else if (callback_status != musaErrorNotReady) {
+                        LOG_WARN("Callback stream query failed: {}", musaGetErrorString(callback_status));
                         callback_busy_.store(false, std::memory_order_release);
                     }
                 }
@@ -1908,24 +1908,24 @@ namespace lfs::training {
                 if (!step_result) {
                     // Check if this is an OOM_RETRY signal
                     if (step_result.error() == "OOM_RETRY") {
-                        cudaDeviceSynchronize();
-                        cudaGetLastError();
+                        musaDeviceSynchronize();
+                        musaGetLastError();
 
                         lfs::core::GlobalArenaManager::instance().get_arena().full_reset();
                         lfs::core::Tensor::trim_memory_pool();
 
-                        cudaDeviceSynchronize();
-                        cudaGetLastError();
+                        musaDeviceSynchronize();
+                        musaGetLastError();
 
                         LOG_INFO("OOM recovery: retrying iteration {}", iter);
                         step_result = train_step(iter, cam, gt_image, render_mode, stop_token);
                         if (!step_result) {
                             strategy_->set_image_loader(nullptr);
-                            return std::unexpected(step_result.error());
+                            return lfs_compat::unexpected(step_result.error());
                         }
                     } else {
                         strategy_->set_image_loader(nullptr);
-                        return std::unexpected(step_result.error());
+                        return lfs_compat::unexpected(step_result.error());
                     }
                 }
 
@@ -1940,7 +1940,7 @@ namespace lfs::training {
                 // Launch callback for async progress update (except first iteration)
                 if (iter > 1 && callback_ && !callback_busy_.load(std::memory_order_acquire)) {
                     callback_busy_.store(true, std::memory_order_release);
-                    auto err = cudaLaunchHostFunc(
+                    auto err = musaLaunchHostFunc(
                         callback_stream_,
                         [](void* self) {
                             auto* trainer = static_cast<Trainer*>(self);
@@ -1950,8 +1950,8 @@ namespace lfs::training {
                             trainer->callback_busy_.store(false, std::memory_order_release);
                         },
                         this);
-                    if (err != cudaSuccess) {
-                        LOG_WARN("Failed to launch callback: {}", cudaGetErrorString(err));
+                    if (err != musaSuccess) {
+                        LOG_WARN("Failed to launch callback: {}", musaGetErrorString(err));
                         callback_busy_.store(false, std::memory_order_release);
                     }
                 }
@@ -1963,7 +1963,7 @@ namespace lfs::training {
 
             // Ensure callback is finished before final save
             if (callback_busy_.load()) {
-                cudaStreamSynchronize(callback_stream_);
+                musaStreamSynchronize(callback_stream_);
             }
 
             // Final save if not already saved by stop request
@@ -2011,7 +2011,7 @@ namespace lfs::training {
             lfs::core::image_io::wait_for_pending_saves();
             lfs::training::CommandCenter::instance().set_phase(lfs::training::TrainingPhase::Idle);
 
-            return std::unexpected(std::format("Training failed: {}", e.what()));
+            return lfs_compat::unexpected(std::format("Training failed: {}", e.what()));
         }
     }
 
@@ -2062,9 +2062,9 @@ namespace lfs::training {
         LOG_DEBUG("PLY save initiated: {} (sync={})", lfs::core::path_to_utf8(save_path), join_threads);
     }
 
-    std::expected<void, std::string> Trainer::save_checkpoint(int iteration) {
+    lfs_compat::expected<void, std::string> Trainer::save_checkpoint(int iteration) {
         if (!strategy_) {
-            return std::unexpected("Cannot save checkpoint: no strategy initialized");
+            return lfs_compat::unexpected("Cannot save checkpoint: no strategy initialized");
         }
 
         // Only save controller if training has reached activation step
@@ -2118,9 +2118,9 @@ namespace lfs::training {
         save_ply(params_.dataset.output_path, iteration, /*join=*/true);
     }
 
-    std::expected<int, std::string> Trainer::load_checkpoint(const std::filesystem::path& checkpoint_path) {
+    lfs_compat::expected<int, std::string> Trainer::load_checkpoint(const std::filesystem::path& checkpoint_path) {
         if (!strategy_) {
-            return std::unexpected("Cannot load checkpoint: no strategy initialized");
+            return lfs_compat::unexpected("Cannot load checkpoint: no strategy initialized");
         }
 
         // Create bilateral grid before loading if needed (checkpoint may contain grid state)

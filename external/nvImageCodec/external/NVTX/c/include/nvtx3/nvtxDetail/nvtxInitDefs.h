@@ -280,7 +280,7 @@ NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCu
         local(device, name);
 }
 
-NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCudaStreamA_impl_init)(nvtx_cudaStream_t stream, const char* name) {
+NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCudaStreamA_impl_init)(nvtx_musaStream_t stream, const char* name) {
     nvtxNameCudaStreamA_fakeimpl_fntype local;
     NVTX_VERSIONED_IDENTIFIER(nvtxInitOnce)
     ();
@@ -289,7 +289,7 @@ NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCu
         local(stream, name);
 }
 
-NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCudaStreamW_impl_init)(nvtx_cudaStream_t stream, const wchar_t* name) {
+NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCudaStreamW_impl_init)(nvtx_musaStream_t stream, const wchar_t* name) {
     nvtxNameCudaStreamW_fakeimpl_fntype local;
     NVTX_VERSIONED_IDENTIFIER(nvtxInitOnce)
     ();
@@ -298,7 +298,7 @@ NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCu
         local(stream, name);
 }
 
-NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCudaEventA_impl_init)(nvtx_cudaEvent_t event, const char* name) {
+NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCudaEventA_impl_init)(nvtx_musaEvent_t event, const char* name) {
     nvtxNameCudaEventA_fakeimpl_fntype local;
     NVTX_VERSIONED_IDENTIFIER(nvtxInitOnce)
     ();
@@ -307,7 +307,7 @@ NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCu
         local(event, name);
 }
 
-NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCudaEventW_impl_init)(nvtx_cudaEvent_t event, const wchar_t* name) {
+NVTX_LINKONCE_DEFINE_FUNCTION void NVTX_API NVTX_VERSIONED_IDENTIFIER(nvtxNameCudaEventW_impl_init)(nvtx_musaEvent_t event, const wchar_t* name) {
     nvtxNameCudaEventW_fakeimpl_fntype local;
     NVTX_VERSIONED_IDENTIFIER(nvtxInitOnce)
     ();

@@ -8,7 +8,7 @@
 
 #include "Common.h"
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_fwd {
 
@@ -48,6 +48,6 @@ namespace gsplat_fwd {
         float* alphas,
         int32_t* last_ids,
         float* median_depths,
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace gsplat_fwd

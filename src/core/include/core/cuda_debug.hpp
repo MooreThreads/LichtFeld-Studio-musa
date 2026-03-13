@@ -5,17 +5,17 @@
 #pragma once
 
 #include "core/logger.hpp"
-#include <cuda_runtime.h>
-#include <source_location>
+#include <musa_runtime.h>
+#include "core/source_location_compat.hpp"
 #include <string>
 
 namespace lfs::core::debug {
 
-    inline void check_cuda_error(const cudaError_t err, const char* file, const int line, const char* expr,
+    inline void check_cuda_error(const musaError_t err, const char* file, const int line, const char* expr,
                                  const std::source_location loc = std::source_location::current()) {
-        if (err != cudaSuccess) {
+        if (err != musaSuccess) {
             std::string msg = std::string("CUDA error at ") + file + ":" + std::to_string(line) +
-                              " - " + cudaGetErrorName(err) + ": " + cudaGetErrorString(err) +
+                              " - " + musaGetErrorName(err) + ": " + musaGetErrorString(err) +
                               " (" + expr + ")";
             ::lfs::core::Logger::get().log_internal(
                 ::lfs::core::LogLevel::Error, loc, msg);
@@ -24,20 +24,20 @@ namespace lfs::core::debug {
 
     inline void check_kernel_sync(const char* file, const int line, const char* kernel_name,
                                   const std::source_location loc = std::source_location::current()) {
-        cudaError_t err = cudaGetLastError();
-        if (err != cudaSuccess) {
+        musaError_t err = musaGetLastError();
+        if (err != musaSuccess) {
             std::string msg = std::string("Kernel '") + kernel_name + "' launch failed at " +
                               file + ":" + std::to_string(line) +
-                              " - " + cudaGetErrorName(err) + ": " + cudaGetErrorString(err);
+                              " - " + musaGetErrorName(err) + ": " + musaGetErrorString(err);
             ::lfs::core::Logger::get().log_internal(
                 ::lfs::core::LogLevel::Error, loc, msg);
             return;
         }
-        err = cudaDeviceSynchronize();
-        if (err != cudaSuccess) {
+        err = musaDeviceSynchronize();
+        if (err != musaSuccess) {
             std::string msg = std::string("Kernel '") + kernel_name + "' execution failed at " +
                               file + ":" + std::to_string(line) +
-                              " - " + cudaGetErrorName(err) + ": " + cudaGetErrorString(err);
+                              " - " + musaGetErrorName(err) + ": " + musaGetErrorString(err);
             ::lfs::core::Logger::get().log_internal(
                 ::lfs::core::LogLevel::Error, loc, msg);
         }
@@ -45,11 +45,11 @@ namespace lfs::core::debug {
 
     inline void check_kernel_async(const char* file, const int line, const char* kernel_name,
                                    const std::source_location loc = std::source_location::current()) {
-        const cudaError_t err = cudaGetLastError();
-        if (err != cudaSuccess) {
+        const musaError_t err = musaGetLastError();
+        if (err != musaSuccess) {
             std::string msg = std::string("Kernel '") + kernel_name + "' launch failed at " +
                               file + ":" + std::to_string(line) +
-                              " - " + cudaGetErrorName(err) + ": " + cudaGetErrorString(err);
+                              " - " + musaGetErrorName(err) + ": " + musaGetErrorString(err);
             ::lfs::core::Logger::get().log_internal(
                 ::lfs::core::LogLevel::Error, loc, msg);
         }
@@ -62,8 +62,8 @@ namespace lfs::core::debug {
 
 #define CHECK_CUDA_RETURN(call)                                                  \
     do {                                                                         \
-        const cudaError_t _err = (call);                                         \
-        if (_err != cudaSuccess) {                                               \
+        const musaError_t _err = (call);                                         \
+        if (_err != musaSuccess) {                                               \
             lfs::core::debug::check_cuda_error(_err, __FILE__, __LINE__, #call); \
             return;                                                              \
         }                                                                        \
@@ -71,8 +71,8 @@ namespace lfs::core::debug {
 
 #define CHECK_CUDA_RETURN_VAL(call, val)                                         \
     do {                                                                         \
-        const cudaError_t _err = (call);                                         \
-        if (_err != cudaSuccess) {                                               \
+        const musaError_t _err = (call);                                         \
+        if (_err != musaSuccess) {                                               \
             lfs::core::debug::check_cuda_error(_err, __FILE__, __LINE__, #call); \
             return (val);                                                        \
         }                                                                        \

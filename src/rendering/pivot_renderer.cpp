@@ -17,13 +17,13 @@ namespace lfs::rendering {
         auto result = load_shader("pivot_point", "pivot_point.vert", "pivot_point.frag", false);
         if (!result) {
             LOG_ERROR("Failed to load pivot shader: {}", result.error().what());
-            return std::unexpected(result.error().what());
+            return lfs_compat::unexpected(result.error().what());
         }
         shader_ = std::move(*result);
 
         auto vao_result = create_vao();
         if (!vao_result) {
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         }
         vao_ = std::move(*vao_result);
 
@@ -34,7 +34,7 @@ namespace lfs::rendering {
 
     Result<void> RenderPivotPoint::render(const glm::mat4& view, const glm::mat4& projection) {
         if (!initialized_ || !shader_.valid()) {
-            return std::unexpected("Pivot renderer not initialized");
+            return lfs_compat::unexpected("Pivot renderer not initialized");
         }
 
         GLStateGuard state_guard;

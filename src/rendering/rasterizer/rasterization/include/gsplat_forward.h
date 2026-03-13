@@ -5,7 +5,7 @@
 #pragma once
 
 #include <cstdint>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs::rendering {
 
@@ -54,6 +54,6 @@ namespace lfs::rendering {
         float* render_colors_out,   // [H, W, C]
         float* render_alphas_out,   // [H, W]
         float* render_depth_out,    // [H, W] or nullptr
-        cudaStream_t stream = nullptr);
+        musaStream_t stream = nullptr);
 
 } // namespace lfs::rendering

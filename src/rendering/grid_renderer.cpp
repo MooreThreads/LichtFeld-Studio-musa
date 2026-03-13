@@ -23,20 +23,20 @@ namespace lfs::rendering {
         auto shader_result = load_shader("infinite_grid", "infinite_grid.vert", "infinite_grid.frag", false);
         if (!shader_result) {
             LOG_ERROR("Failed to load grid shader: {}", shader_result.error().what());
-            return std::unexpected(shader_result.error().what());
+            return lfs_compat::unexpected(shader_result.error().what());
         }
         shader_ = std::move(*shader_result);
 
         auto vao_result = create_vao();
         if (!vao_result) {
             LOG_ERROR("Failed to create VAO: {}", vao_result.error());
-            return std::unexpected(vao_result.error());
+            return lfs_compat::unexpected(vao_result.error());
         }
 
         auto vbo_result = create_vbo();
         if (!vbo_result) {
             LOG_ERROR("Failed to create VBO: {}", vbo_result.error());
-            return std::unexpected(vbo_result.error());
+            return lfs_compat::unexpected(vbo_result.error());
         }
         vbo_ = std::move(*vbo_result);
 
@@ -114,7 +114,7 @@ namespace lfs::rendering {
     Result<void> RenderInfiniteGrid::render(const glm::mat4& view, const glm::mat4& projection,
                                             const bool orthographic) {
         if (!initialized_ || !shader_.valid())
-            return std::unexpected("Grid renderer not initialized");
+            return lfs_compat::unexpected("Grid renderer not initialized");
 
         const glm::mat4 view_inv = glm::inverse(view);
         const glm::vec3 view_position = glm::vec3(view_inv[3]);

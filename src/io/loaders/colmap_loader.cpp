@@ -183,14 +183,14 @@ namespace lfs::io {
                 LOG_DEBUG("Reading binary COLMAP data");
                 auto result = read_colmap_cameras_and_images(path, actual_images_folder);
                 if (!result) {
-                    return std::unexpected(result.error());
+                    return lfs_compat::unexpected(result.error());
                 }
                 std::tie(cameras, scene_center) = std::move(*result);
             } else if (has_cameras_text && has_images_text) {
                 LOG_DEBUG("Reading text COLMAP data");
                 auto result = read_colmap_cameras_and_images_text(path, actual_images_folder);
                 if (!result) {
-                    return std::unexpected(result.error());
+                    return lfs_compat::unexpected(result.error());
                 }
                 std::tie(cameras, scene_center) = std::move(*result);
             } else {

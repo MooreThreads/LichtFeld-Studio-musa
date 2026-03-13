@@ -37,14 +37,14 @@ namespace lfs::training {
          * @param opacities Initial opacity values from the model [N, 1]
          * @return Error string if initialization fails
          */
-        virtual std::expected<void, std::string> initialize(const lfs::core::Tensor& opacities) = 0;
+        virtual lfs_compat::expected<void, std::string> initialize(const lfs::core::Tensor& opacities) = 0;
 
         /**
          * @brief MANUAL FORWARD: Compute sparsity loss without autograd
          * @param opacities Current opacity values from the model [N, 1]
          * @return (loss_tensor_gpu, context) or error string - NO CPU SYNC
          */
-        virtual std::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string>
+        virtual lfs_compat::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string>
         compute_loss_forward(const lfs::core::Tensor& opacities) = 0;
 
         /**
@@ -55,7 +55,7 @@ namespace lfs::training {
          * @return Error string if backward fails
          * @note Gradients are written directly to grad_opacities (accumulated)
          */
-        virtual std::expected<void, std::string>
+        virtual lfs_compat::expected<void, std::string>
         compute_loss_backward(const SparsityLossContext& ctx,
                               float grad_loss,
                               lfs::core::Tensor& grad_opacities) = 0;
@@ -65,14 +65,14 @@ namespace lfs::training {
          * @param opacities Current opacity values from the model [N, 1]
          * @return Error string if update fails
          */
-        virtual std::expected<void, std::string> update_state(const lfs::core::Tensor& opacities) = 0;
+        virtual lfs_compat::expected<void, std::string> update_state(const lfs::core::Tensor& opacities) = 0;
 
         /**
          * @brief Get mask indicating which Gaussians to prune
          * @param opacities Current opacity values from the model [N, 1]
          * @return Boolean mask tensor [N] or error string
          */
-        virtual std::expected<lfs::core::Tensor, std::string>
+        virtual lfs_compat::expected<lfs::core::Tensor, std::string>
         get_prune_mask(const lfs::core::Tensor& opacities) = 0;
 
         /**
@@ -119,19 +119,19 @@ namespace lfs::training {
 
         explicit ADMMSparsityOptimizer(const Config& config);
 
-        std::expected<void, std::string> initialize(const lfs::core::Tensor& opacities) override;
+        lfs_compat::expected<void, std::string> initialize(const lfs::core::Tensor& opacities) override;
 
-        std::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string>
+        lfs_compat::expected<std::pair<lfs::core::Tensor, SparsityLossContext>, std::string>
         compute_loss_forward(const lfs::core::Tensor& opacities) override;
 
-        std::expected<void, std::string>
+        lfs_compat::expected<void, std::string>
         compute_loss_backward(const SparsityLossContext& ctx,
                               float grad_loss,
                               lfs::core::Tensor& grad_opacities) override;
 
-        std::expected<void, std::string> update_state(const lfs::core::Tensor& opacities) override;
+        lfs_compat::expected<void, std::string> update_state(const lfs::core::Tensor& opacities) override;
 
-        std::expected<lfs::core::Tensor, std::string>
+        lfs_compat::expected<lfs::core::Tensor, std::string>
         get_prune_mask(const lfs::core::Tensor& opacities) override;
 
         bool should_update(int iter) const override {

@@ -29,9 +29,9 @@ namespace lfs::rendering {
     // Import Tensor into this namespace for convenience
     using lfs::core::Tensor;
 
-    // Error handling with std::expected (C++23)
+    // Error handling with lfs_compat::expected (C++23)
     template <typename T>
-    using Result = std::expected<T, std::string>;
+    using Result = lfs_compat::expected<T, std::string>;
 
     enum class SelectionMode {
         Centers,

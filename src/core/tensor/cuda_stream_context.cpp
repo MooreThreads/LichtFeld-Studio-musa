@@ -5,13 +5,13 @@
 
 namespace lfs::core {
 
-    static thread_local cudaStream_t tl_current_stream = nullptr;
+    static thread_local musaStream_t tl_current_stream = nullptr;
 
-    cudaStream_t getCurrentCUDAStream() {
+    musaStream_t getCurrentCUDAStream() {
         return tl_current_stream;
     }
 
-    void setCurrentCUDAStream(cudaStream_t stream) {
+    void setCurrentCUDAStream(musaStream_t stream) {
         tl_current_stream = stream;
     }
 

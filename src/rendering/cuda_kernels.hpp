@@ -4,10 +4,11 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace lfs {
 
+#ifdef CUDA_GL_INTEROP_ENABLED
     // Adjust saturation of Gaussians under the brush
     // sh0: pointer to SH0 data [N, 3] (or [N, 1, 3] viewed as [N*1, 3])
     // screen_positions: [N, 2] screen positions from last render
@@ -24,6 +25,7 @@ namespace lfs {
         float brush_radius,
         float saturation_delta,
         int num_gaussians,
-        cudaStream_t stream = 0);
+        musaStream_t stream = 0);
+#endif
 
 } // namespace lfs

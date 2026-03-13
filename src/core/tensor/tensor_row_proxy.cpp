@@ -3,20 +3,20 @@
 
 #include "internal/tensor_impl.hpp"
 #include <cstring>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <vector>
 
 namespace lfs::core {
     namespace {
-        void cuda_copy_async_sync(void* dst, const void* src, size_t bytes, cudaMemcpyKind kind,
-                                  cudaStream_t stream, const char* context) {
-            cudaError_t err = cudaMemcpyAsync(dst, src, bytes, kind, stream);
-            if (err == cudaSuccess) {
-                err = cudaStreamSynchronize(stream);
+        void cuda_copy_async_sync(void* dst, const void* src, size_t bytes, musaMemcpyKind kind,
+                                  musaStream_t stream, const char* context) {
+            musaError_t err = musaMemcpyAsync(dst, src, bytes, kind, stream);
+            if (err == musaSuccess) {
+                err = musaStreamSynchronize(stream);
             }
-            if (err != cudaSuccess) {
+            if (err != musaSuccess) {
                 throw std::runtime_error(
-                    std::string("CUDA memcpy failed in ") + context + ": " + cudaGetErrorString(err));
+                    std::string("CUDA memcpy failed in ") + context + ": " + musaGetErrorString(err));
             }
         }
     } // namespace
@@ -37,7 +37,7 @@ namespace lfs::core {
             tensor_->ptr<float>() + cuda_staging_linear_idx_,
             &cuda_staging_,
             sizeof(float),
-            cudaMemcpyHostToDevice,
+            musaMemcpyHostToDevice,
             tensor_->stream(),
             "TensorRowProxy::flush_cuda_staging");
         cuda_staging_pending_write_ = false;
@@ -83,7 +83,7 @@ namespace lfs::core {
                 &cuda_staging_,
                 tensor_->ptr<float>() + linear_idx,
                 sizeof(float),
-                cudaMemcpyDeviceToHost,
+                musaMemcpyDeviceToHost,
                 tensor_->stream(),
                 "TensorRowProxy::operator[]");
             cuda_staging_linear_idx_ = linear_idx;
@@ -126,7 +126,7 @@ namespace lfs::core {
                 &value,
                 tensor_->ptr<float>() + linear_idx,
                 sizeof(float),
-                cudaMemcpyDeviceToHost,
+                musaMemcpyDeviceToHost,
                 tensor_->stream(),
                 "TensorRowProxy::operator[] const");
             return value;
@@ -177,7 +177,7 @@ namespace lfs::core {
                 &value,
                 tensor_->ptr<float>() + linear_idx,
                 sizeof(float),
-                cudaMemcpyDeviceToHost,
+                musaMemcpyDeviceToHost,
                 tensor_->stream(),
                 "TensorRowProxy::item()");
             return value;
@@ -234,7 +234,7 @@ namespace lfs::core {
                 result.data_ptr(),
                 &val,
                 sizeof(float),
-                cudaMemcpyHostToDevice,
+                musaMemcpyHostToDevice,
                 tensor_->stream(),
                 "TensorRowProxy scalar tensor conversion");
         } else {
@@ -348,7 +348,7 @@ namespace lfs::core {
                     tensor_->ptr<float>() + linear_idx,
                     &val,
                     sizeof(float),
-                    cudaMemcpyHostToDevice,
+                    musaMemcpyHostToDevice,
                     tensor_->stream(),
                     "TensorRowProxy scalar assignment from tensor");
             } else {
@@ -384,7 +384,7 @@ namespace lfs::core {
                 tensor_->ptr<float>() + linear_idx,
                 &value,
                 sizeof(float),
-                cudaMemcpyHostToDevice,
+                musaMemcpyHostToDevice,
                 tensor_->stream(),
                 "TensorRowProxy scalar assignment");
         } else {

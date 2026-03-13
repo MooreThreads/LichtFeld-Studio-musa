@@ -184,7 +184,7 @@ namespace lfs::training {
         }
     }
 
-    std::expected<std::pair<RenderOutput, FastRasterizeContext>, std::string> fast_rasterize_forward(
+    lfs_compat::expected<std::pair<RenderOutput, FastRasterizeContext>, std::string> fast_rasterize_forward(
         core::Camera& viewpoint_camera,
         core::SplatData& gaussian_model,
         core::Tensor& bg_color,
@@ -233,7 +233,7 @@ namespace lfs::training {
                                             : 0;
 
         if (n_primitives == 0) {
-            return std::unexpected("n_primitives is 0 - model has no gaussians");
+            return lfs_compat::unexpected("n_primitives is 0 - model has no gaussians");
         }
 
         // Pre-allocate output tensors (reused across iterations)
@@ -331,7 +331,7 @@ namespace lfs::training {
 
         // Check if forward failed due to OOM
         if (!forward_ctx.success) {
-            return std::unexpected(std::string(forward_ctx.error_message));
+            return lfs_compat::unexpected(std::string(forward_ctx.error_message));
         }
 
         // Prepare render output
@@ -339,7 +339,7 @@ namespace lfs::training {
         // output = image + (1 - alpha) * bg_color (or bg_image)
         // (output_image is pre-allocated above)
 
-        const cudaStream_t stream = output_image.stream();
+        const musaStream_t stream = output_image.stream();
 
         // Use background image if provided, otherwise use solid color
         if (bg_image.is_valid() && !bg_image.is_empty()) {
@@ -441,7 +441,7 @@ namespace lfs::training {
             cached_ga_w = W;
         }
         auto& grad_alpha = cached_grad_alpha;
-        const cudaStream_t stream = grad_image.stream();
+        const musaStream_t stream = grad_image.stream();
         grad_alpha.set_stream(stream);
 
         // Use background image kernel if available, otherwise use solid color kernel

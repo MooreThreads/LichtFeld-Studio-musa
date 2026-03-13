@@ -89,10 +89,10 @@ namespace lfs::io {
 
         auto splat_result = is_gaussian
                                 ? load_ply(path)
-                                : [&]() -> std::expected<SplatData, std::string> {
+                                : [&]() -> lfs_compat::expected<SplatData, std::string> {
             const auto pc_result = load_ply_point_cloud(path);
             if (!pc_result)
-                return std::unexpected(pc_result.error());
+                return lfs_compat::unexpected(pc_result.error());
 
             const auto& pc = *pc_result;
             const size_t N = static_cast<size_t>(pc.size());

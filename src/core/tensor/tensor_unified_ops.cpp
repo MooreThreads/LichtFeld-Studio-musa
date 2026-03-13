@@ -17,8 +17,8 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
-#include <cuda_runtime.h>
-#include <curand.h>
+#include <musa_runtime.h>
+#include <murand.h>
 #include <format>
 #include <numeric>
 
@@ -85,7 +85,7 @@ namespace lfs::core {
 
             if (bytes == 0) {
                 if (result.device_ == Device::CUDA) {
-                    cudaStream_t s = result.stream();
+                    musaStream_t s = result.stream();
                     void* dummy = CudaMemoryPool::instance().allocate(1, s);
                     result.data_owner_ = std::shared_ptr<void>(dummy, [s](void* p) {
                         CudaMemoryPool::instance().deallocate(p, s);
@@ -94,7 +94,7 @@ namespace lfs::core {
                     void* dummy = nullptr;
                     if (args.use_pinned) {
                         dummy = PinnedMemoryAllocator::instance().allocate(1);
-                        cudaStream_t s = result.stream();
+                        musaStream_t s = result.stream();
                         result.data_owner_ = std::shared_ptr<void>(dummy, [s](void* p) {
                             if (p)
                                 PinnedMemoryAllocator::instance().deallocate(p, s);
@@ -111,7 +111,7 @@ namespace lfs::core {
             }
 
             if (result.device_ == Device::CUDA) {
-                cudaStream_t s = result.stream();
+                musaStream_t s = result.stream();
                 void* ptr = CudaMemoryPool::instance().allocate(bytes, s);
                 if (!ptr) {
                     throw std::runtime_error(std::format(
@@ -142,7 +142,7 @@ namespace lfs::core {
                             "Out of memory: failed to allocate {} bytes ({:.2f} GB) of pinned memory.",
                             bytes, bytes / (1024.0 * 1024.0 * 1024.0)));
                     }
-                    cudaStream_t s = result.stream();
+                    musaStream_t s = result.stream();
                     result.data_owner_ = std::shared_ptr<void>(ptr, [s](void* p) {
                         if (p)
                             PinnedMemoryAllocator::instance().deallocate(p, s);
@@ -175,7 +175,7 @@ namespace lfs::core {
             if (result.device_ == Device::CUDA) {
                 if (result.dtype_ == DataType::Float32) {
                     if (value == 0.0f) {
-                        cudaMemset(result.data_, 0, result.bytes());
+                        musaMemset(result.data_, 0, result.bytes());
                     } else {
                         tensor_ops::launch_load_op(
                             result.data_,
@@ -189,32 +189,32 @@ namespace lfs::core {
                     }
                 } else if (result.dtype_ == DataType::Float16) {
                     if (value == 0.0f) {
-                        cudaMemset(result.data_, 0, result.bytes());
+                        musaMemset(result.data_, 0, result.bytes());
                     } else {
                         // Create Float16 values on CPU, then copy to GPU
                         std::vector<__half> temp(result.numel(), __float2half(value));
-                        cudaMemcpy(result.data_, temp.data(), result.bytes(), cudaMemcpyHostToDevice);
+                        musaMemcpy(result.data_, temp.data(), result.bytes(), musaMemcpyHostToDevice);
                     }
                 } else if (result.dtype_ == DataType::Bool) {
                     unsigned char fill_val = (value != 0.0f) ? 1 : 0;
-                    cudaMemset(result.data_, fill_val, result.bytes());
+                    musaMemset(result.data_, fill_val, result.bytes());
                 } else if (result.dtype_ == DataType::Int32) {
                     if (value == 0.0f) {
-                        cudaMemset(result.data_, 0, result.bytes());
+                        musaMemset(result.data_, 0, result.bytes());
                     } else {
                         std::vector<int> temp(result.numel(), static_cast<int>(value));
-                        cudaMemcpy(result.data_, temp.data(), result.bytes(), cudaMemcpyHostToDevice);
+                        musaMemcpy(result.data_, temp.data(), result.bytes(), musaMemcpyHostToDevice);
                     }
                 } else if (result.dtype_ == DataType::Int64) {
                     if (value == 0.0f) {
-                        cudaMemset(result.data_, 0, result.bytes());
+                        musaMemset(result.data_, 0, result.bytes());
                     } else {
                         std::vector<int64_t> temp(result.numel(), static_cast<int64_t>(value));
-                        cudaMemcpy(result.data_, temp.data(), result.bytes(), cudaMemcpyHostToDevice);
+                        musaMemcpy(result.data_, temp.data(), result.bytes(), musaMemcpyHostToDevice);
                     }
                 } else if (result.dtype_ == DataType::UInt8) {
                     const uint8_t fill_val = static_cast<uint8_t>(std::clamp(value, 0.0f, 255.0f));
-                    cudaMemset(result.data_, fill_val, result.bytes());
+                    musaMemset(result.data_, fill_val, result.bytes());
                 }
             } else {
                 if (result.dtype_ == DataType::Float32) {
@@ -267,7 +267,7 @@ namespace lfs::core {
             size_t bytes = count * dtype_size(result.dtype_);
 
             if (result.device_ == Device::CUDA) {
-                cudaStream_t s = result.stream();
+                musaStream_t s = result.stream();
                 void* ptr = CudaMemoryPool::instance().allocate(bytes, s);
                 if (!ptr) {
                     throw std::runtime_error(std::format(
@@ -291,13 +291,13 @@ namespace lfs::core {
                     for (size_t i = 0; i < count; ++i) {
                         data[i] = start + i * step;
                     }
-                    cudaMemcpy(result.data_, data.data(), bytes, cudaMemcpyHostToDevice);
+                    musaMemcpy(result.data_, data.data(), bytes, musaMemcpyHostToDevice);
                 } else if (result.dtype_ == DataType::Int32) {
                     std::vector<int> data(count);
                     for (size_t i = 0; i < count; ++i) {
                         data[i] = static_cast<int>(start + i * step);
                     }
-                    cudaMemcpy(result.data_, data.data(), bytes, cudaMemcpyHostToDevice);
+                    musaMemcpy(result.data_, data.data(), bytes, musaMemcpyHostToDevice);
                 }
             } else {
                 void* ptr = PinnedMemoryAllocator::instance().allocate(bytes);
@@ -306,7 +306,7 @@ namespace lfs::core {
                         "Out of memory: failed to allocate {} bytes ({:.2f} GB) of pinned memory.",
                         bytes, bytes / (1024.0 * 1024.0 * 1024.0)));
                 }
-                cudaStream_t s = result.stream();
+                musaStream_t s = result.stream();
                 result.data_owner_ = std::shared_ptr<void>(ptr, [s](void* p) {
                     if (p)
                         PinnedMemoryAllocator::instance().deallocate(p, s);
@@ -335,7 +335,7 @@ namespace lfs::core {
                 return result;
 
             if (result.device_ == Device::CUDA) {
-                const cudaStream_t stream = result.stream();
+                const musaStream_t stream = result.stream();
                 if (result.dtype_ == DataType::Float32) {
                     tensor_ops::launch_uniform(result.ptr<float>(), result.numel(), low, high,
                                                RandomGenerator::instance().get_next_cuda_seed(), stream);
@@ -376,16 +376,16 @@ namespace lfs::core {
 
             if (result.device_ == Device::CUDA) {
                 // Use Philox RNG without resetting offset (stateful like PyTorch - much faster!)
-                curandGenerator_t* gen = static_cast<curandGenerator_t*>(
+                murandGenerator_t* gen = static_cast<murandGenerator_t*>(
                     RandomGenerator::instance().get_generator(Device::CUDA));
 
                 size_t n = result.numel();
                 if (n % 2 == 1) {
-                    curandGenerateNormal(*gen, result.ptr<float>(), n + 1, mean, std);
+                    murandGenerateNormal(*gen, result.ptr<float>(), n + 1, mean, std);
                 } else {
-                    curandGenerateNormal(*gen, result.ptr<float>(), n, mean, std);
+                    murandGenerateNormal(*gen, result.ptr<float>(), n, mean, std);
                 }
-                // curandGenerateNormal is blocking, no need for explicit sync
+                // murandGenerateNormal is blocking, no need for explicit sync
             } else {
                 auto& gen = *static_cast<std::mt19937_64*>(
                     RandomGenerator::instance().get_generator(Device::CPU));
@@ -405,7 +405,7 @@ namespace lfs::core {
                 return result;
 
             if (result.device_ == Device::CUDA) {
-                const cudaStream_t stream = result.stream();
+                const musaStream_t stream = result.stream();
                 if (result.dtype_ == DataType::Int32) {
                     tensor_ops::launch_randint(result.ptr<int>(), result.numel(), low, high,
                                                RandomGenerator::instance().get_next_cuda_seed(), stream);
@@ -957,11 +957,11 @@ namespace lfs::core {
             if (input->device_ == Device::CUDA) {
                 if (out_dtype == DataType::Float32) {
                     std::vector<float> temp(result.numel(), identity_value);
-                    cudaMemcpy(result.data_ptr(), temp.data(),
-                               result.bytes(), cudaMemcpyHostToDevice);
+                    musaMemcpy(result.data_ptr(), temp.data(),
+                               result.bytes(), musaMemcpyHostToDevice);
                 } else if (out_dtype == DataType::Bool) {
                     unsigned char bool_val = (identity_value != 0.0f) ? 1 : 0;
-                    cudaMemset(result.data_ptr(), bool_val, result.bytes());
+                    musaMemset(result.data_ptr(), bool_val, result.bytes());
                 }
             } else {
                 if (out_dtype == DataType::Float32) {
@@ -1739,12 +1739,12 @@ namespace lfs::core {
                           tensors.size() - 1, offset);
 
                 // Validate destination buffer before copying
-                cudaPointerAttributes dest_attrs;
-                cudaError_t attr_err = cudaPointerGetAttributes(&dest_attrs, result.data_);
-                if (attr_err != cudaSuccess) {
-                    LOG_ERROR("  Destination buffer validation FAILED: {}", cudaGetErrorString(attr_err));
+                musaPointerAttributes dest_attrs;
+                musaError_t attr_err = musaPointerGetAttributes(&dest_attrs, result.data_);
+                if (attr_err != musaSuccess) {
+                    LOG_ERROR("  Destination buffer validation FAILED: {}", musaGetErrorString(attr_err));
                     LOG_ERROR("  Buffer ptr={}, attempting to access at offset={}", result.data_, offset);
-                    cudaGetLastError(); // Clear error
+                    musaGetLastError(); // Clear error
                 } else {
                     LOG_DEBUG("  Destination buffer valid: type={}, device={}, devicePtr={}, hostPtr={}",
                               static_cast<int>(dest_attrs.type), dest_attrs.device, dest_attrs.devicePointer, dest_attrs.hostPointer);
@@ -1758,29 +1758,29 @@ namespace lfs::core {
                               i, tensor_rows, tensors[i].numel(), bytes, src_ptr, offset);
 
                     // Validate source buffer
-                    cudaPointerAttributes src_attrs;
-                    attr_err = cudaPointerGetAttributes(&src_attrs, src_ptr);
-                    if (attr_err != cudaSuccess) {
-                        LOG_ERROR("  Source buffer validation FAILED: {}", cudaGetErrorString(attr_err));
-                        cudaGetLastError(); // Clear error
+                    musaPointerAttributes src_attrs;
+                    attr_err = musaPointerGetAttributes(&src_attrs, src_ptr);
+                    if (attr_err != musaSuccess) {
+                        LOG_ERROR("  Source buffer validation FAILED: {}", musaGetErrorString(attr_err));
+                        musaGetLastError(); // Clear error
                     } else {
                         LOG_DEBUG("  Source buffer valid: type={}, device={}, devicePtr={}",
                                   static_cast<int>(src_attrs.type), src_attrs.device, src_attrs.devicePointer);
                     }
 
-                    cudaError_t err = cudaMemcpy(
+                    musaError_t err = musaMemcpy(
                         static_cast<char*>(result.data_) + offset,
                         src_ptr,
                         bytes,
-                        cudaMemcpyDeviceToDevice);
-                    if (err != cudaSuccess) {
-                        LOG_ERROR("  cudaMemcpy FAILED: {}", cudaGetErrorString(err));
+                        musaMemcpyDeviceToDevice);
+                    if (err != musaSuccess) {
+                        LOG_ERROR("  musaMemcpy FAILED: {}", musaGetErrorString(err));
                         LOG_ERROR("  Source tensor[{}]: ptr={}, device={}, is_contiguous={}, is_view={}",
                                   i, src_ptr, static_cast<int>(tensors[i].device()),
                                   tensors[i].is_contiguous(), tensors[i].is_view());
                         LOG_ERROR("  Destination: buffer_start={}, offset={}, bytes={}, total={}",
                                   result.data_, offset, bytes, offset + bytes);
-                        throw std::runtime_error(std::string("cudaMemcpy failed in in-place cat: ") + cudaGetErrorString(err));
+                        throw std::runtime_error(std::string("musaMemcpy failed in in-place cat: ") + musaGetErrorString(err));
                     }
                     offset += bytes;
                 }
@@ -1817,11 +1817,11 @@ namespace lfs::core {
                 size_t offset = 0;
                 for (const auto& t : tensors) {
                     size_t bytes = t.bytes();
-                    cudaMemcpy(
+                    musaMemcpy(
                         static_cast<char*>(result.data_ptr()) + offset,
                         t.data_ptr(),
                         bytes,
-                        cudaMemcpyDeviceToDevice);
+                        musaMemcpyDeviceToDevice);
                     offset += bytes;
                 }
             } else {
@@ -1980,8 +1980,8 @@ namespace lfs::core {
             if (dim == 0 && first_device == Device::CUDA) {
                 // dim=0: output slices are contiguous, use direct memcpy
                 void* dst = static_cast<char*>(result.data_ptr()) + i * bytes_per_tensor;
-                cudaMemcpy(dst, tensors[i].data_ptr(), bytes_per_tensor,
-                           cudaMemcpyDeviceToDevice);
+                musaMemcpy(dst, tensors[i].data_ptr(), bytes_per_tensor,
+                           musaMemcpyDeviceToDevice);
             } else if (dim == 0) {
                 void* dst = static_cast<char*>(result.data_ptr()) + i * bytes_per_tensor;
                 std::memcpy(dst, tensors[i].data_ptr(), bytes_per_tensor);
@@ -2020,7 +2020,7 @@ namespace lfs::core {
                 tensor_ops::launch_clamp_fused(src, dst, min_val, max_val, numel(), result.stream());
             } else if (dtype_ == DataType::Int32) {
                 // Fallback: copy then clamp for int
-                cudaMemcpy(result.data_, data_ptr(), bytes(), cudaMemcpyDeviceToDevice);
+                musaMemcpy(result.data_, data_ptr(), bytes(), musaMemcpyDeviceToDevice);
                 tensor_ops::launch_clamp_scalar_int(result.ptr<int>(),
                                                     static_cast<int>(min_val),
                                                     static_cast<int>(max_val),

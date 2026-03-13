@@ -112,16 +112,16 @@ namespace lfs::io {
             return quat; // Returns [x, y, z, w]
         }
 
-        std::expected<std::vector<uint8_t>, std::string> decode_webp(
+        lfs_compat::expected<std::vector<uint8_t>, std::string> decode_webp(
             const uint8_t* data, size_t size, int& width, int& height) {
 
             if (!data || size == 0) {
-                return std::unexpected("Invalid WebP data");
+                return lfs_compat::unexpected("Invalid WebP data");
             }
 
             // Get image info
             if (!WebPGetInfo(data, size, &width, &height)) {
-                return std::unexpected("Failed to get WebP info");
+                return lfs_compat::unexpected("Failed to get WebP info");
             }
 
             // Decode RGBA
@@ -129,7 +129,7 @@ namespace lfs::io {
             uint8_t* result = WebPDecodeRGBA(data, size, &width, &height);
 
             if (!result) {
-                return std::unexpected("Failed to decode WebP image");
+                return lfs_compat::unexpected("Failed to decode WebP image");
             }
 
             // Copy to vector
@@ -172,7 +172,7 @@ namespace lfs::io {
             std::optional<SHData> shN;
         };
 
-        std::expected<SogMetadata, std::string> parse_metadata(
+        lfs_compat::expected<SogMetadata, std::string> parse_metadata(
             const std::string& json_str) {
 
             try {
@@ -237,11 +237,11 @@ namespace lfs::io {
                 return meta;
 
             } catch (const std::exception& e) {
-                return std::unexpected(std::format("Failed to parse metadata: {}", e.what()));
+                return lfs_compat::unexpected(std::format("Failed to parse metadata: {}", e.what()));
             }
         }
 
-        std::expected<SplatData, std::string> reconstruct_splat_data(
+        lfs_compat::expected<SplatData, std::string> reconstruct_splat_data(
             const SogMetadata& meta,
             const std::unordered_map<std::string, std::vector<uint8_t>>& images) {
 
@@ -284,7 +284,7 @@ namespace lfs::io {
                 auto it_u = images.find("means_u.webp");
 
                 if (it_l == images.end() || it_u == images.end()) {
-                    return std::unexpected("Missing position textures");
+                    return lfs_compat::unexpected("Missing position textures");
                 }
 
                 const auto& means_l = it_l->second;
@@ -317,7 +317,7 @@ namespace lfs::io {
             {
                 auto it = images.find("quats.webp");
                 if (it == images.end()) {
-                    return std::unexpected("Missing quaternion texture");
+                    return lfs_compat::unexpected("Missing quaternion texture");
                 }
 
                 const auto& quats = it->second;
@@ -344,7 +344,7 @@ namespace lfs::io {
             {
                 auto it = images.find("scales.webp");
                 if (it == images.end()) {
-                    return std::unexpected("Missing scales texture");
+                    return lfs_compat::unexpected("Missing scales texture");
                 }
 
                 const auto& scales_img = it->second;
@@ -363,7 +363,7 @@ namespace lfs::io {
                         idx2 >= meta.scales_codebook.size()) {
                         LOG_ERROR("Scale codebook index out of bounds: {}, {}, {} (codebook size: {})",
                                   idx0, idx1, idx2, meta.scales_codebook.size());
-                        return std::unexpected("Invalid scale codebook index");
+                        return lfs_compat::unexpected("Invalid scale codebook index");
                     }
 
                     // Look up from codebook (already in log space)
@@ -377,7 +377,7 @@ namespace lfs::io {
             {
                 auto it = images.find("sh0.webp");
                 if (it == images.end()) {
-                    return std::unexpected("Missing color texture");
+                    return lfs_compat::unexpected("Missing color texture");
                 }
 
                 const auto& sh0_img = it->second;
@@ -396,7 +396,7 @@ namespace lfs::io {
                         idx2 >= meta.sh0_codebook.size()) {
                         LOG_ERROR("Color codebook index out of bounds: {}, {}, {} (codebook size: {})",
                                   idx0, idx1, idx2, meta.sh0_codebook.size());
-                        return std::unexpected("Invalid color codebook index");
+                        return lfs_compat::unexpected("Invalid color codebook index");
                     }
 
                     // Look up colors from codebook
@@ -451,7 +451,7 @@ namespace lfs::io {
                                 if (idx >= sh_meta.codebook.size()) {
                                     LOG_ERROR("SH codebook index out of bounds: {} (codebook size: {})",
                                               idx, sh_meta.codebook.size());
-                                    return std::unexpected("Invalid SH codebook index");
+                                    return lfs_compat::unexpected("Invalid SH codebook index");
                                 }
 
                                 // Band-major ordering
@@ -518,7 +518,7 @@ namespace lfs::io {
             return splat_data;
         }
 
-        std::expected<SplatData, std::string> read_sog_bundle(
+        lfs_compat::expected<SplatData, std::string> read_sog_bundle(
             const std::filesystem::path& path) {
 
             LOG_INFO("Reading SOG bundle: {}", lfs::core::path_to_utf8(path));
@@ -536,7 +536,7 @@ namespace lfs::io {
 #endif
             if (result != ARCHIVE_OK) {
                 archive_read_free(a);
-                return std::unexpected(std::format("Failed to open archive: {}",
+                return lfs_compat::unexpected(std::format("Failed to open archive: {}",
                                                    archive_error_string(a)));
             }
 
@@ -556,7 +556,7 @@ namespace lfs::io {
 
                 if (r != static_cast<ssize_t>(size)) {
                     archive_read_free(a);
-                    return std::unexpected(std::format("Failed to read {} from archive", filename));
+                    return lfs_compat::unexpected(std::format("Failed to read {} from archive", filename));
                 }
 
                 if (filename == "meta.json") {
@@ -567,7 +567,7 @@ namespace lfs::io {
                     auto decoded = decode_webp(data.data(), data.size(), width, height);
                     if (!decoded) {
                         archive_read_free(a);
-                        return std::unexpected(decoded.error());
+                        return lfs_compat::unexpected(decoded.error());
                     }
                     images[filename] = std::move(decoded.value());
                 }
@@ -576,20 +576,20 @@ namespace lfs::io {
             archive_read_free(a);
 
             if (metadata_json.empty()) {
-                return std::unexpected("Missing meta.json in archive");
+                return lfs_compat::unexpected("Missing meta.json in archive");
             }
 
             // Parse metadata
             auto meta_result = parse_metadata(metadata_json);
             if (!meta_result) {
-                return std::unexpected(meta_result.error());
+                return lfs_compat::unexpected(meta_result.error());
             }
 
             // Reconstruct SplatData
             return reconstruct_splat_data(meta_result.value(), images);
         }
 
-        std::expected<SplatData, std::string> read_sog_directory(
+        lfs_compat::expected<SplatData, std::string> read_sog_directory(
             const std::filesystem::path& path) {
 
             LOG_INFO("Reading SOG from directory: {}", lfs::core::path_to_utf8(path));
@@ -597,12 +597,12 @@ namespace lfs::io {
             // Read meta.json
             auto meta_path = path / "meta.json";
             if (!std::filesystem::exists(meta_path)) {
-                return std::unexpected("Missing meta.json");
+                return lfs_compat::unexpected("Missing meta.json");
             }
 
             std::ifstream meta_file;
             if (!lfs::core::open_file_for_read(meta_path, meta_file)) {
-                return std::unexpected("Failed to open meta.json");
+                return lfs_compat::unexpected("Failed to open meta.json");
             }
 
             std::stringstream buffer;
@@ -610,7 +610,7 @@ namespace lfs::io {
 
             auto meta_result = parse_metadata(buffer.str());
             if (!meta_result) {
-                return std::unexpected(meta_result.error());
+                return lfs_compat::unexpected(meta_result.error());
             }
 
             auto& meta = meta_result.value();
@@ -659,19 +659,19 @@ namespace lfs::io {
             // Read all required files
             for (const auto& file : meta.means_files) {
                 if (!read_webp(file))
-                    return std::unexpected("Failed to read " + file);
+                    return lfs_compat::unexpected("Failed to read " + file);
             }
             for (const auto& file : meta.scales_files) {
                 if (!read_webp(file))
-                    return std::unexpected("Failed to read " + file);
+                    return lfs_compat::unexpected("Failed to read " + file);
             }
             for (const auto& file : meta.quats_files) {
                 if (!read_webp(file))
-                    return std::unexpected("Failed to read " + file);
+                    return lfs_compat::unexpected("Failed to read " + file);
             }
             for (const auto& file : meta.sh0_files) {
                 if (!read_webp(file))
-                    return std::unexpected("Failed to read " + file);
+                    return lfs_compat::unexpected("Failed to read " + file);
             }
 
             // Read optional SH files
@@ -691,16 +691,16 @@ namespace lfs::io {
 
     } // anonymous namespace
 
-    std::expected<SplatData, std::string> load_sog(const std::filesystem::path& path) {
+    lfs_compat::expected<SplatData, std::string> load_sog(const std::filesystem::path& path) {
         LOG_TIMER("SOG File Loading");
 
         if (!std::filesystem::exists(path)) {
             std::string error_msg = std::format("SOG file/directory does not exist: {}", lfs::core::path_to_utf8(path));
             LOG_ERROR("{}", error_msg);
-            return std::unexpected(error_msg);
+            return lfs_compat::unexpected(error_msg);
         }
 
-        std::expected<SplatData, std::string> result;
+        lfs_compat::expected<SplatData, std::string> result;
 
         // Check if it's a .sog bundle
         if (path.extension() == ".sog") {
@@ -714,7 +714,7 @@ namespace lfs::io {
         else if (std::filesystem::is_directory(path)) {
             result = read_sog_directory(path);
         } else {
-            return std::unexpected(std::format("Unknown SOG format: {}", lfs::core::path_to_utf8(path)));
+            return lfs_compat::unexpected(std::format("Unknown SOG format: {}", lfs::core::path_to_utf8(path)));
         }
 
         return result;
@@ -952,11 +952,11 @@ namespace lfs::io {
         estimated_size = static_cast<size_t>(estimated_size * COMPRESSION_RATIO) + OVERHEAD;
 
         if (auto result = check_disk_space(options.output_path, estimated_size); !result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         if (auto result = verify_writable(options.output_path); !result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         auto means_cuda = splat_data.means_raw().cuda();
@@ -1026,10 +1026,10 @@ namespace lfs::io {
         }
 
         if (auto result = write_webp("means_l.webp", means_l.data(), width, height); !result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
         if (auto result = write_webp("means_u.webp", means_u.data(), width, height); !result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         if (!report_progress(0.20f, "Rotations")) {
@@ -1075,7 +1075,7 @@ namespace lfs::io {
         }
 
         if (auto result = write_webp("quats.webp", quats.data(), width, height); !result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         if (!report_progress(0.30f, "Scales k-means")) {
@@ -1099,7 +1099,7 @@ namespace lfs::io {
         }
 
         if (auto result = write_webp("scales.webp", scales_data.data(), width, height); !result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         if (!report_progress(0.45f, "Colors k-means")) {
@@ -1127,7 +1127,7 @@ namespace lfs::io {
         }
 
         if (auto result = write_webp("sh0.webp", sh0_data.data(), width, height); !result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         nlohmann::json sh_n_meta;
@@ -1186,7 +1186,7 @@ namespace lfs::io {
             }
 
             if (auto result = write_webp("shN_centroids.webp", centroids_buf.data(), centroids_width, centroids_height); !result) {
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
 
             auto sh_labels_cpu = sh_labels.cpu();
@@ -1205,7 +1205,7 @@ namespace lfs::io {
             }
 
             if (auto result = write_webp("shN_labels.webp", labels_buf.data(), width, height); !result) {
-                return std::unexpected(result.error());
+                return lfs_compat::unexpected(result.error());
             }
 
             sh_n_meta["count"] = actual_palette_size;
@@ -1241,7 +1241,7 @@ namespace lfs::io {
 
         std::string meta_json = meta.dump();
         if (auto result = archive.add_file("meta.json", meta_json.c_str(), meta_json.size()); !result) {
-            return std::unexpected(result.error());
+            return lfs_compat::unexpected(result.error());
         }
 
         LOG_INFO("SOG export complete: {} splats", num_rows);

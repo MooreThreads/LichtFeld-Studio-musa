@@ -24,27 +24,27 @@ namespace lfs::mcp {
 
         explicit SelectionClient(const std::string& socket_path = SOCKET_PATH);
 
-        [[nodiscard]] std::expected<void, std::string> select_rect(float x0, float y0, float x1, float y1,
+        [[nodiscard]] lfs_compat::expected<void, std::string> select_rect(float x0, float y0, float x1, float y1,
                                                                    const std::string& mode = "replace",
                                                                    int camera_index = 0);
-        [[nodiscard]] std::expected<void, std::string> select_polygon(const std::vector<float>& points,
+        [[nodiscard]] lfs_compat::expected<void, std::string> select_polygon(const std::vector<float>& points,
                                                                       const std::string& mode = "replace",
                                                                       int camera_index = 0);
-        [[nodiscard]] std::expected<void, std::string> select_lasso(const std::vector<float>& points,
+        [[nodiscard]] lfs_compat::expected<void, std::string> select_lasso(const std::vector<float>& points,
                                                                     const std::string& mode = "replace",
                                                                     int camera_index = 0);
-        [[nodiscard]] std::expected<void, std::string> select_ring(float x, float y,
+        [[nodiscard]] lfs_compat::expected<void, std::string> select_ring(float x, float y,
                                                                    const std::string& mode = "replace",
                                                                    int camera_index = 0);
-        [[nodiscard]] std::expected<void, std::string> select_brush(float x, float y, float radius,
+        [[nodiscard]] lfs_compat::expected<void, std::string> select_brush(float x, float y, float radius,
                                                                     const std::string& mode = "replace",
                                                                     int camera_index = 0);
 
-        [[nodiscard]] std::expected<void, std::string> apply_mask(const std::vector<uint8_t>& mask);
+        [[nodiscard]] lfs_compat::expected<void, std::string> apply_mask(const std::vector<uint8_t>& mask);
 
-        [[nodiscard]] std::expected<void, std::string> deselect_all();
+        [[nodiscard]] lfs_compat::expected<void, std::string> deselect_all();
 
-        [[nodiscard]] std::expected<CapabilityCallResult, std::string> invoke_capability(const std::string& name,
+        [[nodiscard]] lfs_compat::expected<CapabilityCallResult, std::string> invoke_capability(const std::string& name,
                                                                                          const std::string& args_json);
 
         [[nodiscard]] bool is_gui_running() const;
@@ -52,7 +52,7 @@ namespace lfs::mcp {
     private:
         static constexpr size_t RECV_BUFFER_SIZE = 65536;
 
-        [[nodiscard]] std::expected<std::string, std::string> send_command(const std::string& json_command);
+        [[nodiscard]] lfs_compat::expected<std::string, std::string> send_command(const std::string& json_command);
 
         std::string socket_path_;
     };

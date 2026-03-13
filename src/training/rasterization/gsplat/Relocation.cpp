@@ -6,7 +6,7 @@
 #include "Common.h"
 #include "Ops.h"
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 namespace gsplat_lfs {
 
@@ -17,7 +17,7 @@ namespace gsplat_lfs {
         const float* binoms,
         int64_t N,
         int32_t n_max,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         GSPLAT_CHECK_CUDA_PTR(opacities, "opacities");
         GSPLAT_CHECK_CUDA_PTR(scales, "scales");
         GSPLAT_CHECK_CUDA_PTR(ratios, "ratios");
@@ -40,7 +40,7 @@ namespace gsplat_lfs {
         float* means,
         int64_t N,
         float current_lr,
-        cudaStream_t stream) {
+        musaStream_t stream) {
         GSPLAT_CHECK_CUDA_PTR(raw_opacities, "raw_opacities");
         GSPLAT_CHECK_CUDA_PTR(raw_scales, "raw_scales");
         GSPLAT_CHECK_CUDA_PTR(raw_quats, "raw_quats");

@@ -50,7 +50,7 @@ namespace nvjpeg2k {
         nvjpeg2kHandle_t handle_;
         nvimgcodec::DeviceBuffer device_buffer_;
 
-        cudaEvent_t event_;
+        musaEvent_t event_;
         nvjpeg2kDecodeState_t state_;
         nvjpeg2kStream_t nvjpeg2k_stream_;
         std::optional<uint64_t> parsed_stream_id_;
@@ -61,14 +61,14 @@ namespace nvjpeg2k {
               plugin_id_(plugin_id),
               handle_(handle),
               device_buffer_(exec_params) {
-            XM_CHECK_CUDA(cudaEventCreate(&event_));
+            XM_CHECK_CUDA(musaEventCreate(&event_));
             XM_CHECK_NVJPEG2K(nvjpeg2kDecodeStateCreate(handle_, &state_));
             XM_CHECK_NVJPEG2K(nvjpeg2kStreamCreate(&nvjpeg2k_stream_));
         }
 
         ~PerThreadResources() {
             if (event_) {
-                XM_CUDA_LOG_DESTROY(cudaEventDestroy(event_));
+                XM_CUDA_LOG_DESTROY(musaEventDestroy(event_));
             }
             if (state_) {
                 XM_NVJPEG2K_LOG_DESTROY(nvjpeg2kDecodeStateDestroy(state_));
@@ -80,8 +80,8 @@ namespace nvjpeg2k {
     };
 
     struct PerTileResources {
-        cudaStream_t stream_;
-        cudaEvent_t event_;
+        musaStream_t stream_;
+        musaEvent_t event_;
         nvjpeg2kDecodeState_t state_;
     };
 
@@ -342,8 +342,8 @@ namespace nvjpeg2k {
         if (num_parallel_tiles_ >= num_threads) {
             per_tile_res_.res_.resize(num_parallel_tiles_);
             for (auto& tile_res : per_tile_res_.res_) {
-                XM_CHECK_CUDA(cudaStreamCreateWithFlags(&tile_res.stream_, cudaStreamNonBlocking));
-                XM_CHECK_CUDA(cudaEventCreate(&tile_res.event_));
+                XM_CHECK_CUDA(musaStreamCreateWithFlags(&tile_res.stream_, musaStreamNonBlocking));
+                XM_CHECK_CUDA(musaEventCreate(&tile_res.event_));
                 XM_CHECK_NVJPEG2K(nvjpeg2kDecodeStateCreate(handle_, &tile_res.state_));
                 per_tile_res_.free_.push(&tile_res);
             }
@@ -386,10 +386,10 @@ namespace nvjpeg2k {
 
             for (auto& tile_res : per_tile_res_.res_) {
                 if (tile_res.event_) {
-                    XM_CUDA_LOG_DESTROY(cudaEventDestroy(tile_res.event_));
+                    XM_CUDA_LOG_DESTROY(musaEventDestroy(tile_res.event_));
                 }
                 if (tile_res.stream_) {
-                    XM_CUDA_LOG_DESTROY(cudaStreamDestroy(tile_res.stream_));
+                    XM_CUDA_LOG_DESTROY(musaStreamDestroy(tile_res.stream_));
                 }
                 if (tile_res.state_) {
                     XM_NVJPEG2K_LOG_DESTROY(nvjpeg2kDecodeStateDestroy(tile_res.state_));
@@ -674,7 +674,7 @@ namespace nvjpeg2k {
             output_image.pitch_in_bytes = &pitch_in_bytes[0];
 
             // Waits for GPU stage from previous iteration
-            XM_CHECK_CUDA(cudaEventSynchronize(t.event_));
+            XM_CHECK_CUDA(musaEventSynchronize(t.event_));
 
             bool tiled = (jpeg2k_info.num_tiles_y > 1 || jpeg2k_info.num_tiles_x > 1);
             // If per-tile parallelization is smaller than per-thread parallelization, it is not worth to decode tile-by-tile.
@@ -737,11 +737,11 @@ namespace nvjpeg2k {
                         // Acquire tile resources
                         PerTileResources* tile_res = per_tile_res.Acquire();
                         // sync with previous tile work
-                        XM_CHECK_CUDA(cudaEventSynchronize(tile_res->event_));
+                        XM_CHECK_CUDA(musaEventSynchronize(tile_res->event_));
 
                         // sync tile stream with user stream
-                        XM_CHECK_CUDA(cudaEventRecord(tile_res->event_, image_info.cuda_stream));
-                        XM_CHECK_CUDA(cudaStreamWaitEvent(tile_res->stream_, tile_res->event_));
+                        XM_CHECK_CUDA(musaEventRecord(tile_res->event_, image_info.cuda_stream));
+                        XM_CHECK_CUDA(musaStreamWaitEvent(tile_res->stream_, tile_res->event_));
                         {
                             auto tile_idx = tile_y * jpeg2k_info.num_tiles_x + tile_x;
                             nvtx3::scoped_range marker{"nvjpeg2kDecodeTile #" + std::to_string(tile_idx) + " @" + std::to_string((uint64_t)tile_res)};
@@ -749,8 +749,8 @@ namespace nvjpeg2k {
                                                                  tile_idx, 0, &output_tile, tile_res->stream_));
                         }
                         // sync thread stream with tile stream
-                        XM_CHECK_CUDA(cudaEventRecord(tile_res->event_, tile_res->stream_));
-                        XM_CHECK_CUDA(cudaStreamWaitEvent(image_info.cuda_stream, tile_res->event_));
+                        XM_CHECK_CUDA(musaEventRecord(tile_res->event_, tile_res->stream_));
+                        XM_CHECK_CUDA(musaStreamWaitEvent(image_info.cuda_stream, tile_res->event_));
                         // Release tile resources
                         per_tile_res.Release(tile_res);
                     }
@@ -786,7 +786,7 @@ namespace nvjpeg2k {
             }
 
             // Record event on user stream to synchronize on next iteration
-            XM_CHECK_CUDA(cudaEventRecord(t.event_, image_info.cuda_stream));
+            XM_CHECK_CUDA(musaEventRecord(t.event_, image_info.cuda_stream));
             image->imageReady(image->instance, NVIMGCODEC_PROCESSING_STATUS_SUCCESS);
             return NVIMGCODEC_STATUS_SUCCESS;
         } catch (const NvJpeg2kException& e) {

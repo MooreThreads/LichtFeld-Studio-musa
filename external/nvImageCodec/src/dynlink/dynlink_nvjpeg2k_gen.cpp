@@ -202,23 +202,23 @@ nvjpeg2kStatus_t nvjpeg2kDecodeParamsSetOutputFormat(nvjpeg2kDecodeParams_t deco
     return func_ptr(decode_params, format);
 }
 
-nvjpeg2kStatus_t NVJPEG2KAPI nvjpeg2kDecodeImageNotFound(nvjpeg2kHandle_t, nvjpeg2kDecodeState_t, nvjpeg2kStream_t, nvjpeg2kDecodeParams_t, nvjpeg2kImage_t*, cudaStream_t) {
+nvjpeg2kStatus_t NVJPEG2KAPI nvjpeg2kDecodeImageNotFound(nvjpeg2kHandle_t, nvjpeg2kDecodeState_t, nvjpeg2kStream_t, nvjpeg2kDecodeParams_t, nvjpeg2kImage_t*, musaStream_t) {
     return NVJPEG2K_STATUS_IMPLEMENTATION_NOT_SUPPORTED;
 }
 
-nvjpeg2kStatus_t nvjpeg2kDecodeImage(nvjpeg2kHandle_t handle, nvjpeg2kDecodeState_t decode_state, nvjpeg2kStream_t jpeg2k_stream, nvjpeg2kDecodeParams_t decode_params, nvjpeg2kImage_t* decode_output, cudaStream_t stream) {
-    using FuncPtr = nvjpeg2kStatus_t (*)(nvjpeg2kHandle_t, nvjpeg2kDecodeState_t, nvjpeg2kStream_t, nvjpeg2kDecodeParams_t, nvjpeg2kImage_t*, cudaStream_t);
+nvjpeg2kStatus_t nvjpeg2kDecodeImage(nvjpeg2kHandle_t handle, nvjpeg2kDecodeState_t decode_state, nvjpeg2kStream_t jpeg2k_stream, nvjpeg2kDecodeParams_t decode_params, nvjpeg2kImage_t* decode_output, musaStream_t stream) {
+    using FuncPtr = nvjpeg2kStatus_t (*)(nvjpeg2kHandle_t, nvjpeg2kDecodeState_t, nvjpeg2kStream_t, nvjpeg2kDecodeParams_t, nvjpeg2kImage_t*, musaStream_t);
 
     static auto func_ptr = reinterpret_cast<FuncPtr>(LOAD_SYMBOL_FUNC("nvjpeg2kDecodeImage")) ? reinterpret_cast<FuncPtr>(LOAD_SYMBOL_FUNC("nvjpeg2kDecodeImage")) : nvjpeg2kDecodeImageNotFound;
     return func_ptr(handle, decode_state, jpeg2k_stream, decode_params, decode_output, stream);
 }
 
-nvjpeg2kStatus_t NVJPEG2KAPI nvjpeg2kDecodeTileNotFound(nvjpeg2kHandle_t, nvjpeg2kDecodeState_t, nvjpeg2kStream_t, nvjpeg2kDecodeParams_t, uint32_t, uint32_t, nvjpeg2kImage_t*, cudaStream_t) {
+nvjpeg2kStatus_t NVJPEG2KAPI nvjpeg2kDecodeTileNotFound(nvjpeg2kHandle_t, nvjpeg2kDecodeState_t, nvjpeg2kStream_t, nvjpeg2kDecodeParams_t, uint32_t, uint32_t, nvjpeg2kImage_t*, musaStream_t) {
     return NVJPEG2K_STATUS_IMPLEMENTATION_NOT_SUPPORTED;
 }
 
-nvjpeg2kStatus_t nvjpeg2kDecodeTile(nvjpeg2kHandle_t handle, nvjpeg2kDecodeState_t decode_state, nvjpeg2kStream_t jpeg2k_stream, nvjpeg2kDecodeParams_t decode_params, uint32_t tile_id, uint32_t num_res_levels, nvjpeg2kImage_t* decode_output, cudaStream_t stream) {
-    using FuncPtr = nvjpeg2kStatus_t (*)(nvjpeg2kHandle_t, nvjpeg2kDecodeState_t, nvjpeg2kStream_t, nvjpeg2kDecodeParams_t, uint32_t, uint32_t, nvjpeg2kImage_t*, cudaStream_t);
+nvjpeg2kStatus_t nvjpeg2kDecodeTile(nvjpeg2kHandle_t handle, nvjpeg2kDecodeState_t decode_state, nvjpeg2kStream_t jpeg2k_stream, nvjpeg2kDecodeParams_t decode_params, uint32_t tile_id, uint32_t num_res_levels, nvjpeg2kImage_t* decode_output, musaStream_t stream) {
+    using FuncPtr = nvjpeg2kStatus_t (*)(nvjpeg2kHandle_t, nvjpeg2kDecodeState_t, nvjpeg2kStream_t, nvjpeg2kDecodeParams_t, uint32_t, uint32_t, nvjpeg2kImage_t*, musaStream_t);
 
     static auto func_ptr = reinterpret_cast<FuncPtr>(LOAD_SYMBOL_FUNC("nvjpeg2kDecodeTile")) ? reinterpret_cast<FuncPtr>(LOAD_SYMBOL_FUNC("nvjpeg2kDecodeTile")) : nvjpeg2kDecodeTileNotFound;
     return func_ptr(handle, decode_state, jpeg2k_stream, decode_params, tile_id, num_res_levels, decode_output, stream);
@@ -334,23 +334,23 @@ nvjpeg2kStatus_t nvjpeg2kEncodeParamsSetInputFormat(nvjpeg2kEncodeParams_t encod
     return func_ptr(encode_params, format);
 }
 
-nvjpeg2kStatus_t NVJPEG2KAPI nvjpeg2kEncodeNotFound(nvjpeg2kEncoder_t, nvjpeg2kEncodeState_t, const nvjpeg2kEncodeParams_t, const nvjpeg2kImage_t*, cudaStream_t) {
+nvjpeg2kStatus_t NVJPEG2KAPI nvjpeg2kEncodeNotFound(nvjpeg2kEncoder_t, nvjpeg2kEncodeState_t, const nvjpeg2kEncodeParams_t, const nvjpeg2kImage_t*, musaStream_t) {
     return NVJPEG2K_STATUS_IMPLEMENTATION_NOT_SUPPORTED;
 }
 
-nvjpeg2kStatus_t nvjpeg2kEncode(nvjpeg2kEncoder_t enc_handle, nvjpeg2kEncodeState_t encode_state, const nvjpeg2kEncodeParams_t encode_params, const nvjpeg2kImage_t* input_image, cudaStream_t stream) {
-    using FuncPtr = nvjpeg2kStatus_t (*)(nvjpeg2kEncoder_t, nvjpeg2kEncodeState_t, const nvjpeg2kEncodeParams_t, const nvjpeg2kImage_t*, cudaStream_t);
+nvjpeg2kStatus_t nvjpeg2kEncode(nvjpeg2kEncoder_t enc_handle, nvjpeg2kEncodeState_t encode_state, const nvjpeg2kEncodeParams_t encode_params, const nvjpeg2kImage_t* input_image, musaStream_t stream) {
+    using FuncPtr = nvjpeg2kStatus_t (*)(nvjpeg2kEncoder_t, nvjpeg2kEncodeState_t, const nvjpeg2kEncodeParams_t, const nvjpeg2kImage_t*, musaStream_t);
 
     static auto func_ptr = reinterpret_cast<FuncPtr>(LOAD_SYMBOL_FUNC("nvjpeg2kEncode")) ? reinterpret_cast<FuncPtr>(LOAD_SYMBOL_FUNC("nvjpeg2kEncode")) : nvjpeg2kEncodeNotFound;
     return func_ptr(enc_handle, encode_state, encode_params, input_image, stream);
 }
 
-nvjpeg2kStatus_t NVJPEG2KAPI nvjpeg2kEncodeRetrieveBitstreamNotFound(nvjpeg2kEncoder_t, nvjpeg2kEncodeState_t, unsigned char*, size_t*, cudaStream_t) {
+nvjpeg2kStatus_t NVJPEG2KAPI nvjpeg2kEncodeRetrieveBitstreamNotFound(nvjpeg2kEncoder_t, nvjpeg2kEncodeState_t, unsigned char*, size_t*, musaStream_t) {
     return NVJPEG2K_STATUS_IMPLEMENTATION_NOT_SUPPORTED;
 }
 
-nvjpeg2kStatus_t nvjpeg2kEncodeRetrieveBitstream(nvjpeg2kEncoder_t enc_handle, nvjpeg2kEncodeState_t encode_state, unsigned char* compressed_data, size_t* length, cudaStream_t stream) {
-    using FuncPtr = nvjpeg2kStatus_t (*)(nvjpeg2kEncoder_t, nvjpeg2kEncodeState_t, unsigned char*, size_t*, cudaStream_t);
+nvjpeg2kStatus_t nvjpeg2kEncodeRetrieveBitstream(nvjpeg2kEncoder_t enc_handle, nvjpeg2kEncodeState_t encode_state, unsigned char* compressed_data, size_t* length, musaStream_t stream) {
+    using FuncPtr = nvjpeg2kStatus_t (*)(nvjpeg2kEncoder_t, nvjpeg2kEncodeState_t, unsigned char*, size_t*, musaStream_t);
 
     static auto func_ptr = reinterpret_cast<FuncPtr>(LOAD_SYMBOL_FUNC("nvjpeg2kEncodeRetrieveBitstream")) ? reinterpret_cast<FuncPtr>(LOAD_SYMBOL_FUNC("nvjpeg2kEncodeRetrieveBitstream")) : nvjpeg2kEncodeRetrieveBitstreamNotFound;
     return func_ptr(enc_handle, encode_state, compressed_data, length, stream);

@@ -761,7 +761,7 @@ _repl_out.close()
         }
     }
 
-    std::expected<void, std::string> run_scripts(const std::vector<std::filesystem::path>& scripts) {
+    lfs_compat::expected<void, std::string> run_scripts(const std::vector<std::filesystem::path>& scripts) {
         if (scripts.empty()) {
             return {};
         }
@@ -791,7 +791,7 @@ _repl_out.close()
             PyObject* lf_module = PyImport_ImportModule("lichtfeld");
             if (!lf_module) {
                 PyErr_Print();
-                return std::unexpected("Failed to import lichtfeld module - check build output");
+                return lfs_compat::unexpected("Failed to import lichtfeld module - check build output");
             }
             Py_DECREF(lf_module);
             LOG_INFO("Successfully pre-imported lichtfeld module");
@@ -803,7 +803,7 @@ _repl_out.close()
         for (const auto& script : scripts) {
             const auto script_utf8 = lfs::core::path_to_utf8(script);
             if (!std::filesystem::exists(script)) {
-                return std::unexpected(std::format("Python script not found: {}", script_utf8));
+                return lfs_compat::unexpected(std::format("Python script not found: {}", script_utf8));
             }
 
             // Ensure script directory is on sys.path
@@ -823,13 +823,13 @@ _repl_out.close()
             FILE* const fp = fopen(script.c_str(), "r");
 #endif
             if (!fp) {
-                return std::unexpected(std::format("Failed to open Python script: {}", script_utf8));
+                return lfs_compat::unexpected(std::format("Failed to open Python script: {}", script_utf8));
             }
 
             LOG_INFO("Executing Python script: {}", script_utf8);
             const int rc = PyRun_SimpleFileEx(fp, script_utf8.c_str(), /*closeit=*/1);
             if (rc != 0) {
-                return std::unexpected(std::format("Python script failed: {} (rc={})", script_utf8, rc));
+                return lfs_compat::unexpected(std::format("Python script failed: {} (rc={})", script_utf8, rc));
             }
 
             LOG_INFO("Python script completed: {}", script_utf8);

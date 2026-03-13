@@ -27,7 +27,7 @@
 #include "visualizer/gui/video_widget_interface.hpp"
 #include "visualizer/gui/windows/video_extractor_dialog.hpp"
 #include <cstdlib>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <rasterization_api.h>
 
 #ifdef WIN32
@@ -209,8 +209,8 @@ namespace lfs::app {
         void warmupCuda() {
             checkCudaDriverVersion();
 
-            cudaDeviceProp prop;
-            if (cudaGetDeviceProperties(&prop, 0) == cudaSuccess) {
+            musaDeviceProp prop;
+            if (musaGetDeviceProperties(&prop, 0) == musaSuccess) {
                 LOG_INFO("GPU: {} (SM {}.{}, {} MB)", prop.name, prop.major, prop.minor,
                          prop.totalGlobalMem / (1024 * 1024));
             }
