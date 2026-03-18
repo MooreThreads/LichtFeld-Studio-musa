@@ -16,12 +16,12 @@ using namespace lfs::core;
 class MCMCNaNFixTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         lfs::training::mcmc::init_relocation_coefficients(51);
     }
 
     void TearDown() override {
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
     bool hasNaNOrInf(const Tensor& t) {
@@ -92,7 +92,7 @@ TEST_F(MCMCNaNFixTest, RelocationKernel_ExtremeOpacity_ProducesNaN) {
         new_opacities.ptr<float>(),
         new_scales.ptr<float>(),
         N);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Check for NaN/Inf in outputs
     auto [nan_opac, inf_opac] = countNaNInf(new_opacities);
@@ -142,7 +142,7 @@ TEST_F(MCMCNaNFixTest, RelocationKernel_NormalOpacity_NoNaN) {
         new_opacities.ptr<float>(),
         new_scales.ptr<float>(),
         N);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     auto [nan_opac, inf_opac] = countNaNInf(new_opacities);
     auto [nan_scale, inf_scale] = countNaNInf(new_scales);
@@ -180,7 +180,7 @@ TEST_F(MCMCNaNFixTest, RelocationKernel_ReproduceGaussian15975) {
         new_opacities.ptr<float>(),
         new_scales.ptr<float>(),
         N);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Print the results
     Tensor new_opac_cpu = new_opacities.cpu();
@@ -228,7 +228,7 @@ TEST_F(MCMCNaNFixTest, NewScalesLog_ProducesValidOutput) {
             new_opacities.ptr<float>(),
             new_scales.ptr<float>(),
             N);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         // Check new_scales before log
         auto [nan_scale, inf_scale] = countNaNInf(new_scales);

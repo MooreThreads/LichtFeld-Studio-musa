@@ -4,9 +4,9 @@
 #include "core/logger.hpp"
 #include "core/pinned_memory_allocator.hpp"
 #include "core/tensor.hpp"
-#include <c10/cuda/CUDACachingAllocator.h>
+#include <musa_runtime.h>
 #include <cstdlib>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <torch/torch.h>
 
@@ -14,27 +14,27 @@
 class MemoryCleanupListener : public ::testing::EmptyTestEventListener {
 private:
     void aggressive_cleanup() {
-        cudaSetDevice(0);
+        musaSetDevice(0);
 
         // Synchronize and check for errors
-        cudaError_t sync_err = cudaDeviceSynchronize();
-        cudaError_t last_err = cudaGetLastError();
+        musaError_t sync_err = musaDeviceSynchronize();
+        musaError_t last_err = musaGetLastError();
 
         // If there are CUDA errors, log and clear them
-        if (sync_err != cudaSuccess || last_err != cudaSuccess) {
-            if (sync_err != cudaSuccess) {
-                std::cerr << "[CLEANUP] CUDA sync error: " << cudaGetErrorString(sync_err) << std::endl;
+        if (sync_err != musaSuccess || last_err != musaSuccess) {
+            if (sync_err != musaSuccess) {
+                std::cerr << "[CLEANUP] CUDA sync error: " << musaGetErrorString(sync_err) << std::endl;
             }
-            if (last_err != cudaSuccess) {
-                std::cerr << "[CLEANUP] CUDA error: " << cudaGetErrorString(last_err) << std::endl;
+            if (last_err != musaSuccess) {
+                std::cerr << "[CLEANUP] CUDA error: " << musaGetErrorString(last_err) << std::endl;
             }
             // Clear the error
-            cudaGetLastError();
+            musaGetLastError();
         }
 
         // Empty PyTorch's cache
         try {
-            c10::cuda::CUDACachingAllocator::emptyCache();
+            musaDeviceSynchronize();
         } catch (...) {
             std::cerr << "[CLEANUP] Exception while emptying PyTorch cache" << std::endl;
         }
@@ -47,8 +47,8 @@ private:
         }
 
         // Final sync
-        cudaDeviceSynchronize();
-        cudaGetLastError(); // Clear any remaining errors
+        musaDeviceSynchronize();
+        musaGetLastError(); // Clear any remaining errors
     }
 
 public:

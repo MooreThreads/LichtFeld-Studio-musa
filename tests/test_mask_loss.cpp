@@ -15,7 +15,7 @@
 
 #include "core/parameters.hpp"
 #include "core/tensor.hpp"
-#include "lfs/kernels/ssim.cuh"
+#include "lfs/kernels/ssim.muh"
 #include <cmath>
 #include <gtest/gtest.h>
 

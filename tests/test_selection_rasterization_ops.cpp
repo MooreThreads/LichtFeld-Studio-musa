@@ -6,7 +6,7 @@
 
 #include <algorithm>
 #include <array>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 
 using lfs::core::DataType;
@@ -58,13 +58,13 @@ namespace {
         }
 
         uint32_t* d_locked = nullptr;
-        if (cudaMalloc(&d_locked, sizeof(locked_bitmask)) != cudaSuccess) {
-            ADD_FAILURE() << "cudaMalloc failed for locked group mask";
+        if (musaMalloc(&d_locked, sizeof(locked_bitmask)) != musaSuccess) {
+            ADD_FAILURE() << "musaMalloc failed for locked group mask";
             return {};
         }
-        if (cudaMemcpy(d_locked, locked_bitmask.data(), sizeof(locked_bitmask), cudaMemcpyHostToDevice) != cudaSuccess) {
-            cudaFree(d_locked);
-            ADD_FAILURE() << "cudaMemcpy failed for locked group mask";
+        if (musaMemcpy(d_locked, locked_bitmask.data(), sizeof(locked_bitmask), musaMemcpyHostToDevice) != musaSuccess) {
+            musaFree(d_locked);
+            ADD_FAILURE() << "musaMemcpy failed for locked group mask";
             return {};
         }
 
@@ -85,8 +85,8 @@ namespace {
             transform_indices_ptr,
             valid_nodes,
             replace_mode);
-        if (cudaFree(d_locked) != cudaSuccess) {
-            ADD_FAILURE() << "cudaFree failed for locked group mask";
+        if (musaFree(d_locked) != musaSuccess) {
+            ADD_FAILURE() << "musaFree failed for locked group mask";
             return {};
         }
 

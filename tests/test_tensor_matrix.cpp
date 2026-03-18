@@ -4,7 +4,7 @@
 #include "core/logger.hpp"
 #include "core/tensor.hpp"
 #include <chrono>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <numeric>
 #include <random>
@@ -244,14 +244,14 @@ TEST_F(TensorMatrixTest, BatchMatMulLargeRowCount) {
                                  static_cast<int64_t>(inner),
                                  static_cast<int64_t>(cols)});
 
-    cudaGetLastError();
+    musaGetLastError();
 
     auto custom_result = custom_a.bmm(custom_b);
-    const cudaError_t sync_err = cudaDeviceSynchronize();
-    EXPECT_EQ(sync_err, cudaSuccess) << cudaGetErrorString(sync_err);
+    const musaError_t sync_err = musaDeviceSynchronize();
+    EXPECT_EQ(sync_err, musaSuccess) << musaGetErrorString(sync_err);
 
-    const cudaError_t last_err = cudaGetLastError();
-    EXPECT_EQ(last_err, cudaSuccess) << cudaGetErrorString(last_err);
+    const musaError_t last_err = musaGetLastError();
+    EXPECT_EQ(last_err, musaSuccess) << musaGetErrorString(last_err);
 
     auto torch_result = torch::bmm(torch_a, torch_b);
 
@@ -716,13 +716,13 @@ TEST_F(TensorMatrixTest, MatMulPerformance) {
     // Warm up
     auto warm_custom = custom_a.matmul(custom_b);
     auto warm_torch = torch::matmul(torch_a, torch_b);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark custom implementation
     auto start_custom = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < iterations; ++i) {
         auto result = custom_a.matmul(custom_b);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
     auto end_custom = std::chrono::high_resolution_clock::now();
     auto custom_time = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -733,7 +733,7 @@ TEST_F(TensorMatrixTest, MatMulPerformance) {
     auto start_torch = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < iterations; ++i) {
         auto result = torch::matmul(torch_a, torch_b);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
     auto end_torch = std::chrono::high_resolution_clock::now();
     auto torch_time = std::chrono::duration_cast<std::chrono::milliseconds>(

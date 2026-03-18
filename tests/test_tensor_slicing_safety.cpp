@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 
 using namespace lfs::core;
@@ -23,7 +23,7 @@ protected:
     void SetUp() override {
         // Ensure CUDA is available
         int device_count = 0;
-        cudaGetDeviceCount(&device_count);
+        musaGetDeviceCount(&device_count);
         if (device_count == 0) {
             GTEST_SKIP() << "No CUDA devices available";
         }
@@ -41,14 +41,14 @@ TEST_F(TensorSlicingSafetyTest, SliceIsZeroCopy) {
 
     // Get memory before slicing
     size_t free_before, total;
-    cudaMemGetInfo(&free_before, &total);
+    musaMemGetInfo(&free_before, &total);
 
     // Create slice
     Tensor slice = full.slice(0, 0, 500);
 
     // Get memory after slicing
     size_t free_after;
-    cudaMemGetInfo(&free_after, &total);
+    musaMemGetInfo(&free_after, &total);
 
     // Verify no new allocation (within 1KB tolerance for metadata)
     const size_t tolerance = 1024;
@@ -130,9 +130,9 @@ TEST_F(TensorSlicingSafetyTest, SliceModifiesOriginalTensor) {
 
     // Copy first and last values to CPU to check
     float first_val, last_val;
-    cudaMemcpy(&first_val, first_500.ptr<float>(), sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&last_val, last_500.ptr<float>(), sizeof(float), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
+    musaMemcpy(&first_val, first_500.ptr<float>(), sizeof(float), musaMemcpyDeviceToHost);
+    musaMemcpy(&last_val, last_500.ptr<float>(), sizeof(float), musaMemcpyDeviceToHost);
+    musaDeviceSynchronize();
 
     EXPECT_FLOAT_EQ(first_val, 42.0f)
         << "Slice modification didn't affect original tensor!";
@@ -164,8 +164,8 @@ TEST_F(TensorSlicingSafetyTest, MultipleSlicesShareBuffer) {
     // Verify slice2's overlapping region [250:500] is modified
     Tensor overlap = slice2.slice(0, 0, 250); // First 250 of slice2 = [250:500] of full
     float overlap_val;
-    cudaMemcpy(&overlap_val, overlap.ptr<float>(), sizeof(float), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
+    musaMemcpy(&overlap_val, overlap.ptr<float>(), sizeof(float), musaMemcpyDeviceToHost);
+    musaDeviceSynchronize();
 
     EXPECT_FLOAT_EQ(overlap_val, 10.0f)
         << "Multiple slices don't share buffer!";
@@ -247,14 +247,14 @@ TEST_F(TensorSlicingSafetyTest, ContiguousCreatesCopy) {
 
     // Get memory before contiguous()
     size_t free_before, total;
-    cudaMemGetInfo(&free_before, &total);
+    musaMemGetInfo(&free_before, &total);
 
     // Call contiguous() - should create copy if not contiguous
     Tensor contig = slice.contiguous();
 
     // Get memory after
     size_t free_after;
-    cudaMemGetInfo(&free_after, &total);
+    musaMemGetInfo(&free_after, &total);
 
     // If slice is already contiguous, no copy made
     // If not contiguous, copy is made and we should see allocation
@@ -284,7 +284,7 @@ TEST_F(TensorSlicingSafetyTest, SimulateMCMCGrowth) {
 
     // Get baseline memory
     size_t free_before, total;
-    cudaMemGetInfo(&free_before, &total);
+    musaMemGetInfo(&free_before, &total);
 
     // Simulate MCMC growth (5% per step)
     while (current_size < MAX_CAP) {
@@ -307,7 +307,7 @@ TEST_F(TensorSlicingSafetyTest, SimulateMCMCGrowth) {
 
     // Verify no allocations during growth
     size_t free_after;
-    cudaMemGetInfo(&free_after, &total);
+    musaMemGetInfo(&free_after, &total);
 
     const size_t tolerance = 1024 * 1024; // 1MB
     EXPECT_NEAR(free_after, free_before, tolerance)

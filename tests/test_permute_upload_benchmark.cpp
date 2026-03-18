@@ -108,7 +108,7 @@ protected:
         // Warmup GPU
         auto warmup = Tensor::rand({100, 100}, Device::CUDA);
         auto warmup_torch = torch::rand({100, 100}, torch::kCUDA);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
     void print_separator(const std::string& title = "") {
@@ -238,7 +238,7 @@ TEST_F(PermuteUploadBenchmarkTest, CUDAUploadOnly) {
             {
                 Timer timer;
                 result_custom = custom_cpu.cuda();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -246,7 +246,7 @@ TEST_F(PermuteUploadBenchmarkTest, CUDAUploadOnly) {
             {
                 Timer timer;
                 result_torch = torch_cpu.to(torch::kCUDA);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -318,7 +318,7 @@ TEST_F(PermuteUploadBenchmarkTest, PermuteAndUploadCombined) {
             {
                 Timer timer_total;
                 result_custom = custom_cpu.permute({2, 0, 1}).cuda();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer_total.elapsed_ms();
             }
 
@@ -326,7 +326,7 @@ TEST_F(PermuteUploadBenchmarkTest, PermuteAndUploadCombined) {
             {
                 Timer timer;
                 auto temp = custom_cpu.permute({2, 0, 1}).contiguous().cuda();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom_contiguous += timer.elapsed_ms();
             }
 
@@ -334,7 +334,7 @@ TEST_F(PermuteUploadBenchmarkTest, PermuteAndUploadCombined) {
             {
                 Timer timer;
                 result_torch = torch_cpu.permute({2, 0, 1}).to(torch::kCUDA);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
 
@@ -348,7 +348,7 @@ TEST_F(PermuteUploadBenchmarkTest, PermuteAndUploadCombined) {
                 // Upload only (already permuted)
                 Timer timer_upload;
                 auto uploaded = permuted.cuda();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom_upload_only = timer_upload.elapsed_ms();
             }
         }
@@ -430,7 +430,7 @@ TEST_F(PermuteUploadBenchmarkTest, GPUPermuteOnly) {
             {
                 Timer timer;
                 auto result = custom_gpu.permute({2, 0, 1});
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -438,7 +438,7 @@ TEST_F(PermuteUploadBenchmarkTest, GPUPermuteOnly) {
             {
                 Timer timer;
                 auto result = torch_gpu.permute({2, 0, 1});
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -463,7 +463,7 @@ TEST_F(PermuteUploadBenchmarkTest, CPUtoGPUTransferBenchmark) {
     print_separator("CPU → GPU TRANSFER BENCHMARK - Upload Performance");
 
     std::cout << "\n🎯 This tests raw data transfer from CPU to GPU" << std::endl;
-    std::cout << "📊 Pure cudaMemcpy performance comparison with LibTorch" << std::endl;
+    std::cout << "📊 Pure musaMemcpy performance comparison with LibTorch" << std::endl;
     std::cout << "🎪 Tests various sizes from small to large\n"
               << std::endl;
 
@@ -508,7 +508,7 @@ TEST_F(PermuteUploadBenchmarkTest, CPUtoGPUTransferBenchmark) {
             {
                 Timer timer;
                 result_custom = custom_cpu.cuda();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -516,7 +516,7 @@ TEST_F(PermuteUploadBenchmarkTest, CPUtoGPUTransferBenchmark) {
             {
                 Timer timer;
                 result_torch = torch_cpu.to(torch::kCUDA);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -557,7 +557,7 @@ TEST_F(PermuteUploadBenchmarkTest, GPUtoCPUTransferBenchmark) {
     print_separator("GPU → CPU TRANSFER BENCHMARK - Download Performance");
 
     std::cout << "\n🎯 This tests raw data transfer from GPU to CPU" << std::endl;
-    std::cout << "📊 Pure cudaMemcpy performance comparison with LibTorch" << std::endl;
+    std::cout << "📊 Pure musaMemcpy performance comparison with LibTorch" << std::endl;
     std::cout << "🔄 This is used in point_cloud_renderer.cpp:169 (5.48ms bottleneck!)\n"
               << std::endl;
 
@@ -592,7 +592,7 @@ TEST_F(PermuteUploadBenchmarkTest, GPUtoCPUTransferBenchmark) {
             {
                 Timer timer;
                 result_custom = custom_gpu.cpu();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -600,7 +600,7 @@ TEST_F(PermuteUploadBenchmarkTest, GPUtoCPUTransferBenchmark) {
             {
                 Timer timer;
                 result_torch = torch_gpu.to(torch::kCPU);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -671,7 +671,7 @@ TEST_F(PermuteUploadBenchmarkTest, RoundTripTransferBenchmark) {
                 Timer timer;
                 auto gpu = custom_cpu.cuda();
                 auto back = gpu.cpu();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -680,7 +680,7 @@ TEST_F(PermuteUploadBenchmarkTest, RoundTripTransferBenchmark) {
                 Timer timer;
                 auto gpu = torch_cpu.to(torch::kCUDA);
                 auto back = gpu.to(torch::kCPU);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -731,13 +731,13 @@ TEST_F(PermuteUploadBenchmarkTest, ContiguousVsStridedTransfer) {
             {
                 Timer timer;
                 auto result = custom_cpu.cuda();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
             {
                 Timer timer;
                 auto result = torch_cpu.to(torch::kCUDA);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -772,13 +772,13 @@ TEST_F(PermuteUploadBenchmarkTest, ContiguousVsStridedTransfer) {
             {
                 Timer timer;
                 auto result = custom_transposed.cuda();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
             {
                 Timer timer;
                 auto result = torch_transposed.to(torch::kCUDA);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }

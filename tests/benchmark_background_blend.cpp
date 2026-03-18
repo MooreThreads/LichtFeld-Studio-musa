@@ -25,13 +25,13 @@ protected:
         // Create LibTorch tensors, then copy to LFS for exact match
         image_torch = torch::randn({3, H, W}, torch::TensorOptions().device(torch::kCUDA));
         image_lfs = Tensor::empty({3, H, W}, Device::CUDA);
-        cudaMemcpy(image_lfs.ptr<float>(), image_torch.data_ptr<float>(),
-                   3 * H * W * sizeof(float), cudaMemcpyDeviceToDevice);
+        musaMemcpy(image_lfs.ptr<float>(), image_torch.data_ptr<float>(),
+                   3 * H * W * sizeof(float), musaMemcpyDeviceToDevice);
 
         alpha_torch = torch::rand({1, H, W}, torch::TensorOptions().device(torch::kCUDA));
         alpha_lfs = Tensor::empty({1, H, W}, Device::CUDA);
-        cudaMemcpy(alpha_lfs.ptr<float>(), alpha_torch.data_ptr<float>(),
-                   H * W * sizeof(float), cudaMemcpyDeviceToDevice);
+        musaMemcpy(alpha_lfs.ptr<float>(), alpha_torch.data_ptr<float>(),
+                   H * W * sizeof(float), musaMemcpyDeviceToDevice);
     }
 
     Tensor bg_color_lfs;
@@ -82,14 +82,14 @@ TEST_F(BackgroundBlendBenchmark, LFS_Old) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_blend_lfs_old(image_lfs, alpha_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_blend_lfs_old(image_lfs, alpha_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -104,14 +104,14 @@ TEST_F(BackgroundBlendBenchmark, LFS_Fused) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_blend_lfs_fused(image_lfs, alpha_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_blend_lfs_fused(image_lfs, alpha_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -126,14 +126,14 @@ TEST_F(BackgroundBlendBenchmark, LibTorch) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_blend_torch(image_torch, alpha_torch, bg_color_torch);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_blend_torch(image_torch, alpha_torch, bg_color_torch);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();

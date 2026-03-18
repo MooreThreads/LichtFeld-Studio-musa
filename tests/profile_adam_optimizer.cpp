@@ -96,7 +96,7 @@ void profile_lfs_optimizer() {
     std::cout << "Add amount: " << N_add << " per addition" << std::endl;
     std::cout << "Pre-allocated capacity: " << config.initial_capacity << std::endl;
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto start = std::chrono::high_resolution_clock::now();
 
     {
@@ -121,7 +121,7 @@ void profile_lfs_optimizer() {
         }
     }
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double, std::milli> elapsed = end - start;
@@ -154,7 +154,7 @@ void profile_pytorch_optimizer() {
     std::cout << "Starting profiling loop..." << std::endl;
     std::cout << "Initial size: " << N_initial << std::endl;
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto start = std::chrono::high_resolution_clock::now();
 
     {
@@ -197,7 +197,7 @@ void profile_pytorch_optimizer() {
         }
     }
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double, std::milli> elapsed = end - start;
@@ -225,7 +225,7 @@ void profile_step_operation_detailed() {
         AdamOptimizer optimizer(splat_data, config);
         optimizer.allocate_gradients();
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto start = std::chrono::high_resolution_clock::now();
 
         {
@@ -238,7 +238,7 @@ void profile_step_operation_detailed() {
             }
         }
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double, std::milli> elapsed = end - start;
@@ -257,7 +257,7 @@ void profile_step_operation_detailed() {
             std::vector<torch::Tensor>{torch_means},
             std::make_unique<gs::training::FusedAdam::Options>(lr));
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto start = std::chrono::high_resolution_clock::now();
 
         {
@@ -271,7 +271,7 @@ void profile_step_operation_detailed() {
             }
         }
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double, std::milli> elapsed = end - start;

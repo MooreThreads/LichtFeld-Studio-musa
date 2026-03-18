@@ -2,11 +2,11 @@
  *
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <cuda_runtime.h>
-#include <expected>
+#include <musa_runtime.h>
+#include "compat/expected"
 #include <gtest/gtest.h>
 #include <memory>
-#include <print>
+#include <fmt/format.h>
 #include <string>
 #include <torch/torch.h>
 #include <vector>
@@ -84,7 +84,7 @@ protected:
     }
 
     void print_test_header(const std::string& test_name) {
-        std::println("\n=== {} ===", test_name);
+        fmt::print("\n=== {} ===", test_name);
     }
 };
 
@@ -113,7 +113,7 @@ TEST_F(TensorMoveTest, BasicMoveConstructor) {
     EXPECT_TRUE(gs_moved.is_valid()) << "Tensor: destination should be valid";
     EXPECT_EQ(gs_moved.ptr<float>(), gs_orig_ptr) << "Tensor: data pointer should match";
 
-    std::println("✓ BasicMoveConstructor: Both implementations behave correctly");
+    fmt::print("✓ BasicMoveConstructor: Both implementations behave correctly");
 }
 
 TEST_F(TensorMoveTest, MoveAssignment) {
@@ -139,7 +139,7 @@ TEST_F(TensorMoveTest, MoveAssignment) {
     EXPECT_TRUE(gs_dest.is_valid()) << "Tensor: destination should be valid";
     EXPECT_EQ(gs_dest.ptr<float>(), gs_orig_ptr) << "Tensor: data pointer should match";
 
-    std::println("✓ MoveAssignment: Both implementations behave correctly");
+    fmt::print("✓ MoveAssignment: Both implementations behave correctly");
 }
 
 TEST_F(TensorMoveTest, MoveToExistingTensor) {
@@ -166,7 +166,7 @@ TEST_F(TensorMoveTest, MoveToExistingTensor) {
     EXPECT_EQ(gs_existing.shape()[1], 3);
     EXPECT_EQ(gs_existing.ptr<float>(), gs_orig_ptr);
 
-    std::println("✓ MoveToExistingTensor: Both implementations handle reassignment");
+    fmt::print("✓ MoveToExistingTensor: Both implementations handle reassignment");
 }
 
 // ============================================================================
@@ -190,7 +190,7 @@ TEST_F(TensorMoveTest, DataPreservationAfterMove) {
 
     EXPECT_TRUE(tensors_equal(gs_moved, gs_copy));
 
-    std::println("✓ DataPreservationAfterMove: Data preserved correctly");
+    fmt::print("✓ DataPreservationAfterMove: Data preserved correctly");
 }
 
 TEST_F(TensorMoveTest, MultipleSequentialMoves) {
@@ -220,7 +220,7 @@ TEST_F(TensorMoveTest, MultipleSequentialMoves) {
     EXPECT_FALSE(gs_1.is_valid());
     EXPECT_FALSE(gs_2.is_valid());
 
-    std::println("✓ MultipleSequentialMoves: Chain of moves works correctly");
+    fmt::print("✓ MultipleSequentialMoves: Chain of moves works correctly");
 }
 
 // ============================================================================
@@ -246,7 +246,7 @@ TEST_F(TensorMoveTest, MoveScalarTensor) {
     EXPECT_EQ(gs_moved.numel(), 1);
     EXPECT_FLOAT_EQ(gs_moved.item(), 42.0f);
 
-    std::println("✓ MoveScalarTensor: Scalar tensors move correctly");
+    fmt::print("✓ MoveScalarTensor: Scalar tensors move correctly");
 }
 
 TEST_F(TensorMoveTest, MoveLargeTensor) {
@@ -270,7 +270,7 @@ TEST_F(TensorMoveTest, MoveLargeTensor) {
     EXPECT_EQ(gs_moved.ptr<float>(), gs_ptr);
     EXPECT_EQ(gs_moved.numel(), large_size * large_size);
 
-    std::println("✓ MoveLargeTensor: Large tensors move correctly");
+    fmt::print("✓ MoveLargeTensor: Large tensors move correctly");
 }
 
 TEST_F(TensorMoveTest, MoveHighDimensionalTensor) {
@@ -292,7 +292,7 @@ TEST_F(TensorMoveTest, MoveHighDimensionalTensor) {
     EXPECT_EQ(gs_moved.shape(), gs_shape);
     EXPECT_EQ(gs_moved.ndim(), 4);
 
-    std::println("✓ MoveHighDimensionalTensor: Multi-dimensional tensors move correctly");
+    fmt::print("✓ MoveHighDimensionalTensor: Multi-dimensional tensors move correctly");
 }
 
 // ============================================================================
@@ -322,7 +322,7 @@ TEST_F(TensorMoveTest, MoveIntoVector) {
     EXPECT_TRUE(gs_vec[0].is_valid());
     EXPECT_EQ(gs_vec[0].ptr<float>(), gs_ptr);
 
-    std::println("✓ MoveIntoVector: Moving into vector works correctly");
+    fmt::print("✓ MoveIntoVector: Moving into vector works correctly");
 }
 
 TEST_F(TensorMoveTest, MoveFromVector) {
@@ -348,7 +348,7 @@ TEST_F(TensorMoveTest, MoveFromVector) {
     EXPECT_TRUE(gs_moved.is_valid());
     EXPECT_EQ(gs_moved.ptr<float>(), gs_ptr);
 
-    std::println("✓ MoveFromVector: Moving from vector works correctly");
+    fmt::print("✓ MoveFromVector: Moving from vector works correctly");
 }
 
 TEST_F(TensorMoveTest, MoveMultipleIntoVector) {
@@ -384,7 +384,7 @@ TEST_F(TensorMoveTest, MoveMultipleIntoVector) {
         EXPECT_EQ(gs_vec[i].ptr<float>(), gs_ptrs[i]);
     }
 
-    std::println("✓ MoveMultipleIntoVector: Multiple moves into vector work correctly");
+    fmt::print("✓ MoveMultipleIntoVector: Multiple moves into vector work correctly");
 }
 
 // ============================================================================
@@ -414,7 +414,7 @@ TEST_F(TensorMoveTest, MoveAfterClone) {
     EXPECT_TRUE(gs_moved.is_valid());
     EXPECT_TRUE(tensors_equal(gs_orig, gs_moved));
 
-    std::println("✓ MoveAfterClone: Moving cloned tensors works correctly");
+    fmt::print("✓ MoveAfterClone: Moving cloned tensors works correctly");
 }
 
 TEST_F(TensorMoveTest, MoveAfterContiguous) {
@@ -436,7 +436,7 @@ TEST_F(TensorMoveTest, MoveAfterContiguous) {
     EXPECT_TRUE(gs_moved.is_valid());
     EXPECT_TRUE(gs_moved.is_contiguous());
 
-    std::println("✓ MoveAfterContiguous: Moving after contiguous() works correctly");
+    fmt::print("✓ MoveAfterContiguous: Moving after contiguous() works correctly");
 }
 
 TEST_F(TensorMoveTest, MoveAfterReshape) {
@@ -459,7 +459,7 @@ TEST_F(TensorMoveTest, MoveAfterReshape) {
     EXPECT_EQ(gs_moved.shape()[0], 10);
     EXPECT_EQ(gs_moved.shape()[1], 30);
 
-    std::println("✓ MoveAfterReshape: Moving reshaped tensors works correctly");
+    fmt::print("✓ MoveAfterReshape: Moving reshaped tensors works correctly");
 }
 
 // ============================================================================
@@ -500,7 +500,7 @@ TEST_F(TensorMoveTest, ReturnByValue_RVO) {
     EXPECT_EQ(gs_returned.shape()[0], 100);
     EXPECT_EQ(gs_returned.shape()[1], 3);
 
-    std::println("✓ ReturnByValue_RVO: RVO works correctly");
+    fmt::print("✓ ReturnByValue_RVO: RVO works correctly");
 }
 
 TEST_F(TensorMoveTest, ReturnByValue_ExplicitMove) {
@@ -517,19 +517,19 @@ TEST_F(TensorMoveTest, ReturnByValue_ExplicitMove) {
     EXPECT_EQ(gs_returned.shape()[0], 100);
     EXPECT_EQ(gs_returned.shape()[1], 3);
 
-    std::println("✓ ReturnByValue_ExplicitMove: Explicit move in return works correctly");
+    fmt::print("✓ ReturnByValue_ExplicitMove: Explicit move in return works correctly");
 }
 
 // ============================================================================
-// Move with std::expected
+// Move with lfs_compat::expected
 // ============================================================================
 
-std::expected<torch::Tensor, std::string> create_torch_expected() {
+lfs_compat::expected<torch::Tensor, std::string> create_torch_expected() {
     auto t = torch::randn({100, 3}, torch::kCUDA);
     return t;
 }
 
-std::expected<lfs::core::Tensor, std::string> create_gs_expected() {
+lfs_compat::expected<lfs::core::Tensor, std::string> create_gs_expected() {
     auto t = lfs::core::Tensor::randn({100, 3}, lfs::core::Device::CUDA);
     return t;
 }
@@ -550,7 +550,7 @@ TEST_F(TensorMoveTest, MoveInExpected) {
     EXPECT_EQ(gs_result.value().shape()[0], 100);
     EXPECT_EQ(gs_result.value().shape()[1], 3);
 
-    std::println("✓ MoveInExpected: Moving through std::expected works correctly");
+    fmt::print("✓ MoveInExpected: Moving through lfs_compat::expected works correctly");
 }
 
 // ============================================================================
@@ -590,7 +590,7 @@ TEST_F(TensorMoveTest, MoveIntoStructConstructor) {
     EXPECT_TRUE(gs_wrapper.data.is_valid());
     EXPECT_EQ(gs_wrapper.data.ptr<float>(), gs_ptr);
 
-    std::println("✓ MoveIntoStructConstructor: Moving into struct constructor works");
+    fmt::print("✓ MoveIntoStructConstructor: Moving into struct constructor works");
 }
 
 TEST_F(TensorMoveTest, MoveClonedTensorIntoConstructor) {
@@ -612,7 +612,7 @@ TEST_F(TensorMoveTest, MoveClonedTensorIntoConstructor) {
     EXPECT_TRUE(gs_wrapper.data.is_valid());
     EXPECT_TRUE(tensors_equal(gs_wrapper.data, gs_orig));
 
-    std::println("✓ MoveClonedTensorIntoConstructor: Clone-then-move pattern works");
+    fmt::print("✓ MoveClonedTensorIntoConstructor: Clone-then-move pattern works");
 }
 
 // ============================================================================
@@ -640,7 +640,7 @@ TEST_F(TensorMoveTest, MoveWithUniquePtr) {
     EXPECT_TRUE(gs_moved_ptr);
     EXPECT_EQ(gs_moved_ptr->ptr<float>(), gs_data_ptr);
 
-    std::println("✓ MoveWithUniquePtr: Moving with unique_ptr works correctly");
+    fmt::print("✓ MoveWithUniquePtr: Moving with unique_ptr works correctly");
 }
 
 // ============================================================================
@@ -663,10 +663,10 @@ TEST_F(TensorMoveTest, MovedFromTensorState) {
 
     // CRITICAL TEST: What is the state of gs_orig after move?
     // According to your implementation, is_valid() checks initialized_ flag
-    std::println("  After move - gs_orig.is_valid(): {}", gs_orig.is_valid());
-    std::println("  After move - gs_orig.numel(): {}", gs_orig.numel());
-    std::println("  After move - gs_orig.ptr<float>(): {}", static_cast<void*>(gs_orig.ptr<float>()));
-    std::println("  After move - gs_orig.data_owner_.use_count(): {}",
+    fmt::print("  After move - gs_orig.is_valid(): {}", gs_orig.is_valid());
+    fmt::print("  After move - gs_orig.numel(): {}", gs_orig.numel());
+    fmt::print("  After move - gs_orig.ptr<float>(): {}", static_cast<void*>(gs_orig.ptr<float>()));
+    fmt::print("  After move - gs_orig.data_owner_.use_count(): {}",
                  gs_orig.owns_memory() ? "owns" : "doesn't own");
 
     // The moved-from tensor state depends on implementation
@@ -674,13 +674,13 @@ TEST_F(TensorMoveTest, MovedFromTensorState) {
     // But shape metadata might still be there
 
     if (!gs_orig.is_valid()) {
-        std::println("  ✓ Moved-from tensor is invalid (as expected)");
+        fmt::print("  ✓ Moved-from tensor is invalid (as expected)");
     } else {
-        std::println("  ⚠ Moved-from tensor still reports valid!");
-        std::println("    This means is_valid() is NOT checking correctly");
+        fmt::print("  ⚠ Moved-from tensor still reports valid!");
+        fmt::print("    This means is_valid() is NOT checking correctly");
     }
 
-    std::println("✓ MovedFromTensorState: State documented");
+    fmt::print("✓ MovedFromTensorState: State documented");
 }
 
 TEST_F(TensorMoveTest, MoveEmptyTensor) {
@@ -696,7 +696,7 @@ TEST_F(TensorMoveTest, MoveEmptyTensor) {
     EXPECT_EQ(gs_moved.numel(), 0);
     EXPECT_FALSE(gs_empty.is_valid());
 
-    std::println("✓ MoveEmptyTensor: Empty tensors move correctly");
+    fmt::print("✓ MoveEmptyTensor: Empty tensors move correctly");
 }
 
 TEST_F(TensorMoveTest, CRITICAL_MovedFromNumelBug) {
@@ -706,9 +706,9 @@ TEST_F(TensorMoveTest, CRITICAL_MovedFromNumelBug) {
     auto gs_orig = lfs::core::Tensor::randn({100, 3}, lfs::core::Device::CUDA);
     auto gs_moved = std::move(gs_orig);
 
-    std::println("  After move - moved-from tensor:");
-    std::println("    is_valid(): {}", gs_orig.is_valid());
-    std::println("    numel(): {}", gs_orig.numel());
+    fmt::print("  After move - moved-from tensor:");
+    fmt::print("    is_valid(): {}", gs_orig.is_valid());
+    fmt::print("    numel(): {}", gs_orig.numel());
 
     // HARD ASSERT: If tensor is invalid, numel MUST be 0
     ASSERT_FALSE(gs_orig.is_valid()) << "Moved-from tensor must be invalid";
@@ -716,7 +716,7 @@ TEST_F(TensorMoveTest, CRITICAL_MovedFromNumelBug) {
         << "BUG EXPOSED: Moved-from tensor is invalid but reports numel()="
         << gs_orig.numel() << " instead of 0!";
 
-    std::println("✓ CRITICAL_MovedFromNumelBug: Bug test passed");
+    fmt::print("✓ CRITICAL_MovedFromNumelBug: Bug test passed");
 }
 
 TEST_F(TensorMoveTest, CRITICAL_MovedFromShapeBug) {
@@ -725,9 +725,9 @@ TEST_F(TensorMoveTest, CRITICAL_MovedFromShapeBug) {
     auto gs_orig = lfs::core::Tensor::randn({100, 3}, lfs::core::Device::CUDA);
     auto gs_moved = std::move(gs_orig);
 
-    std::println("  After move - moved-from tensor:");
-    std::println("    is_valid(): {}", gs_orig.is_valid());
-    std::println("    ndim(): {}", gs_orig.ndim());
+    fmt::print("  After move - moved-from tensor:");
+    fmt::print("    is_valid(): {}", gs_orig.is_valid());
+    fmt::print("    ndim(): {}", gs_orig.ndim());
 
     // HARD ASSERT: Invalid tensor should have no dimensions
     ASSERT_FALSE(gs_orig.is_valid());
@@ -738,7 +738,7 @@ TEST_F(TensorMoveTest, CRITICAL_MovedFromShapeBug) {
     // Accessing shape()[0] on invalid tensor should throw (rank is 0)
     EXPECT_THROW(gs_orig.shape()[0], std::out_of_range);
 
-    std::println("✓ CRITICAL_MovedFromShapeBug: Bug test passed");
+    fmt::print("✓ CRITICAL_MovedFromShapeBug: Bug test passed");
 }
 
 TEST_F(TensorMoveTest, CRITICAL_InconsistentState) {
@@ -751,10 +751,10 @@ TEST_F(TensorMoveTest, CRITICAL_InconsistentState) {
     size_t numel = gs_orig.numel();
     size_t ndim = gs_orig.ndim();
 
-    std::println("  Moved-from tensor state:");
-    std::println("    is_valid(): {}", is_valid);
-    std::println("    numel(): {}", numel);
-    std::println("    ndim(): {}", ndim);
+    fmt::print("  Moved-from tensor state:");
+    fmt::print("    is_valid(): {}", is_valid);
+    fmt::print("    numel(): {}", numel);
+    fmt::print("    ndim(): {}", ndim);
 
     // HARD ASSERTS: All state must be consistent
     if (!is_valid) {
@@ -764,7 +764,7 @@ TEST_F(TensorMoveTest, CRITICAL_InconsistentState) {
             << "INCONSISTENT: is_valid()=false but ndim()=" << ndim;
     }
 
-    std::println("✓ CRITICAL_InconsistentState: Consistency verified");
+    fmt::print("✓ CRITICAL_InconsistentState: Consistency verified");
 }
 
 TEST_F(TensorMoveTest, MoveSelfAssignment) {
@@ -780,7 +780,7 @@ TEST_F(TensorMoveTest, MoveSelfAssignment) {
     EXPECT_TRUE(gs_tensor.is_valid());
     EXPECT_EQ(gs_tensor.ptr<float>(), original_ptr);
 
-    std::println("✓ MoveSelfAssignment: Self-move-assignment is safe");
+    fmt::print("✓ MoveSelfAssignment: Self-move-assignment is safe");
 }
 
 TEST_F(TensorMoveTest, MoveWithViews) {
@@ -798,7 +798,7 @@ TEST_F(TensorMoveTest, MoveWithViews) {
     EXPECT_TRUE(gs_moved.is_view());
     EXPECT_FALSE(gs_view.is_valid());
 
-    std::println("✓ MoveWithViews: Views move correctly preserving view status");
+    fmt::print("✓ MoveWithViews: Views move correctly preserving view status");
 }
 
 TEST_F(TensorMoveTest, MoveChainWithOperations) {
@@ -823,7 +823,7 @@ TEST_F(TensorMoveTest, MoveChainWithOperations) {
     EXPECT_FALSE(gs_2.is_valid());
     EXPECT_FALSE(gs_4.is_valid());
 
-    std::println("✓ MoveChainWithOperations: Complex move chains work correctly");
+    fmt::print("✓ MoveChainWithOperations: Complex move chains work correctly");
 }
 
 TEST_F(TensorMoveTest, MoveWithDifferentDtypes) {
@@ -847,7 +847,7 @@ TEST_F(TensorMoveTest, MoveWithDifferentDtypes) {
     EXPECT_TRUE(gs_bool_moved.is_valid());
     EXPECT_EQ(gs_bool_moved.dtype(), lfs::core::DataType::Bool);
 
-    std::println("✓ MoveWithDifferentDtypes: Different dtypes move correctly");
+    fmt::print("✓ MoveWithDifferentDtypes: Different dtypes move correctly");
 }
 
 TEST_F(TensorMoveTest, MoveFromTemporaryInExpression) {
@@ -861,7 +861,7 @@ TEST_F(TensorMoveTest, MoveFromTemporaryInExpression) {
     EXPECT_TRUE(result.is_valid());
     EXPECT_EQ(result.numel(), 300);
 
-    std::println("✓ MoveFromTemporaryInExpression: Temporaries move correctly");
+    fmt::print("✓ MoveFromTemporaryInExpression: Temporaries move correctly");
 }
 
 TEST_F(TensorMoveTest, MoveInLambdaCapture) {
@@ -877,7 +877,7 @@ TEST_F(TensorMoveTest, MoveInLambdaCapture) {
     EXPECT_FALSE(gs_orig.is_valid());
     EXPECT_TRUE(lambda());
 
-    std::println("✓ MoveInLambdaCapture: Lambda capture by move works correctly");
+    fmt::print("✓ MoveInLambdaCapture: Lambda capture by move works correctly");
 }
 
 TEST_F(TensorMoveTest, MoveWithSlicing) {
@@ -892,7 +892,7 @@ TEST_F(TensorMoveTest, MoveWithSlicing) {
     EXPECT_EQ(gs_moved.shape()[1], 30);
     EXPECT_FALSE(gs_slice.is_valid());
 
-    std::println("✓ MoveWithSlicing: Sliced tensors move correctly");
+    fmt::print("✓ MoveWithSlicing: Sliced tensors move correctly");
 }
 
 TEST_F(TensorMoveTest, MoveSequenceInVector) {
@@ -920,7 +920,7 @@ TEST_F(TensorMoveTest, MoveSequenceInVector) {
     EXPECT_EQ(retrieved.ptr<float>(), ptr1);
     EXPECT_FALSE(vec[0].is_valid());
 
-    std::println("✓ MoveSequenceInVector: Complex vector operations work correctly");
+    fmt::print("✓ MoveSequenceInVector: Complex vector operations work correctly");
 }
 
 TEST_F(TensorMoveTest, MoveAfterDeviceTransfer) {
@@ -935,7 +935,7 @@ TEST_F(TensorMoveTest, MoveAfterDeviceTransfer) {
     EXPECT_EQ(gs_moved.device(), lfs::core::Device::CPU);
     EXPECT_FALSE(gs_cpu.is_valid());
 
-    std::println("✓ MoveAfterDeviceTransfer: Moving after device transfer works");
+    fmt::print("✓ MoveAfterDeviceTransfer: Moving after device transfer works");
 }
 
 TEST_F(TensorMoveTest, MoveWithBroadcasting) {
@@ -949,7 +949,7 @@ TEST_F(TensorMoveTest, MoveWithBroadcasting) {
     EXPECT_EQ(gs_moved.shape()[0], 100);
     EXPECT_FALSE(gs_broadcast.is_valid());
 
-    std::println("✓ MoveWithBroadcasting: Broadcasted tensors move correctly");
+    fmt::print("✓ MoveWithBroadcasting: Broadcasted tensors move correctly");
 }
 
 TEST_F(TensorMoveTest, MoveReassignmentLoop) {
@@ -965,7 +965,7 @@ TEST_F(TensorMoveTest, MoveReassignmentLoop) {
         EXPECT_FALSE(temp.is_valid());
     }
 
-    std::println("✓ MoveReassignmentLoop: Repeated reassignment works correctly");
+    fmt::print("✓ MoveReassignmentLoop: Repeated reassignment works correctly");
 }
 
 TEST_F(TensorMoveTest, CRITICAL_MovedFromBytesSize) {
@@ -976,9 +976,9 @@ TEST_F(TensorMoveTest, CRITICAL_MovedFromBytesSize) {
 
     auto gs_moved = std::move(gs_orig);
 
-    std::println("  Original bytes: {}", orig_bytes);
-    std::println("  Moved-to bytes: {}", gs_moved.bytes());
-    std::println("  Moved-from bytes: {}", gs_orig.bytes());
+    fmt::print("  Original bytes: {}", orig_bytes);
+    fmt::print("  Moved-to bytes: {}", gs_moved.bytes());
+    fmt::print("  Moved-from bytes: {}", gs_orig.bytes());
 
     // HARD ASSERT: Invalid tensor must report 0 bytes
     ASSERT_FALSE(gs_orig.is_valid());
@@ -987,7 +987,7 @@ TEST_F(TensorMoveTest, CRITICAL_MovedFromBytesSize) {
 
     ASSERT_EQ(gs_moved.bytes(), orig_bytes);
 
-    std::println("✓ CRITICAL_MovedFromBytesSize: Bytes size consistent");
+    fmt::print("✓ CRITICAL_MovedFromBytesSize: Bytes size consistent");
 }
 
 TEST_F(TensorMoveTest, CRITICAL_MovedFromShapeAccess) {
@@ -999,7 +999,7 @@ TEST_F(TensorMoveTest, CRITICAL_MovedFromShapeAccess) {
     ASSERT_FALSE(gs_orig.is_valid());
 
     // Accessing shape dimensions on invalid tensor throws (rank is 0)
-    std::println("  Accessing shape of invalid tensor:");
+    fmt::print("  Accessing shape of invalid tensor:");
     EXPECT_THROW(gs_orig.shape()[0], std::out_of_range);
     EXPECT_THROW(gs_orig.shape()[1], std::out_of_range);
 
@@ -1007,16 +1007,16 @@ TEST_F(TensorMoveTest, CRITICAL_MovedFromShapeAccess) {
     ASSERT_EQ(gs_orig.numel(), 0)
         << "BUG: Invalid tensor shape access returns non-zero numel()";
 
-    std::println("✓ CRITICAL_MovedFromShapeAccess: Shape access throws as expected");
+    fmt::print("✓ CRITICAL_MovedFromShapeAccess: Shape access throws as expected");
 }
 
 TEST_F(TensorMoveTest, CRITICAL_ExpectedValueAccess) {
     print_test_header("CRITICAL_ExpectedValueAccess");
 
     // This reproduces the exact SplatDataNew pattern
-    auto create_in_expected = []() -> std::expected<lfs::core::Tensor, std::string> {
+    auto create_in_expected = []() -> lfs_compat::expected<lfs::core::Tensor, std::string> {
         auto t = lfs::core::Tensor::randn({100, 3}, lfs::core::Device::CUDA);
-        std::println("    Created tensor - is_valid(): {}", t.is_valid());
+        fmt::print("    Created tensor - is_valid(): {}", t.is_valid());
         return t; // Moves into expected
     };
 
@@ -1024,18 +1024,18 @@ TEST_F(TensorMoveTest, CRITICAL_ExpectedValueAccess) {
 
     ASSERT_TRUE(result.has_value());
 
-    std::println("  Accessing value from expected:");
+    fmt::print("  Accessing value from expected:");
     auto& tensor_ref = result.value();
-    std::println("    is_valid(): {}", tensor_ref.is_valid());
-    std::println("    numel(): {}", tensor_ref.numel());
+    fmt::print("    is_valid(): {}", tensor_ref.is_valid());
+    fmt::print("    numel(): {}", tensor_ref.numel());
 
     // HARD ASSERT: This is the SplatDataNew bug!
     ASSERT_TRUE(tensor_ref.is_valid())
-        << "BUG EXPOSED: Tensor in std::expected is invalid after moves!";
+        << "BUG EXPOSED: Tensor in lfs_compat::expected is invalid after moves!";
     ASSERT_GT(tensor_ref.numel(), 0)
         << "BUG EXPOSED: Valid tensor in expected has numel()=0!";
 
-    std::println("✓ CRITICAL_ExpectedValueAccess: Expected pattern works");
+    fmt::print("✓ CRITICAL_ExpectedValueAccess: Expected pattern works");
 }
 
 TEST_F(TensorMoveTest, CRITICAL_ConstructorMoveChain) {
@@ -1044,14 +1044,14 @@ TEST_F(TensorMoveTest, CRITICAL_ConstructorMoveChain) {
     struct Wrapper {
         lfs::core::Tensor data;
         Wrapper(lfs::core::Tensor t) : data(std::move(t)) {
-            std::println("    In constructor - data.is_valid(): {}", data.is_valid());
-            std::println("    In constructor - data.numel(): {}", data.numel());
+            fmt::print("    In constructor - data.is_valid(): {}", data.is_valid());
+            fmt::print("    In constructor - data.numel(): {}", data.numel());
         }
     };
 
-    auto create_wrapped = []() -> std::expected<Wrapper, std::string> {
+    auto create_wrapped = []() -> lfs_compat::expected<Wrapper, std::string> {
         auto t = lfs::core::Tensor::randn({100, 3}, lfs::core::Device::CUDA);
-        std::println("  Created tensor - is_valid(): {}", t.is_valid());
+        fmt::print("  Created tensor - is_valid(): {}", t.is_valid());
         return Wrapper(std::move(t)); // Move into Wrapper, then into expected
     };
 
@@ -1059,9 +1059,9 @@ TEST_F(TensorMoveTest, CRITICAL_ConstructorMoveChain) {
     ASSERT_TRUE(result.has_value());
 
     auto& wrapper = result.value();
-    std::println("  Final state:");
-    std::println("    wrapper.data.is_valid(): {}", wrapper.data.is_valid());
-    std::println("    wrapper.data.numel(): {}", wrapper.data.numel());
+    fmt::print("  Final state:");
+    fmt::print("    wrapper.data.is_valid(): {}", wrapper.data.is_valid());
+    fmt::print("    wrapper.data.numel(): {}", wrapper.data.numel());
 
     // HARD ASSERT: This is THE bug from SplatDataNew!
     ASSERT_TRUE(wrapper.data.is_valid())
@@ -1070,7 +1070,7 @@ TEST_F(TensorMoveTest, CRITICAL_ConstructorMoveChain) {
     ASSERT_EQ(wrapper.data.numel(), 300)
         << "BUG EXPOSED: Valid tensor has wrong numel after move chain!";
 
-    std::println("✓ CRITICAL_ConstructorMoveChain: Move chain works");
+    fmt::print("✓ CRITICAL_ConstructorMoveChain: Move chain works");
 }
 
 // ============================================================================
@@ -1108,7 +1108,7 @@ TEST_F(TensorMoveTest, StressTest_ManyMoves) {
     EXPECT_TRUE(gs_current.is_valid());
     EXPECT_TRUE(tensors_equal(gs_current, gs_copy));
 
-    std::println("✓ StressTest_ManyMoves: {} moves completed successfully", iterations);
+    fmt::print("✓ StressTest_ManyMoves: {} moves completed successfully", iterations);
 }
 
 TEST_F(TensorMoveTest, StressTest_VectorResize) {
@@ -1132,7 +1132,7 @@ TEST_F(TensorMoveTest, StressTest_VectorResize) {
         EXPECT_EQ(vec[i].ptr<float>(), ptrs[i]);
     }
 
-    std::println("✓ StressTest_VectorResize: {} tensors in vector all valid", count);
+    fmt::print("✓ StressTest_VectorResize: {} tensors in vector all valid", count);
 }
 
 // ============================================================================
@@ -1141,9 +1141,9 @@ TEST_F(TensorMoveTest, StressTest_VectorResize) {
 
 TEST_F(TensorMoveTest, Summary) {
     const std::string sep(80, '=');
-    std::println("\n{}", sep);
-    std::println("TENSOR MOVE SEMANTICS TEST SUMMARY");
-    std::println("{}", sep);
+    fmt::print("\n{}", sep);
+    fmt::print("TENSOR MOVE SEMANTICS TEST SUMMARY");
+    fmt::print("{}", sep);
 
     // Get test results
     auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -1164,33 +1164,33 @@ TEST_F(TensorMoveTest, Summary) {
         }
     }
 
-    std::println("Tests run: {}", total_tests);
-    std::println("Tests passed: {}", passed_tests);
-    std::println("Tests FAILED: {}", failed_tests);
-    std::println("");
+    fmt::print("Tests run: {}", total_tests);
+    fmt::print("Tests passed: {}", passed_tests);
+    fmt::print("Tests FAILED: {}", failed_tests);
+    fmt::print("");
 
     if (failed_tests > 0) {
-        std::println("⚠️  CRITICAL: {} test(s) failed!", failed_tests);
-        std::println("");
-        std::println("DIAGNOSIS:");
-        std::println("The Tensor move semantics have bugs that need fixing.");
-        std::println("");
-        std::println("Most likely issues:");
-        std::println("1. initialized_ flag is set to false but shape data remains");
-        std::println("2. is_valid() checks initialized_ but not actual data presence");
-        std::println("3. Multiple moves through std::expected cause validation to fail");
-        std::println("");
-        std::println("RECOMMENDED FIXES:");
-        std::println("1. Don't set initialized_=false in move constructor");
-        std::println("2. Change is_valid() to: shape_.is_initialized() && (data_ || data_owner_)");
-        std::println("3. Use std::exchange() to properly null out data_ in move operations");
-        std::println("");
-        std::println("See the CRITICAL_* tests for specific failure scenarios.");
+        fmt::print("⚠️  CRITICAL: {} test(s) failed!", failed_tests);
+        fmt::print("");
+        fmt::print("DIAGNOSIS:");
+        fmt::print("The Tensor move semantics have bugs that need fixing.");
+        fmt::print("");
+        fmt::print("Most likely issues:");
+        fmt::print("1. initialized_ flag is set to false but shape data remains");
+        fmt::print("2. is_valid() checks initialized_ but not actual data presence");
+        fmt::print("3. Multiple moves through lfs_compat::expected cause validation to fail");
+        fmt::print("");
+        fmt::print("RECOMMENDED FIXES:");
+        fmt::print("1. Don't set initialized_=false in move constructor");
+        fmt::print("2. Change is_valid() to: shape_.is_initialized() && (data_ || data_owner_)");
+        fmt::print("3. Use std::exchange() to properly null out data_ in move operations");
+        fmt::print("");
+        fmt::print("See the CRITICAL_* tests for specific failure scenarios.");
     } else {
-        std::println("✅ All tensor move tests passed!");
-        std::println("The custom Tensor implementation has correct move semantics");
-        std::println("matching PyTorch's behavior.");
+        fmt::print("✅ All tensor move tests passed!");
+        fmt::print("The custom Tensor implementation has correct move semantics");
+        fmt::print("matching PyTorch's behavior.");
     }
 
-    std::println("{}\n", sep);
+    fmt::print("{}\n", sep);
 }

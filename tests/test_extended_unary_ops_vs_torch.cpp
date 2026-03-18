@@ -11,7 +11,7 @@ using namespace lfs::core;
 class ExtendedUnaryOpsVsTorchTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        cudaSetDevice(0);
+        musaSetDevice(0);
     }
 
     void compare_tensors_near(const Tensor& ours, const torch::Tensor& theirs,

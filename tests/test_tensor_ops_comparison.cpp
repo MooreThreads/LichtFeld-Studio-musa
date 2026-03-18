@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <cmath>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <torch/torch.h>
 #include <vector>
@@ -262,8 +262,8 @@ TEST_F(TensorBugHuntingTest, TensorRowProxyAssignmentFromAnotherRowDebug) {
             torch_row[col] = torch_data[row][col].item<float>();
         }
 
-        cudaMemcpy(gs_row.data(), gs_data.ptr<float>() + row * 3,
-                   3 * sizeof(float), cudaMemcpyDeviceToHost);
+        musaMemcpy(gs_row.data(), gs_data.ptr<float>() + row * 3,
+                   3 * sizeof(float), musaMemcpyDeviceToHost);
 
         std::cout << "Row " << row << ":" << std::endl;
         std::cout << "  PyTorch: [" << torch_row[0] << ", " << torch_row[1] << ", " << torch_row[2] << "]" << std::endl;
@@ -301,8 +301,8 @@ TEST_F(TensorBugHuntingTest, TensorRowProxyAssignmentFromAnotherRowDebug) {
             torch_row[col] = torch_data[row][col].item<float>();
         }
 
-        cudaMemcpy(gs_row.data(), gs_data.ptr<float>() + row * 3,
-                   3 * sizeof(float), cudaMemcpyDeviceToHost);
+        musaMemcpy(gs_row.data(), gs_data.ptr<float>() + row * 3,
+                   3 * sizeof(float), musaMemcpyDeviceToHost);
 
         std::cout << "Row " << row << ":" << std::endl;
         std::cout << "  PyTorch: [" << torch_row[0] << ", " << torch_row[1] << ", " << torch_row[2] << "]" << std::endl;
@@ -343,8 +343,8 @@ TEST_F(TensorBugHuntingTest, DiagnosticTensorsCloseFunction) {
                 float torch_val = torch_data[row][col].item<float>();
 
                 std::vector<float> gs_val(1);
-                cudaMemcpy(gs_val.data(), gs_data.ptr<float>() + row * 3 + col,
-                           sizeof(float), cudaMemcpyDeviceToHost);
+                musaMemcpy(gs_val.data(), gs_data.ptr<float>() + row * 3 + col,
+                           sizeof(float), musaMemcpyDeviceToHost);
 
                 float diff = std::abs(torch_val - gs_val[0]);
                 if (diff > 1e-5) {
@@ -384,8 +384,8 @@ TEST_F(TensorBugHuntingTest, TensorRowProxyAssignmentFromAnotherRowVerbose) {
             float torch_val = torch_data[row][col].item<float>();
 
             std::vector<float> gs_val(1);
-            cudaMemcpy(gs_val.data(), gs_data.ptr<float>() + row * 3 + col,
-                       sizeof(float), cudaMemcpyDeviceToHost);
+            musaMemcpy(gs_val.data(), gs_data.ptr<float>() + row * 3 + col,
+                       sizeof(float), musaMemcpyDeviceToHost);
 
             float diff = std::abs(torch_val - gs_val[0]);
             if (diff > 1e-3) {
@@ -421,8 +421,8 @@ TEST_F(TensorBugHuntingTest, DiagnosticAutoVsExplicitType) {
         gs_data[4] = gs_row0;
 
         std::vector<float> gs_row4(3);
-        cudaMemcpy(gs_row4.data(), gs_data.ptr<float>() + 12,
-                   3 * sizeof(float), cudaMemcpyDeviceToHost);
+        musaMemcpy(gs_row4.data(), gs_data.ptr<float>() + 12,
+                   3 * sizeof(float), musaMemcpyDeviceToHost);
 
         std::cout << "  GS row 4 after auto: [" << gs_row4[0] << ", " << gs_row4[1] << ", " << gs_row4[2] << "]" << std::endl;
     }
@@ -441,8 +441,8 @@ TEST_F(TensorBugHuntingTest, DiagnosticAutoVsExplicitType) {
         gs_data[4] = gs_row0;
 
         std::vector<float> gs_row4(3);
-        cudaMemcpy(gs_row4.data(), gs_data.ptr<float>() + 12,
-                   3 * sizeof(float), cudaMemcpyDeviceToHost);
+        musaMemcpy(gs_row4.data(), gs_data.ptr<float>() + 12,
+                   3 * sizeof(float), musaMemcpyDeviceToHost);
 
         std::cout << "  GS row 4 after explicit: [" << gs_row4[0] << ", " << gs_row4[1] << ", " << gs_row4[2] << "]" << std::endl;
     }
@@ -597,8 +597,8 @@ TEST_F(TensorBugHuntingTest, PointerAccessRowMajor) {
     size_t idx = 2 * 4 + 3; // Row-major: row * cols + col
 
     std::vector<float> torch_val(1), gs_val(1);
-    cudaMemcpy(torch_val.data(), torch_data.data_ptr<float>() + idx, sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(gs_val.data(), gs_data.ptr<float>() + idx, sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(torch_val.data(), torch_data.data_ptr<float>() + idx, sizeof(float), musaMemcpyDeviceToHost);
+    musaMemcpy(gs_val.data(), gs_data.ptr<float>() + idx, sizeof(float), musaMemcpyDeviceToHost);
 
     EXPECT_FLOAT_EQ(gs_val[0], torch_val[0])
         << "Pointer access doesn't match row-major layout!";
@@ -611,8 +611,8 @@ TEST_F(TensorBugHuntingTest, PointerAccessAllElements) {
     size_t total = 3 * 4 * 5;
     std::vector<float> torch_vec(total), gs_vec(total);
 
-    cudaMemcpy(torch_vec.data(), torch_data.data_ptr<float>(), total * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(gs_vec.data(), gs_data.ptr<float>(), total * sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(torch_vec.data(), torch_data.data_ptr<float>(), total * sizeof(float), musaMemcpyDeviceToHost);
+    musaMemcpy(gs_vec.data(), gs_data.ptr<float>(), total * sizeof(float), musaMemcpyDeviceToHost);
 
     for (size_t i = 0; i < total; ++i) {
         EXPECT_FLOAT_EQ(gs_vec[i], torch_vec[i])
@@ -629,8 +629,8 @@ TEST_F(TensorBugHuntingTest, PointerAccessAfterReshape) {
 
     // Data should be contiguous and identical
     std::vector<float> torch_vec(20), gs_vec(20);
-    cudaMemcpy(torch_vec.data(), torch_2d.data_ptr<float>(), 20 * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(gs_vec.data(), gs_2d.ptr<float>(), 20 * sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(torch_vec.data(), torch_2d.data_ptr<float>(), 20 * sizeof(float), musaMemcpyDeviceToHost);
+    musaMemcpy(gs_vec.data(), gs_2d.ptr<float>(), 20 * sizeof(float), musaMemcpyDeviceToHost);
 
     for (int i = 0; i < 20; ++i) {
         EXPECT_FLOAT_EQ(gs_vec[i], torch_vec[i]);
@@ -984,16 +984,16 @@ TEST_F(TensorBugHuntingTest, NoMemoryLeakOnMultipleAllocations) {
     // The pool will cache allocations (by design), but should stabilize
 
     size_t initial_free, initial_total;
-    cudaMemGetInfo(&initial_free, &initial_total);
+    musaMemGetInfo(&initial_free, &initial_total);
 
     // Warm up the memory pool - first allocations will be cached
     for (int i = 0; i < 10; ++i) {
         auto t = lfs::core::Tensor::randn({1000, 1000}, lfs::core::Device::CUDA);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     size_t after_warmup_free, after_warmup_total;
-    cudaMemGetInfo(&after_warmup_free, &after_warmup_total);
+    musaMemGetInfo(&after_warmup_free, &after_warmup_total);
 
     // Now create and destroy many more tensors - pool should reuse cached memory
     for (int i = 0; i < 100; ++i) {
@@ -1001,10 +1001,10 @@ TEST_F(TensorBugHuntingTest, NoMemoryLeakOnMultipleAllocations) {
         // t goes out of scope, returns to pool
     }
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     size_t final_free, final_total;
-    cudaMemGetInfo(&final_free, &final_total);
+    musaMemGetInfo(&final_free, &final_total);
 
     // After warmup, memory usage should stabilize (within 50MB for pool overhead)
     // We allow more slack because the pool caches multiple sizes
@@ -1174,15 +1174,15 @@ TEST_F(TensorBugHuntingTest, DiagnosticCompareModificationPropagation) {
 
     // Save original value
     std::vector<float> gs_orig(1);
-    cudaMemcpy(gs_orig.data(), gs_data.ptr<float>(), sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(gs_orig.data(), gs_data.ptr<float>(), sizeof(float), musaMemcpyDeviceToHost);
 
     // Modify
     float new_val = 999.0f;
-    cudaMemcpy(gs_data.ptr<float>(), &new_val, sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(gs_data.ptr<float>(), &new_val, sizeof(float), musaMemcpyHostToDevice);
 
     // Check if slice sees the change
     std::vector<float> gs_slice_val(1);
-    cudaMemcpy(gs_slice_val.data(), gs_slice.ptr<float>(), sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(gs_slice_val.data(), gs_slice.ptr<float>(), sizeof(float), musaMemcpyDeviceToHost);
     bool gs_view_sees_change = (gs_slice_val[0] == 999.0f);
 
     std::cout << "GS: slice " << (gs_view_sees_change ? "SEES" : "DOESN'T SEE")
@@ -1218,15 +1218,15 @@ TEST_F(TensorBugHuntingTest, DiagnosticCompareCloneIndependence) {
 
     // Save clone's value
     std::vector<float> gs_clone_orig(1);
-    cudaMemcpy(gs_clone_orig.data(), gs_clone.ptr<float>(), sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(gs_clone_orig.data(), gs_clone.ptr<float>(), sizeof(float), musaMemcpyDeviceToHost);
 
     // Modify original
     float new_val = 999.0f;
-    cudaMemcpy(gs_data.ptr<float>(), &new_val, sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(gs_data.ptr<float>(), &new_val, sizeof(float), musaMemcpyHostToDevice);
 
     // Check if clone is unaffected
     std::vector<float> gs_clone_after(1);
-    cudaMemcpy(gs_clone_after.data(), gs_clone.ptr<float>(), sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(gs_clone_after.data(), gs_clone.ptr<float>(), sizeof(float), musaMemcpyDeviceToHost);
     bool gs_clone_unaffected = (gs_clone_after[0] == gs_clone_orig[0]) && (gs_clone_after[0] != 999.0f);
 
     std::cout << "GS: clone is " << (gs_clone_unaffected ? "INDEPENDENT" : "AFFECTED")

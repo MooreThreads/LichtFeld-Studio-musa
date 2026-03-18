@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: 2025 LichtFeld Studio Authors
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <numeric>
 #include <vector>
@@ -14,7 +14,7 @@ using namespace lfs::core;
 class TensorStreamTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        cudaSetDevice(0);
+        musaSetDevice(0);
     }
 };
 
@@ -24,8 +24,8 @@ TEST_F(TensorStreamTest, DefaultStreamIsNullptr) {
 }
 
 TEST_F(TensorStreamTest, FactoryPicksUpThreadLocalStream) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreate(&stream), musaSuccess);
 
     {
         CUDAStreamGuard guard(stream);
@@ -55,12 +55,12 @@ TEST_F(TensorStreamTest, FactoryPicksUpThreadLocalStream) {
     auto t2 = Tensor::empty({4, 4}, Device::CUDA);
     EXPECT_EQ(t2.stream(), nullptr);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, ViewInheritsStreamReshape) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreate(&stream), musaSuccess);
 
     Tensor t;
     {
@@ -78,12 +78,12 @@ TEST_F(TensorStreamTest, ViewInheritsStreamReshape) {
     auto squeezed = unsqueezed.squeeze(0);
     EXPECT_EQ(squeezed.stream(), stream);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, ViewInheritsStreamSlice) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreate(&stream), musaSuccess);
 
     Tensor t;
     {
@@ -95,12 +95,12 @@ TEST_F(TensorStreamTest, ViewInheritsStreamSlice) {
     auto sliced = t.slice(0, 0, 5);
     EXPECT_EQ(sliced.stream(), stream);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, ViewInheritsStreamPermute) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreate(&stream), musaSuccess);
 
     Tensor t;
     {
@@ -115,12 +115,12 @@ TEST_F(TensorStreamTest, ViewInheritsStreamPermute) {
     auto transposed = t.transpose(0, 1);
     EXPECT_EQ(transposed.stream(), stream);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, OperationsProduceResultWithCorrectStream) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreate(&stream), musaSuccess);
 
     Tensor a, b;
     {
@@ -141,12 +141,12 @@ TEST_F(TensorStreamTest, OperationsProduceResultWithCorrectStream) {
         EXPECT_EQ(d.stream(), stream);
     }
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, EmptyLikeInheritsStream) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreate(&stream), musaSuccess);
 
     Tensor t;
     {
@@ -161,12 +161,12 @@ TEST_F(TensorStreamTest, EmptyLikeInheritsStream) {
     auto flike = Tensor::full_like(t, 42.0f);
     EXPECT_EQ(flike.stream(), stream);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, StreamOrderingCorrectness) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreate(&stream), musaSuccess);
 
     Tensor result;
     {
@@ -177,7 +177,7 @@ TEST_F(TensorStreamTest, StreamOrderingCorrectness) {
         result = mulled;
     }
 
-    cudaStreamSynchronize(stream);
+    musaStreamSynchronize(stream);
 
     auto cpu = result.to(Device::CPU);
     auto vals = cpu.to_vector();
@@ -185,15 +185,15 @@ TEST_F(TensorStreamTest, StreamOrderingCorrectness) {
     EXPECT_NEAR(vals[0], 4.0f, 1e-5f);
     EXPECT_NEAR(vals.back(), 4.0f, 1e-5f);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, CrossStreamOrderingWithEventWait) {
-    cudaStream_t producer, consumer;
-    cudaEvent_t ready;
-    ASSERT_EQ(cudaStreamCreate(&producer), cudaSuccess);
-    ASSERT_EQ(cudaStreamCreate(&consumer), cudaSuccess);
-    ASSERT_EQ(cudaEventCreateWithFlags(&ready, cudaEventDisableTiming), cudaSuccess);
+    musaStream_t producer, consumer;
+    musaEvent_t ready;
+    ASSERT_EQ(musaStreamCreate(&producer), musaSuccess);
+    ASSERT_EQ(musaStreamCreate(&consumer), musaSuccess);
+    ASSERT_EQ(musaEventCreateWithFlags(&ready, musaEventDisableTiming), musaSuccess);
 
     Tensor produced, consumed;
     {
@@ -202,28 +202,28 @@ TEST_F(TensorStreamTest, CrossStreamOrderingWithEventWait) {
         produced = base.mul(3.0f); // 6.0
     }
 
-    ASSERT_EQ(cudaEventRecord(ready, producer), cudaSuccess);
-    ASSERT_EQ(cudaStreamWaitEvent(consumer, ready, 0), cudaSuccess);
+    ASSERT_EQ(musaEventRecord(ready, producer), musaSuccess);
+    ASSERT_EQ(musaStreamWaitEvent(consumer, ready, 0), musaSuccess);
 
     {
         CUDAStreamGuard guard(consumer);
         consumed = produced.add(1.0f); // 7.0
     }
 
-    ASSERT_EQ(cudaStreamSynchronize(consumer), cudaSuccess);
+    ASSERT_EQ(musaStreamSynchronize(consumer), musaSuccess);
     auto vals = consumed.to(Device::CPU).to_vector();
     ASSERT_EQ(vals.size(), 2048u);
     EXPECT_NEAR(vals.front(), 7.0f, 1e-5f);
     EXPECT_NEAR(vals.back(), 7.0f, 1e-5f);
 
-    cudaEventDestroy(ready);
-    cudaStreamDestroy(consumer);
-    cudaStreamDestroy(producer);
+    musaEventDestroy(ready);
+    musaStreamDestroy(consumer);
+    musaStreamDestroy(producer);
 }
 
 TEST_F(TensorStreamTest, SetStreamManual) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreate(&stream), musaSuccess);
 
     auto t = Tensor::empty({4}, Device::CUDA);
     EXPECT_EQ(t.stream(), nullptr);
@@ -234,13 +234,13 @@ TEST_F(TensorStreamTest, SetStreamManual) {
     t.set_stream(nullptr);
     EXPECT_EQ(t.stream(), nullptr);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, GuardRestoresPreviousStream) {
-    cudaStream_t s1, s2;
-    ASSERT_EQ(cudaStreamCreate(&s1), cudaSuccess);
-    ASSERT_EQ(cudaStreamCreate(&s2), cudaSuccess);
+    musaStream_t s1, s2;
+    ASSERT_EQ(musaStreamCreate(&s1), musaSuccess);
+    ASSERT_EQ(musaStreamCreate(&s2), musaSuccess);
 
     {
         CUDAStreamGuard g1(s1);
@@ -256,13 +256,13 @@ TEST_F(TensorStreamTest, GuardRestoresPreviousStream) {
 
     EXPECT_EQ(getCurrentCUDAStream(), nullptr);
 
-    cudaStreamDestroy(s1);
-    cudaStreamDestroy(s2);
+    musaStreamDestroy(s1);
+    musaStreamDestroy(s2);
 }
 
 TEST_F(TensorStreamTest, InplaceOpsUseOwnStream) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreate(&stream), musaSuccess);
 
     Tensor t;
     {
@@ -284,20 +284,20 @@ TEST_F(TensorStreamTest, InplaceOpsUseOwnStream) {
         EXPECT_EQ(t.stream(), stream);
     }
 
-    cudaStreamSynchronize(stream);
+    musaStreamSynchronize(stream);
 
     auto vals = t.to(Device::CPU).to_vector();
     ASSERT_GT(vals.size(), 0u);
     EXPECT_NEAR(vals[0], 3.0f, 1e-5f);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, MaskedFillRespectsTensorStreamWithoutGuard) {
-    cudaStream_t stream;
-    cudaEvent_t gate;
-    ASSERT_EQ(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking), cudaSuccess);
-    ASSERT_EQ(cudaEventCreateWithFlags(&gate, cudaEventDisableTiming), cudaSuccess);
+    musaStream_t stream;
+    musaEvent_t gate;
+    ASSERT_EQ(musaStreamCreateWithFlags(&stream, musaStreamNonBlocking), musaSuccess);
+    ASSERT_EQ(musaEventCreateWithFlags(&gate, musaEventDisableTiming), musaSuccess);
 
     Tensor t;
     Tensor mask;
@@ -305,30 +305,30 @@ TEST_F(TensorStreamTest, MaskedFillRespectsTensorStreamWithoutGuard) {
         CUDAStreamGuard guard(stream);
         t = Tensor::zeros({1 << 16}, Device::CUDA);
         mask = Tensor::ones({1 << 16}, Device::CUDA, DataType::Bool);
-        ASSERT_EQ(cudaStreamWaitEvent(stream, gate, 0), cudaSuccess);
+        ASSERT_EQ(musaStreamWaitEvent(stream, gate, 0), musaSuccess);
         t.fill_(1.0f, stream);
     }
 
     // Must enqueue on tensor stream (not implicit default stream).
     t.masked_fill_(mask, 2.0f);
 
-    ASSERT_EQ(cudaEventRecord(gate, nullptr), cudaSuccess);
-    ASSERT_EQ(cudaStreamSynchronize(stream), cudaSuccess);
+    ASSERT_EQ(musaEventRecord(gate, nullptr), musaSuccess);
+    ASSERT_EQ(musaStreamSynchronize(stream), musaSuccess);
 
     auto vals = t.to(Device::CPU).to_vector();
     ASSERT_EQ(vals.size(), static_cast<size_t>(1 << 16));
     EXPECT_NEAR(vals.front(), 2.0f, 1e-5f);
     EXPECT_NEAR(vals.back(), 2.0f, 1e-5f);
 
-    cudaEventDestroy(gate);
-    cudaStreamDestroy(stream);
+    musaEventDestroy(gate);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, GatherRespectsTensorStreamWithoutGuard) {
-    cudaStream_t stream;
-    cudaEvent_t gate;
-    ASSERT_EQ(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking), cudaSuccess);
-    ASSERT_EQ(cudaEventCreateWithFlags(&gate, cudaEventDisableTiming), cudaSuccess);
+    musaStream_t stream;
+    musaEvent_t gate;
+    ASSERT_EQ(musaStreamCreateWithFlags(&stream, musaStreamNonBlocking), musaSuccess);
+    ASSERT_EQ(musaEventCreateWithFlags(&gate, musaEventDisableTiming), musaSuccess);
 
     constexpr size_t count = 4096;
     std::vector<int> host_indices(count);
@@ -340,28 +340,28 @@ TEST_F(TensorStreamTest, GatherRespectsTensorStreamWithoutGuard) {
         CUDAStreamGuard guard(stream);
         src = Tensor::zeros({count}, Device::CUDA);
         idx = Tensor::from_vector(host_indices, {count}, Device::CUDA);
-        ASSERT_EQ(cudaStreamWaitEvent(stream, gate, 0), cudaSuccess);
+        ASSERT_EQ(musaStreamWaitEvent(stream, gate, 0), musaSuccess);
         src.fill_(3.0f, stream);
     }
 
     // Must read from src on src.stream() to preserve producer ordering.
     auto gathered = src.gather(0, idx);
 
-    ASSERT_EQ(cudaEventRecord(gate, nullptr), cudaSuccess);
-    ASSERT_EQ(cudaStreamSynchronize(stream), cudaSuccess);
+    ASSERT_EQ(musaEventRecord(gate, nullptr), musaSuccess);
+    ASSERT_EQ(musaStreamSynchronize(stream), musaSuccess);
 
     auto vals = gathered.to(Device::CPU).to_vector();
     ASSERT_EQ(vals.size(), count);
     EXPECT_NEAR(vals.front(), 3.0f, 1e-5f);
     EXPECT_NEAR(vals.back(), 3.0f, 1e-5f);
 
-    cudaEventDestroy(gate);
-    cudaStreamDestroy(stream);
+    musaEventDestroy(gate);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, ToDeviceNonContiguousCpuToCudaRespectsExplicitStream) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreateWithFlags(&stream, musaStreamNonBlocking), musaSuccess);
 
     std::vector<float> host(20);
     std::iota(host.begin(), host.end(), 1.0f);
@@ -375,40 +375,40 @@ TEST_F(TensorStreamTest, ToDeviceNonContiguousCpuToCudaRespectsExplicitStream) {
     EXPECT_EQ(gpu.stream(), stream);
     EXPECT_EQ(view.stream(), stream);
 
-    ASSERT_EQ(cudaStreamSynchronize(stream), cudaSuccess);
+    ASSERT_EQ(musaStreamSynchronize(stream), musaSuccess);
     auto back = gpu.to(Device::CPU).to_vector();
     ASSERT_EQ(back.size(), 12u);
     EXPECT_FLOAT_EQ(back[0], 1.0f);
     EXPECT_FLOAT_EQ(back[4], 6.0f);
     EXPECT_FLOAT_EQ(back[11], 14.0f);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, ToDeviceCudaToCpuRespectsExplicitStreamMetadata) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreateWithFlags(&stream, musaStreamNonBlocking), musaSuccess);
 
     auto gpu = Tensor::full({1024}, 2.0f, Device::CUDA);
     auto cpu = gpu.to(Device::CPU, stream);
     EXPECT_EQ(cpu.stream(), stream);
 
-    ASSERT_EQ(cudaStreamSynchronize(stream), cudaSuccess);
+    ASSERT_EQ(musaStreamSynchronize(stream), musaSuccess);
     auto vals = cpu.to_vector();
     ASSERT_EQ(vals.size(), 1024u);
     EXPECT_NEAR(vals.front(), 2.0f, 1e-5f);
     EXPECT_NEAR(vals.back(), 2.0f, 1e-5f);
 
-    cudaStreamDestroy(stream);
+    musaStreamDestroy(stream);
 }
 
 TEST_F(TensorStreamTest, DtypeConversionLaunchesOnCurrentResultStream) {
-    cudaStream_t stream;
-    ASSERT_EQ(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking), cudaSuccess);
+    musaStream_t stream;
+    ASSERT_EQ(musaStreamCreateWithFlags(&stream, musaStreamNonBlocking), musaSuccess);
 
     constexpr size_t kNumel = 1u << 20;
     auto src = Tensor::arange(0.0f, static_cast<float>(kNumel), 1.0f);
-    ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+    ASSERT_EQ(musaDeviceSynchronize(), musaSuccess);
 
     // Keep default stream busy. Conversion must still execute correctly when launched on a non-default stream.
     auto busy = Tensor::ones({1u << 25}, Device::CUDA);
@@ -424,13 +424,13 @@ TEST_F(TensorStreamTest, DtypeConversionLaunchesOnCurrentResultStream) {
     }
 
     auto cpu = converted.to(Device::CPU, stream);
-    ASSERT_EQ(cudaStreamSynchronize(stream), cudaSuccess);
+    ASSERT_EQ(musaStreamSynchronize(stream), musaSuccess);
     const int* cpu_ptr = cpu.ptr<int>();
     ASSERT_NE(cpu_ptr, nullptr);
     EXPECT_EQ(cpu_ptr[0], 0);
     EXPECT_EQ(cpu_ptr[kNumel / 2], static_cast<int>(kNumel / 2));
     EXPECT_EQ(cpu_ptr[kNumel - 1], static_cast<int>(kNumel - 1));
 
-    ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
-    cudaStreamDestroy(stream);
+    ASSERT_EQ(musaDeviceSynchronize(), musaSuccess);
+    musaStreamDestroy(stream);
 }

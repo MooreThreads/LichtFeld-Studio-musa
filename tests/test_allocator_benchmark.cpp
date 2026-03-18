@@ -6,7 +6,7 @@
 #include "core/tensor/internal/memory_pool.hpp"
 #include "core/tensor/internal/size_bucketed_pool.hpp"
 #include <chrono>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <vector>
@@ -18,7 +18,7 @@ protected:
     void SetUp() override {
         // Warmup
         auto warmup = Tensor::rand({100, 100}, Device::CUDA);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 };
 
@@ -33,7 +33,7 @@ TEST_F(AllocatorBenchmarkTest, SmallAllocationThroughput) {
         std::vector<void*> ptrs;
         ptrs.reserve(iterations);
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < iterations; i++) {
@@ -64,28 +64,28 @@ TEST_F(AllocatorBenchmarkTest, TensorCreationThroughput) {
 
     // Small tensors (should use slab)
     {
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < iterations; i++) {
             auto t = Tensor::empty({64, 64}, Device::CUDA); // 16 KB
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         auto end = std::chrono::high_resolution_clock::now();
         double us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / (double)iterations;
         std::cout << "  Tensor::empty({64,64}): " << us << " us/iter\n";
     }
 
-    // Medium tensors (should use cudaMallocAsync)
+    // Medium tensors (should use musaMalloc)
     {
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < iterations; i++) {
             auto t = Tensor::empty({512, 512}, Device::CUDA); // 1 MB
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         auto end = std::chrono::high_resolution_clock::now();
         double us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / (double)iterations;
@@ -94,13 +94,13 @@ TEST_F(AllocatorBenchmarkTest, TensorCreationThroughput) {
 
     // Large tensors
     {
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < iterations; i++) {
             auto t = Tensor::empty({2048, 2048}, Device::CUDA); // 16 MB
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         auto end = std::chrono::high_resolution_clock::now();
         double us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / (double)iterations;
@@ -114,7 +114,7 @@ TEST_F(AllocatorBenchmarkTest, MixedSizeWorkload) {
 
     std::cout << "\n=== Mixed Size Workload ===\n";
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < iterations; i++) {
@@ -128,7 +128,7 @@ TEST_F(AllocatorBenchmarkTest, MixedSizeWorkload) {
         // Small parameters
         auto param = Tensor::empty({128}, Device::CUDA);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     auto end = std::chrono::high_resolution_clock::now();
     double us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / (double)iterations;
@@ -143,32 +143,32 @@ TEST_F(AllocatorBenchmarkTest, SlabAllocatorStats) {
 }
 
 TEST_F(AllocatorBenchmarkTest, CompareWithCudaMalloc) {
-    // Direct comparison with raw cudaMalloc
+    // Direct comparison with raw musaMalloc
     const int iterations = 1000;
     const size_t alloc_size = 16384; // 16 KB
 
-    std::cout << "\n=== Direct cudaMalloc Comparison (16 KB) ===\n";
+    std::cout << "\n=== Direct musaMalloc Comparison (16 KB) ===\n";
 
     // Our allocator
     {
         std::vector<void*> ptrs;
         ptrs.reserve(iterations);
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < iterations; i++) {
             void* ptr = CudaMemoryPool::instance().allocate(alloc_size);
             ptrs.push_back(ptr);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         auto mid = std::chrono::high_resolution_clock::now();
 
         for (void* ptr : ptrs) {
             CudaMemoryPool::instance().deallocate(ptr, alloc_size);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         auto end = std::chrono::high_resolution_clock::now();
 
@@ -177,33 +177,33 @@ TEST_F(AllocatorBenchmarkTest, CompareWithCudaMalloc) {
         std::cout << "  CudaMemoryPool: alloc=" << alloc_ns << " ns, free=" << free_ns << " ns\n";
     }
 
-    // Raw cudaMallocAsync
+    // Raw musaMalloc
     {
         std::vector<void*> ptrs;
         ptrs.reserve(iterations);
 
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < iterations; i++) {
             void* ptr;
-            cudaMallocAsync(&ptr, alloc_size, nullptr);
+            musaMalloc(&ptr, alloc_size);
             ptrs.push_back(ptr);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         auto mid = std::chrono::high_resolution_clock::now();
 
         for (void* ptr : ptrs) {
-            cudaFreeAsync(ptr, nullptr);
+            musaFree(ptr);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         auto end = std::chrono::high_resolution_clock::now();
 
         double alloc_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(mid - start).count() / (double)iterations;
         double free_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - mid).count() / (double)iterations;
-        std::cout << "  cudaMallocAsync: alloc=" << alloc_ns << " ns, free=" << free_ns << " ns\n";
+        std::cout << "  musaMalloc: alloc=" << alloc_ns << " ns, free=" << free_ns << " ns\n";
     }
 }
 
@@ -261,7 +261,7 @@ TEST_F(AllocatorBenchmarkTest, BucketCacheHitRate) {
         void* ptr = CudaMemoryPool::instance().allocate(size);
         CudaMemoryPool::instance().deallocate(ptr, size);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Second pass: should hit cache
     auto start = std::chrono::high_resolution_clock::now();
@@ -272,7 +272,7 @@ TEST_F(AllocatorBenchmarkTest, BucketCacheHitRate) {
             CudaMemoryPool::instance().deallocate(ptr, size);
         }
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     auto end = std::chrono::high_resolution_clock::now();
     double us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() /

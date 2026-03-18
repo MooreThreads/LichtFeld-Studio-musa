@@ -8,7 +8,7 @@
 #include "io/formats/ply.hpp"
 #include "training/optimizer/adam_optimizer.hpp"
 #include "training/rasterization/fast_rasterizer.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <random>
@@ -306,12 +306,12 @@ TEST_F(FastGSKernelTest, TiledRendering_Consistency) {
 TEST_F(FastGSKernelTest, Performance_Forward) {
     for (int i = 0; i < 3; ++i)
         forward();
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     auto t0 = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < 10; ++i)
         forward();
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto t1 = std::chrono::high_resolution_clock::now();
 
     double ms = std::chrono::duration<double, std::milli>(t1 - t0).count() / 10;
@@ -329,7 +329,7 @@ TEST_F(FastGSKernelTest, Performance_Backward) {
         opt->zero_grad(0);
         fast_rasterize_backward(r->second, grad, *splat_, *opt, {});
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     auto t0 = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < 10; ++i) {
@@ -337,7 +337,7 @@ TEST_F(FastGSKernelTest, Performance_Backward) {
         opt->zero_grad(0);
         fast_rasterize_backward(fwd->second, grad, *splat_, *opt, {});
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto t1 = std::chrono::high_resolution_clock::now();
 
     double ms = std::chrono::duration<double, std::milli>(t1 - t0).count() / 10;

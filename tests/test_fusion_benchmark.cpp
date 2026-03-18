@@ -109,7 +109,7 @@ protected:
         // Warmup GPU
         auto warmup = Tensor::rand({100, 100}, Device::CUDA);
         auto warmup_torch = torch::rand({100, 100}, torch::kCUDA);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
     void print_separator(const std::string& title = "") {
@@ -149,10 +149,10 @@ TEST_F(FusionBenchmarkTest, TwoOpChain_ExpMul) {
         auto tensor_torch = torch::randn(torch_shape, torch::kCUDA);
 
         // Copy data to ensure same starting values
-        cudaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
                    tensor_custom.ptr<float>(),
                    tensor_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -165,7 +165,7 @@ TEST_F(FusionBenchmarkTest, TwoOpChain_ExpMul) {
             {
                 Timer timer;
                 result_custom = tensor_custom.exp() * 2.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -173,7 +173,7 @@ TEST_F(FusionBenchmarkTest, TwoOpChain_ExpMul) {
             {
                 Timer timer;
                 result_torch = tensor_torch.exp() * 2.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -209,10 +209,10 @@ TEST_F(FusionBenchmarkTest, TwoOpChain_ExpAdd) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto tensor_torch = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
                    tensor_custom.ptr<float>(),
                    tensor_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -224,14 +224,14 @@ TEST_F(FusionBenchmarkTest, TwoOpChain_ExpAdd) {
             {
                 Timer timer;
                 result_custom = tensor_custom.exp() + 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = tensor_torch.exp() + 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -267,10 +267,10 @@ TEST_F(FusionBenchmarkTest, TwoOpChain_MulAdd) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto tensor_torch = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
                    tensor_custom.ptr<float>(),
                    tensor_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -282,14 +282,14 @@ TEST_F(FusionBenchmarkTest, TwoOpChain_MulAdd) {
             {
                 Timer timer;
                 result_custom = tensor_custom * 2.0f + 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = tensor_torch * 2.0f + 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -329,10 +329,10 @@ TEST_F(FusionBenchmarkTest, ThreeOpChain_ExpMulAdd) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto tensor_torch = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
                    tensor_custom.ptr<float>(),
                    tensor_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -344,14 +344,14 @@ TEST_F(FusionBenchmarkTest, ThreeOpChain_ExpMulAdd) {
             {
                 Timer timer;
                 result_custom = tensor_custom.exp() * 2.0f + 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = tensor_torch.exp() * 2.0f + 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -386,10 +386,10 @@ TEST_F(FusionBenchmarkTest, ThreeOpChain_SqrtMulSub) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto tensor_torch = torch::rand(torch_shape, torch::kCUDA) + 0.1f;
 
-        cudaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
                    tensor_custom.ptr<float>(),
                    tensor_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -401,14 +401,14 @@ TEST_F(FusionBenchmarkTest, ThreeOpChain_SqrtMulSub) {
             {
                 Timer timer;
                 result_custom = tensor_custom.sqrt() * 3.0f - 0.5f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = tensor_torch.sqrt() * 3.0f - 0.5f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -447,10 +447,10 @@ TEST_F(FusionBenchmarkTest, FourOpChain_AbsExpMulAdd) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto tensor_torch = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
                    tensor_custom.ptr<float>(),
                    tensor_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -462,14 +462,14 @@ TEST_F(FusionBenchmarkTest, FourOpChain_AbsExpMulAdd) {
             {
                 Timer timer;
                 result_custom = tensor_custom.abs().exp() * 2.0f + 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = tensor_torch.abs().exp() * 2.0f + 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -512,10 +512,10 @@ TEST_F(FusionBenchmarkTest, RealWorld_ImageNormalization) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto image_torch = torch::rand(torch_shape, torch::kCUDA) * 255.0f;
 
-        cudaMemcpy(const_cast<float*>(image_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(image_torch.data_ptr<float>()),
                    image_custom.ptr<float>(),
                    image_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         float mean = 128.0f;
         float std = 64.0f;
@@ -530,14 +530,14 @@ TEST_F(FusionBenchmarkTest, RealWorld_ImageNormalization) {
             {
                 Timer timer;
                 result_custom = (image_custom - mean) / std;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = (image_torch - mean) / std;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -574,10 +574,10 @@ TEST_F(FusionBenchmarkTest, RealWorld_LayerNormActivation) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto x_torch = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(x_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(x_torch.data_ptr<float>()),
                    x_custom.ptr<float>(),
                    x_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         float scale = 1.5f;
         float bias = 0.5f;
@@ -592,14 +592,14 @@ TEST_F(FusionBenchmarkTest, RealWorld_LayerNormActivation) {
             {
                 Timer timer;
                 result_custom = (x_custom * scale + bias).relu();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = (x_torch * scale + bias).relu();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -637,10 +637,10 @@ TEST_F(FusionBenchmarkTest, RealWorld_GaussianSplatting) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto x_torch = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(x_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(x_torch.data_ptr<float>()),
                    x_custom.ptr<float>(),
                    x_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         float opacity = 0.8f;
 
@@ -654,14 +654,14 @@ TEST_F(FusionBenchmarkTest, RealWorld_GaussianSplatting) {
             {
                 Timer timer;
                 result_custom = (-x_custom.abs()).exp() * opacity;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = (-x_torch.abs()).exp() * opacity;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -701,10 +701,10 @@ TEST_F(FusionBenchmarkTest, ComplexChain_5Ops) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto tensor_torch = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
                    tensor_custom.ptr<float>(),
                    tensor_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -716,14 +716,14 @@ TEST_F(FusionBenchmarkTest, ComplexChain_5Ops) {
             {
                 Timer timer;
                 result_custom = ((tensor_custom + 1.0f).exp() * 2.0f - 0.5f).relu();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = ((tensor_torch + 1.0f).exp() * 2.0f - 0.5f).relu();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -759,10 +759,10 @@ TEST_F(FusionBenchmarkTest, ComplexChain_6Ops) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto tensor_torch = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(tensor_torch.data_ptr<float>()),
                    tensor_custom.ptr<float>(),
                    tensor_custom.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -774,14 +774,14 @@ TEST_F(FusionBenchmarkTest, ComplexChain_6Ops) {
             {
                 Timer timer;
                 result_custom = (tensor_custom.abs().sqrt() + 0.1f).log() * 5.0f - 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = (tensor_torch.abs().sqrt() + 0.1f).log() * 5.0f - 1.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -821,10 +821,10 @@ TEST_F(FusionBenchmarkTest, FusedFullReduce_ChainSum) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto x_t = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(x_t.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(x_t.data_ptr<float>()),
                    x.ptr<float>(),
                    x.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -836,14 +836,14 @@ TEST_F(FusionBenchmarkTest, FusedFullReduce_ChainSum) {
             {
                 Timer timer;
                 result_custom = (x * 2.0f + 1.0f).sum();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = (x_t * 2.0f + 1.0f).sum();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -881,10 +881,10 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_ChainSum) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto x_t = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(x_t.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(x_t.data_ptr<float>()),
                    x.ptr<float>(),
                    x.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -896,14 +896,14 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_ChainSum) {
             {
                 Timer timer;
                 result_custom = (x * 2.0f + 1.0f).sum({-1});
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = (x_t * 2.0f + 1.0f).sum(-1);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -935,8 +935,8 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
     {
         auto x = Tensor::randn(TensorShape(shape), Device::CUDA);
         auto x_t = torch::randn(torch_shape, torch::kCUDA);
-        cudaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
-                   x.numel() * sizeof(float), cudaMemcpyDeviceToDevice);
+        musaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
+                   x.numel() * sizeof(float), musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0, total_torch = 0.0;
         Tensor rc;
@@ -946,13 +946,13 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
             {
                 Timer t;
                 rc = (x * 2.0f + 1.0f).sum({-1});
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += t.elapsed_ms();
             }
             {
                 Timer t;
                 rt = (x_t * 2.0f + 1.0f).sum(-1);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += t.elapsed_ms();
             }
         }
@@ -967,8 +967,8 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
     {
         auto x = Tensor::randn(TensorShape(shape), Device::CUDA);
         auto x_t = torch::randn(torch_shape, torch::kCUDA);
-        cudaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
-                   x.numel() * sizeof(float), cudaMemcpyDeviceToDevice);
+        musaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
+                   x.numel() * sizeof(float), musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0, total_torch = 0.0;
         Tensor rc;
@@ -978,13 +978,13 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
             {
                 Timer t;
                 rc = (x * 2.0f + 1.0f).mean({-1});
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += t.elapsed_ms();
             }
             {
                 Timer t;
                 rt = (x_t * 2.0f + 1.0f).mean(-1);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += t.elapsed_ms();
             }
         }
@@ -999,8 +999,8 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
     {
         auto x = Tensor::randn(TensorShape(shape), Device::CUDA);
         auto x_t = torch::randn(torch_shape, torch::kCUDA);
-        cudaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
-                   x.numel() * sizeof(float), cudaMemcpyDeviceToDevice);
+        musaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
+                   x.numel() * sizeof(float), musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0, total_torch = 0.0;
         Tensor rc;
@@ -1010,13 +1010,13 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
             {
                 Timer t;
                 rc = (x * 2.0f + 1.0f).max({-1});
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += t.elapsed_ms();
             }
             {
                 Timer t;
                 rt = std::get<0>((x_t * 2.0f + 1.0f).max(-1));
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += t.elapsed_ms();
             }
         }
@@ -1031,8 +1031,8 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
     {
         auto x = Tensor::randn(TensorShape(shape), Device::CUDA);
         auto x_t = torch::randn(torch_shape, torch::kCUDA);
-        cudaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
-                   x.numel() * sizeof(float), cudaMemcpyDeviceToDevice);
+        musaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
+                   x.numel() * sizeof(float), musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0, total_torch = 0.0;
         Tensor rc;
@@ -1042,13 +1042,13 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
             {
                 Timer t;
                 rc = (x * 2.0f + 1.0f).min({-1});
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += t.elapsed_ms();
             }
             {
                 Timer t;
                 rt = std::get<0>((x_t * 2.0f + 1.0f).min(-1));
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += t.elapsed_ms();
             }
         }
@@ -1063,8 +1063,8 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
     {
         auto x = Tensor::randn(TensorShape(shape), Device::CUDA);
         auto x_t = torch::randn(torch_shape, torch::kCUDA);
-        cudaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
-                   x.numel() * sizeof(float), cudaMemcpyDeviceToDevice);
+        musaMemcpy(const_cast<float*>(x_t.data_ptr<float>()), x.ptr<float>(),
+                   x.numel() * sizeof(float), musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0, total_torch = 0.0;
         Tensor rc;
@@ -1074,13 +1074,13 @@ TEST_F(FusionBenchmarkTest, FusedSegmentedReduce_AllOps) {
             {
                 Timer t;
                 rc = (x.abs() * 0.001f + 0.999f).prod({-1});
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += t.elapsed_ms();
             }
             {
                 Timer t;
                 rt = (x_t.abs() * 0.001f + 0.999f).prod(-1);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += t.elapsed_ms();
             }
         }
@@ -1117,14 +1117,14 @@ TEST_F(FusionBenchmarkTest, RealWorld_MSELoss) {
         auto pred_t = torch::randn(torch_shape, torch::kCUDA);
         auto target_t = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(pred_t.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(pred_t.data_ptr<float>()),
                    pred.ptr<float>(),
                    pred.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
-        cudaMemcpy(const_cast<float*>(target_t.data_ptr<float>()),
+                   musaMemcpyDeviceToDevice);
+        musaMemcpy(const_cast<float*>(target_t.data_ptr<float>()),
                    target.ptr<float>(),
                    target.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -1136,14 +1136,14 @@ TEST_F(FusionBenchmarkTest, RealWorld_MSELoss) {
             {
                 Timer timer;
                 result_custom = (pred - target).square().mean();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = (pred_t - target_t).square().mean();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -1179,10 +1179,10 @@ TEST_F(FusionBenchmarkTest, RealWorld_L2NormPerRow) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto x_t = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(x_t.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(x_t.data_ptr<float>()),
                    x.ptr<float>(),
                    x.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -1194,14 +1194,14 @@ TEST_F(FusionBenchmarkTest, RealWorld_L2NormPerRow) {
             {
                 Timer timer;
                 result_custom = x.square().sum({-1}).sqrt();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = x_t.square().sum(-1).sqrt();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -1236,10 +1236,10 @@ TEST_F(FusionBenchmarkTest, RealWorld_GaussianActivationReduce) {
         std::vector<int64_t> torch_shape(shape.begin(), shape.end());
         auto x_t = torch::randn(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(x_t.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(x_t.data_ptr<float>()),
                    x.ptr<float>(),
                    x.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
+                   musaMemcpyDeviceToDevice);
 
         double total_custom = 0.0;
         double total_torch = 0.0;
@@ -1251,14 +1251,14 @@ TEST_F(FusionBenchmarkTest, RealWorld_GaussianActivationReduce) {
             {
                 Timer timer;
                 result_custom = (-x.abs()).exp().sum({-1});
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 result_torch = (-x_t.abs()).exp().sum(-1);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }

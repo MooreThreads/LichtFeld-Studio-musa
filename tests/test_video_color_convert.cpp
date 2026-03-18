@@ -2,12 +2,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include <cmath>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <vector>
 
 #include "core/tensor.hpp"
-#include "io/video/color_convert.cuh"
+#include "io/video/color_convert.muh"
 #include <torch/torch.h>
 
 namespace {
@@ -30,7 +30,7 @@ class VideoColorConvertTest : public ::testing::Test {
 protected:
     void SetUp() override {
         int device_count = 0;
-        cudaGetDeviceCount(&device_count);
+        musaGetDeviceCount(&device_count);
         if (device_count == 0) {
             GTEST_SKIP() << "No CUDA devices";
         }
@@ -53,22 +53,22 @@ TEST_F(VideoColorConvertTest, SolidRedYuv420p) {
     uint8_t* u_gpu = nullptr;
     uint8_t* v_gpu = nullptr;
 
-    cudaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
-    cudaMalloc(&y_gpu, WIDTH * HEIGHT);
-    cudaMalloc(&u_gpu, (WIDTH / 2) * (HEIGHT / 2));
-    cudaMalloc(&v_gpu, (WIDTH / 2) * (HEIGHT / 2));
+    musaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
+    musaMalloc(&y_gpu, WIDTH * HEIGHT);
+    musaMalloc(&u_gpu, (WIDTH / 2) * (HEIGHT / 2));
+    musaMalloc(&v_gpu, (WIDTH / 2) * (HEIGHT / 2));
 
-    cudaMemcpy(rgb_gpu, rgb_host.data(), WIDTH * HEIGHT * 3 * sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(rgb_gpu, rgb_host.data(), WIDTH * HEIGHT * 3 * sizeof(float), musaMemcpyHostToDevice);
     lfs::io::video::rgbToYuv420pCuda(rgb_gpu, y_gpu, u_gpu, v_gpu, WIDTH, HEIGHT, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::vector<uint8_t> y_host(WIDTH * HEIGHT);
     std::vector<uint8_t> u_host((WIDTH / 2) * (HEIGHT / 2));
     std::vector<uint8_t> v_host((WIDTH / 2) * (HEIGHT / 2));
 
-    cudaMemcpy(y_host.data(), y_gpu, WIDTH * HEIGHT, cudaMemcpyDeviceToHost);
-    cudaMemcpy(u_host.data(), u_gpu, (WIDTH / 2) * (HEIGHT / 2), cudaMemcpyDeviceToHost);
-    cudaMemcpy(v_host.data(), v_gpu, (WIDTH / 2) * (HEIGHT / 2), cudaMemcpyDeviceToHost);
+    musaMemcpy(y_host.data(), y_gpu, WIDTH * HEIGHT, musaMemcpyDeviceToHost);
+    musaMemcpy(u_host.data(), u_gpu, (WIDTH / 2) * (HEIGHT / 2), musaMemcpyDeviceToHost);
+    musaMemcpy(v_host.data(), v_gpu, (WIDTH / 2) * (HEIGHT / 2), musaMemcpyDeviceToHost);
 
     int expected_y, expected_u, expected_v;
     rgbToYuvReference(255, 0, 0, expected_y, expected_u, expected_v);
@@ -81,10 +81,10 @@ TEST_F(VideoColorConvertTest, SolidRedYuv420p) {
         EXPECT_NEAR(v_host[i], expected_v, TOLERANCE);
     }
 
-    cudaFree(rgb_gpu);
-    cudaFree(y_gpu);
-    cudaFree(u_gpu);
-    cudaFree(v_gpu);
+    musaFree(rgb_gpu);
+    musaFree(y_gpu);
+    musaFree(u_gpu);
+    musaFree(v_gpu);
 }
 
 TEST_F(VideoColorConvertTest, SolidGreenYuv420p) {
@@ -103,17 +103,17 @@ TEST_F(VideoColorConvertTest, SolidGreenYuv420p) {
     uint8_t* u_gpu = nullptr;
     uint8_t* v_gpu = nullptr;
 
-    cudaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
-    cudaMalloc(&y_gpu, WIDTH * HEIGHT);
-    cudaMalloc(&u_gpu, (WIDTH / 2) * (HEIGHT / 2));
-    cudaMalloc(&v_gpu, (WIDTH / 2) * (HEIGHT / 2));
+    musaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
+    musaMalloc(&y_gpu, WIDTH * HEIGHT);
+    musaMalloc(&u_gpu, (WIDTH / 2) * (HEIGHT / 2));
+    musaMalloc(&v_gpu, (WIDTH / 2) * (HEIGHT / 2));
 
-    cudaMemcpy(rgb_gpu, rgb_host.data(), WIDTH * HEIGHT * 3 * sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(rgb_gpu, rgb_host.data(), WIDTH * HEIGHT * 3 * sizeof(float), musaMemcpyHostToDevice);
     lfs::io::video::rgbToYuv420pCuda(rgb_gpu, y_gpu, u_gpu, v_gpu, WIDTH, HEIGHT, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::vector<uint8_t> y_host(WIDTH * HEIGHT);
-    cudaMemcpy(y_host.data(), y_gpu, WIDTH * HEIGHT, cudaMemcpyDeviceToHost);
+    musaMemcpy(y_host.data(), y_gpu, WIDTH * HEIGHT, musaMemcpyDeviceToHost);
 
     int expected_y, expected_u, expected_v;
     rgbToYuvReference(0, 255, 0, expected_y, expected_u, expected_v);
@@ -122,10 +122,10 @@ TEST_F(VideoColorConvertTest, SolidGreenYuv420p) {
         EXPECT_NEAR(y_host[i], expected_y, TOLERANCE);
     }
 
-    cudaFree(rgb_gpu);
-    cudaFree(y_gpu);
-    cudaFree(u_gpu);
-    cudaFree(v_gpu);
+    musaFree(rgb_gpu);
+    musaFree(y_gpu);
+    musaFree(u_gpu);
+    musaFree(v_gpu);
 }
 
 TEST_F(VideoColorConvertTest, SolidRedNv12) {
@@ -143,19 +143,19 @@ TEST_F(VideoColorConvertTest, SolidRedNv12) {
     uint8_t* y_gpu = nullptr;
     uint8_t* uv_gpu = nullptr;
 
-    cudaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
-    cudaMalloc(&y_gpu, WIDTH * HEIGHT);
-    cudaMalloc(&uv_gpu, (HEIGHT / 2) * WIDTH);
+    musaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
+    musaMalloc(&y_gpu, WIDTH * HEIGHT);
+    musaMalloc(&uv_gpu, (HEIGHT / 2) * WIDTH);
 
-    cudaMemcpy(rgb_gpu, rgb_host.data(), WIDTH * HEIGHT * 3 * sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(rgb_gpu, rgb_host.data(), WIDTH * HEIGHT * 3 * sizeof(float), musaMemcpyHostToDevice);
     lfs::io::video::rgbToNv12Cuda(rgb_gpu, y_gpu, uv_gpu, WIDTH, HEIGHT, 0, 0, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::vector<uint8_t> y_host(WIDTH * HEIGHT);
     std::vector<uint8_t> uv_host((HEIGHT / 2) * WIDTH);
 
-    cudaMemcpy(y_host.data(), y_gpu, WIDTH * HEIGHT, cudaMemcpyDeviceToHost);
-    cudaMemcpy(uv_host.data(), uv_gpu, (HEIGHT / 2) * WIDTH, cudaMemcpyDeviceToHost);
+    musaMemcpy(y_host.data(), y_gpu, WIDTH * HEIGHT, musaMemcpyDeviceToHost);
+    musaMemcpy(uv_host.data(), uv_gpu, (HEIGHT / 2) * WIDTH, musaMemcpyDeviceToHost);
 
     int expected_y, expected_u, expected_v;
     rgbToYuvReference(255, 0, 0, expected_y, expected_u, expected_v);
@@ -169,9 +169,9 @@ TEST_F(VideoColorConvertTest, SolidRedNv12) {
         EXPECT_NEAR(uv_host[i * 2 + 1], expected_v, TOLERANCE);
     }
 
-    cudaFree(rgb_gpu);
-    cudaFree(y_gpu);
-    cudaFree(uv_gpu);
+    musaFree(rgb_gpu);
+    musaFree(y_gpu);
+    musaFree(uv_gpu);
 }
 
 TEST_F(VideoColorConvertTest, Nv12WithPitch) {
@@ -194,18 +194,18 @@ TEST_F(VideoColorConvertTest, Nv12WithPitch) {
     uint8_t* y_gpu = nullptr;
     uint8_t* uv_gpu = nullptr;
 
-    cudaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
-    cudaMalloc(&y_gpu, Y_PITCH * HEIGHT);
-    cudaMalloc(&uv_gpu, UV_PITCH * (HEIGHT / 2));
-    cudaMemset(y_gpu, 0, Y_PITCH * HEIGHT);
-    cudaMemset(uv_gpu, 0, UV_PITCH * (HEIGHT / 2));
+    musaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
+    musaMalloc(&y_gpu, Y_PITCH * HEIGHT);
+    musaMalloc(&uv_gpu, UV_PITCH * (HEIGHT / 2));
+    musaMemset(y_gpu, 0, Y_PITCH * HEIGHT);
+    musaMemset(uv_gpu, 0, UV_PITCH * (HEIGHT / 2));
 
-    cudaMemcpy(rgb_gpu, rgb_host.data(), WIDTH * HEIGHT * 3 * sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(rgb_gpu, rgb_host.data(), WIDTH * HEIGHT * 3 * sizeof(float), musaMemcpyHostToDevice);
     lfs::io::video::rgbToNv12Cuda(rgb_gpu, y_gpu, uv_gpu, WIDTH, HEIGHT, Y_PITCH, UV_PITCH, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::vector<uint8_t> y_host_pitched(Y_PITCH * HEIGHT);
-    cudaMemcpy(y_host_pitched.data(), y_gpu, Y_PITCH * HEIGHT, cudaMemcpyDeviceToHost);
+    musaMemcpy(y_host_pitched.data(), y_gpu, Y_PITCH * HEIGHT, musaMemcpyDeviceToHost);
 
     // Verify corners
     int y00, y_red, y_green, y_yellow, u, v;
@@ -219,9 +219,9 @@ TEST_F(VideoColorConvertTest, Nv12WithPitch) {
     EXPECT_NEAR(y_host_pitched[(HEIGHT - 1) * Y_PITCH], y_green, TOLERANCE + 1);
     EXPECT_NEAR(y_host_pitched[(HEIGHT - 1) * Y_PITCH + WIDTH - 1], y_yellow, TOLERANCE + 1);
 
-    cudaFree(rgb_gpu);
-    cudaFree(y_gpu);
-    cudaFree(uv_gpu);
+    musaFree(rgb_gpu);
+    musaFree(y_gpu);
+    musaFree(uv_gpu);
 }
 
 TEST_F(VideoColorConvertTest, TensorPermuteCHWtoHWC) {
@@ -290,14 +290,14 @@ TEST_F(VideoColorConvertTest, FullHDExportSimulation) {
     uint8_t* y_gpu = nullptr;
     uint8_t* uv_gpu = nullptr;
 
-    cudaMalloc(&y_gpu, WIDTH * HEIGHT);
-    cudaMalloc(&uv_gpu, WIDTH * (HEIGHT / 2));
+    musaMalloc(&y_gpu, WIDTH * HEIGHT);
+    musaMalloc(&uv_gpu, WIDTH * (HEIGHT / 2));
 
     lfs::io::video::rgbToNv12Cuda(rgb_gpu, y_gpu, uv_gpu, WIDTH, HEIGHT, 0, 0, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::vector<uint8_t> y_host(WIDTH * HEIGHT);
-    cudaMemcpy(y_host.data(), y_gpu, WIDTH * HEIGHT, cudaMemcpyDeviceToHost);
+    musaMemcpy(y_host.data(), y_gpu, WIDTH * HEIGHT, musaMemcpyDeviceToHost);
 
     int y00, y_red, y_green, y_yellow, u, v;
     rgbToYuvReference(0, 0, 0, y00, u, v);
@@ -310,8 +310,8 @@ TEST_F(VideoColorConvertTest, FullHDExportSimulation) {
     EXPECT_NEAR(y_host[(HEIGHT - 1) * WIDTH], y_green, TOLERANCE + 1);
     EXPECT_NEAR(y_host[(HEIGHT - 1) * WIDTH + WIDTH - 1], y_yellow, TOLERANCE + 1);
 
-    cudaFree(y_gpu);
-    cudaFree(uv_gpu);
+    musaFree(y_gpu);
+    musaFree(uv_gpu);
 }
 
 // BT.601 YUV to RGB reference implementation
@@ -342,18 +342,18 @@ TEST_F(VideoColorConvertTest, Nv12ToRgbSolidRed) {
     uint8_t* uv_gpu = nullptr;
     uint8_t* rgb_gpu = nullptr;
 
-    cudaMalloc(&y_gpu, WIDTH * HEIGHT);
-    cudaMalloc(&uv_gpu, (HEIGHT / 2) * WIDTH);
-    cudaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3);
+    musaMalloc(&y_gpu, WIDTH * HEIGHT);
+    musaMalloc(&uv_gpu, (HEIGHT / 2) * WIDTH);
+    musaMalloc(&rgb_gpu, WIDTH * HEIGHT * 3);
 
-    cudaMemcpy(y_gpu, y_host.data(), WIDTH * HEIGHT, cudaMemcpyHostToDevice);
-    cudaMemcpy(uv_gpu, uv_host.data(), (HEIGHT / 2) * WIDTH, cudaMemcpyHostToDevice);
+    musaMemcpy(y_gpu, y_host.data(), WIDTH * HEIGHT, musaMemcpyHostToDevice);
+    musaMemcpy(uv_gpu, uv_host.data(), (HEIGHT / 2) * WIDTH, musaMemcpyHostToDevice);
 
     lfs::io::video::nv12ToRgbCuda(y_gpu, uv_gpu, rgb_gpu, WIDTH, HEIGHT, 0, 0, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::vector<uint8_t> rgb_host(WIDTH * HEIGHT * 3);
-    cudaMemcpy(rgb_host.data(), rgb_gpu, WIDTH * HEIGHT * 3, cudaMemcpyDeviceToHost);
+    musaMemcpy(rgb_host.data(), rgb_gpu, WIDTH * HEIGHT * 3, musaMemcpyDeviceToHost);
 
     for (int i = 0; i < WIDTH * HEIGHT; ++i) {
         EXPECT_NEAR(rgb_host[i * 3], 255, TOLERANCE + 1);
@@ -361,9 +361,9 @@ TEST_F(VideoColorConvertTest, Nv12ToRgbSolidRed) {
         EXPECT_NEAR(rgb_host[i * 3 + 2], 0, TOLERANCE + 1);
     }
 
-    cudaFree(y_gpu);
-    cudaFree(uv_gpu);
-    cudaFree(rgb_gpu);
+    musaFree(y_gpu);
+    musaFree(uv_gpu);
+    musaFree(rgb_gpu);
 }
 
 TEST_F(VideoColorConvertTest, Nv12ToRgbRoundtrip) {
@@ -385,19 +385,19 @@ TEST_F(VideoColorConvertTest, Nv12ToRgbRoundtrip) {
     uint8_t* uv_gpu = nullptr;
     uint8_t* rgb_uint8_gpu = nullptr;
 
-    cudaMalloc(&rgb_float_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
-    cudaMalloc(&y_gpu, WIDTH * HEIGHT);
-    cudaMalloc(&uv_gpu, (HEIGHT / 2) * WIDTH);
-    cudaMalloc(&rgb_uint8_gpu, WIDTH * HEIGHT * 3);
+    musaMalloc(&rgb_float_gpu, WIDTH * HEIGHT * 3 * sizeof(float));
+    musaMalloc(&y_gpu, WIDTH * HEIGHT);
+    musaMalloc(&uv_gpu, (HEIGHT / 2) * WIDTH);
+    musaMalloc(&rgb_uint8_gpu, WIDTH * HEIGHT * 3);
 
-    cudaMemcpy(rgb_float_gpu, rgb_original.data(), WIDTH * HEIGHT * 3 * sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(rgb_float_gpu, rgb_original.data(), WIDTH * HEIGHT * 3 * sizeof(float), musaMemcpyHostToDevice);
 
     lfs::io::video::rgbToNv12Cuda(rgb_float_gpu, y_gpu, uv_gpu, WIDTH, HEIGHT, 0, 0, nullptr);
     lfs::io::video::nv12ToRgbCuda(y_gpu, uv_gpu, rgb_uint8_gpu, WIDTH, HEIGHT, 0, 0, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::vector<uint8_t> rgb_result(WIDTH * HEIGHT * 3);
-    cudaMemcpy(rgb_result.data(), rgb_uint8_gpu, WIDTH * HEIGHT * 3, cudaMemcpyDeviceToHost);
+    musaMemcpy(rgb_result.data(), rgb_uint8_gpu, WIDTH * HEIGHT * 3, musaMemcpyDeviceToHost);
 
     int max_diff = 0;
     for (int i = 0; i < WIDTH * HEIGHT * 3; ++i) {
@@ -408,8 +408,8 @@ TEST_F(VideoColorConvertTest, Nv12ToRgbRoundtrip) {
 
     EXPECT_LE(max_diff, 4);
 
-    cudaFree(rgb_float_gpu);
-    cudaFree(y_gpu);
-    cudaFree(uv_gpu);
-    cudaFree(rgb_uint8_gpu);
+    musaFree(rgb_float_gpu);
+    musaFree(y_gpu);
+    musaFree(uv_gpu);
+    musaFree(rgb_uint8_gpu);
 }

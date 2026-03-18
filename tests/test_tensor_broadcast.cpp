@@ -75,7 +75,7 @@ namespace {
             for (size_t i = 0; i < n; ++i) {
                 data[i] = static_cast<float>(i);
             }
-            cudaMemcpy(tensor.ptr<float>(), data.data(), n * sizeof(float), cudaMemcpyHostToDevice);
+            musaMemcpy(tensor.ptr<float>(), data.data(), n * sizeof(float), musaMemcpyHostToDevice);
         } else {
             float* data = tensor.ptr<float>();
             for (size_t i = 0; i < n; ++i) {
@@ -532,7 +532,7 @@ TEST_F(TensorBroadcastTest, BroadcastPerformance) {
 
     auto start = std::chrono::high_resolution_clock::now();
     auto result_custom = col_vector_custom.add(row_vector_custom);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     EXPECT_EQ(result_custom.shape(), TensorShape({rows, cols}));
@@ -548,7 +548,7 @@ TEST_F(TensorBroadcastTest, BroadcastPerformance) {
 
     auto torch_start = std::chrono::high_resolution_clock::now();
     auto result_torch = col_vector_torch + row_vector_torch;
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto torch_end = std::chrono::high_resolution_clock::now();
 
     auto torch_duration = std::chrono::duration_cast<std::chrono::milliseconds>(torch_end - torch_start);

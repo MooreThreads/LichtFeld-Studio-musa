@@ -13,7 +13,7 @@ using namespace lfs::core;
 TEST(BinarySearchBug, Step1_CreateSplatData) {
     std::cout << "\n=== STEP 1: Create SplatData ===" << std::endl;
 
-    cudaSetDevice(0);
+    musaSetDevice(0);
 
     try {
         size_t n = 10000;
@@ -47,7 +47,7 @@ TEST(BinarySearchBug, Step1_CreateSplatData) {
 TEST(BinarySearchBug, Step2_CreateStrategy) {
     std::cout << "\n=== STEP 2: Create ADC ===" << std::endl;
 
-    cudaSetDevice(0);
+    musaSetDevice(0);
 
     try {
         size_t n = 10000;
@@ -84,7 +84,7 @@ TEST(BinarySearchBug, Step2_CreateStrategy) {
 TEST(BinarySearchBug, Step3_InitializeStrategy) {
     std::cout << "\n=== STEP 3: Initialize Strategy ===" << std::endl;
 
-    cudaSetDevice(0);
+    musaSetDevice(0);
 
     try {
         size_t n = 10000;
@@ -134,7 +134,7 @@ TEST(BinarySearchBug, Step3_InitializeStrategy) {
 TEST(BinarySearchBug, Step4_CallPostBackward) {
     std::cout << "\n=== STEP 4: Call post_backward ===" << std::endl;
 
-    cudaSetDevice(0);
+    musaSetDevice(0);
 
     try {
         size_t n = 10000;
@@ -407,18 +407,18 @@ TEST(MinimalTensorIsolated, FullLikeWorks) {
 
     // Initialize CUDA
     int device_count = -1;
-    cudaGetDeviceCount(&device_count);
+    musaGetDeviceCount(&device_count);
     printf("[TEST] CUDA device count: %d\n", device_count);
 
-    cudaSetDevice(0);
+    musaSetDevice(0);
     int current_device = -1;
-    cudaGetDevice(&current_device);
+    musaGetDevice(&current_device);
     printf("[TEST] Current CUDA device: %d\n", current_device);
 
     // Force CUDA runtime initialization
     void* dummy_ptr = nullptr;
-    cudaMalloc(&dummy_ptr, 1024);
-    cudaFree(dummy_ptr);
+    musaMalloc(&dummy_ptr, 1024);
+    musaFree(dummy_ptr);
     printf("[TEST] CUDA runtime initialized\n");
 
     try {
@@ -445,7 +445,7 @@ TEST(MinimalTensorIsolated, FullLikeWorks) {
 TEST(MinimalTensorIsolated, FullLikeWithZeros) {
     std::cout << "\n=== MINIMAL TENSOR ISOLATED TEST (ZEROS) ===" << std::endl;
 
-    cudaSetDevice(0);
+    musaSetDevice(0);
 
     try {
         // Create tensor with zeros (simpler, no cuRAND)

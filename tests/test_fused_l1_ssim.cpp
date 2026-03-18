@@ -13,11 +13,11 @@
 #include <gtest/gtest.h>
 
 #include "core/tensor.hpp"
-#include "lfs/kernels/l1_loss.cuh"
-#include "lfs/kernels/ssim.cuh"
+#include "lfs/kernels/l1_loss.muh"
+#include "lfs/kernels/ssim.muh"
 #include "training/losses/photometric_loss.hpp"
 #include <cmath>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 
 using namespace lfs::core;
 using namespace lfs::training::kernels;
@@ -27,7 +27,7 @@ protected:
     void SetUp() override {
         // Ensure CUDA is available
         int device_count = 0;
-        cudaGetDeviceCount(&device_count);
+        musaGetDeviceCount(&device_count);
         if (device_count == 0) {
             GTEST_SKIP() << "No CUDA device available";
         }
@@ -89,7 +89,7 @@ protected:
         } else {
             dL_dmap.fill_(grad_per_pixel, nullptr);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         // L1 gradient: sign(img1 - img2) * l1_weight * dL_dmap
         auto sign_diff = (img1_4d - img2_4d).sign();
@@ -299,7 +299,7 @@ class MaskedFusedL1SSIMTest : public ::testing::Test {
 protected:
     void SetUp() override {
         int device_count = 0;
-        cudaGetDeviceCount(&device_count);
+        musaGetDeviceCount(&device_count);
         if (device_count == 0) {
             GTEST_SKIP() << "No CUDA device available";
         }
@@ -362,7 +362,7 @@ TEST_F(MaskedFusedL1SSIMTest, ForwardBasic) {
     // Mask out a region
     auto mask_view = mask.slice(0, 0, H / 2).slice(1, 0, W / 2);
     mask_view.fill_(0.0f, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     const float ssim_weight = 0.2f;
 
@@ -438,7 +438,7 @@ TEST_F(MaskedFusedL1SSIMTest, PartialMask) {
             pixel.fill_(1.0f, nullptr);
         }
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     const float ssim_weight = 0.2f;
 
@@ -504,29 +504,29 @@ TEST_F(FusedL1SSIMTest, DISABLED_PerformanceBenchmark) {
             auto [loss, ctx] = fused_l1_ssim_forward(img1, img2, ssim_weight, workspace, true);
             auto grad = fused_l1_ssim_backward(ctx, workspace);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
     // Benchmark fused kernel
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    musaEvent_t start, stop;
+    musaEventCreate(&start);
+    musaEventCreate(&stop);
 
     FusedL1SSIMWorkspace fused_workspace;
-    cudaEventRecord(start);
+    musaEventRecord(start);
     for (int i = 0; i < iterations; ++i) {
         auto [loss, ctx] = fused_l1_ssim_forward(img1, img2, ssim_weight, fused_workspace, true);
         auto grad = fused_l1_ssim_backward(ctx, fused_workspace);
     }
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
+    musaEventRecord(stop);
+    musaEventSynchronize(stop);
 
     float fused_time;
-    cudaEventElapsedTime(&fused_time, start, stop);
+    musaEventElapsedTime(&fused_time, start, stop);
 
     // Benchmark separate kernels
     SSIMWorkspace ssim_workspace;
-    cudaEventRecord(start);
+    musaEventRecord(start);
     for (int i = 0; i < iterations; ++i) {
         // L1
         auto l1_diff = (img1 - img2).abs();
@@ -541,14 +541,14 @@ TEST_F(FusedL1SSIMTest, DISABLED_PerformanceBenchmark) {
         // Combine
         auto grad = l1_grad * (1.0f - ssim_weight) + ssim_grad * ssim_weight;
     }
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
+    musaEventRecord(stop);
+    musaEventSynchronize(stop);
 
     float separate_time;
-    cudaEventElapsedTime(&separate_time, start, stop);
+    musaEventElapsedTime(&separate_time, start, stop);
 
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    musaEventDestroy(start);
+    musaEventDestroy(stop);
 
     float speedup = separate_time / fused_time;
     std::cout << "Fused kernel time: " << fused_time / iterations << " ms/iter\n";

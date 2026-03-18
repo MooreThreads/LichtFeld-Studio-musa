@@ -12,14 +12,14 @@ using namespace lfs::core;
 class TensorReductionAlignmentTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        cudaDeviceSynchronize();
-        cudaGetLastError();
+        musaDeviceSynchronize();
+        musaGetLastError();
     }
 
     void TearDown() override {
-        cudaDeviceSynchronize();
-        const cudaError_t err = cudaGetLastError();
-        ASSERT_EQ(err, cudaSuccess) << "CUDA error: " << cudaGetErrorString(err);
+        musaDeviceSynchronize();
+        const musaError_t err = musaGetLastError();
+        ASSERT_EQ(err, musaSuccess) << "CUDA error: " << musaGetErrorString(err);
     }
 
     std::vector<float> cpu_sum_axis1(const std::vector<float>& data, size_t rows, size_t cols) {
@@ -51,9 +51,9 @@ TEST_F(TensorReductionAlignmentTest, SumDim1_MisalignedSegments) {
                              .cuda();
         const Tensor result = t.sum(1);
 
-        cudaDeviceSynchronize();
-        const cudaError_t err = cudaGetLastError();
-        ASSERT_EQ(err, cudaSuccess) << "cols=" << cols << ": " << cudaGetErrorString(err);
+        musaDeviceSynchronize();
+        const musaError_t err = musaGetLastError();
+        ASSERT_EQ(err, musaSuccess) << "cols=" << cols << ": " << musaGetErrorString(err);
 
         ASSERT_EQ(result.shape().rank(), 1);
         ASSERT_EQ(result.shape()[0], ROWS);
@@ -81,9 +81,9 @@ TEST_F(TensorReductionAlignmentTest, MeanDim1_MisalignedSegments) {
                              .cuda();
         const Tensor result = t.mean(1);
 
-        cudaDeviceSynchronize();
-        const cudaError_t err = cudaGetLastError();
-        ASSERT_EQ(err, cudaSuccess) << "cols=" << cols << ": " << cudaGetErrorString(err);
+        musaDeviceSynchronize();
+        const musaError_t err = musaGetLastError();
+        ASSERT_EQ(err, musaSuccess) << "cols=" << cols << ": " << musaGetErrorString(err);
 
         const Tensor result_cpu = result.cpu();
         const float* const result_ptr = result_cpu.ptr<float>();
@@ -113,9 +113,9 @@ TEST_F(TensorReductionAlignmentTest, MaxDim1_MisalignedSegments) {
                              .cuda();
         const Tensor result = t.max(1);
 
-        cudaDeviceSynchronize();
-        const cudaError_t err = cudaGetLastError();
-        ASSERT_EQ(err, cudaSuccess) << "cols=" << cols << ": " << cudaGetErrorString(err);
+        musaDeviceSynchronize();
+        const musaError_t err = musaGetLastError();
+        ASSERT_EQ(err, musaSuccess) << "cols=" << cols << ": " << musaGetErrorString(err);
 
         const Tensor result_cpu = result.cpu();
         const float* const result_ptr = result_cpu.ptr<float>();
@@ -145,9 +145,9 @@ TEST_F(TensorReductionAlignmentTest, MinDim1_MisalignedSegments) {
                              .cuda();
         const Tensor result = t.min(1);
 
-        cudaDeviceSynchronize();
-        const cudaError_t err = cudaGetLastError();
-        ASSERT_EQ(err, cudaSuccess) << "cols=" << cols << ": " << cudaGetErrorString(err);
+        musaDeviceSynchronize();
+        const musaError_t err = musaGetLastError();
+        ASSERT_EQ(err, musaSuccess) << "cols=" << cols << ": " << musaGetErrorString(err);
 
         const Tensor result_cpu = result.cpu();
         const float* const result_ptr = result_cpu.ptr<float>();
@@ -169,25 +169,25 @@ TEST_F(TensorReductionAlignmentTest, CudaStateNotCorrupted) {
                                            Device::CPU, DataType::Float32)
                              .cuda();
         const Tensor result = t.sum(1);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
-    cudaError_t err = cudaGetLastError();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = musaGetLastError();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     void* ptr = nullptr;
-    err = cudaMalloc(&ptr, ALLOC_SIZE);
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    err = musaMalloc(&ptr, ALLOC_SIZE);
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
     ASSERT_NE(ptr, nullptr);
 
     const Tensor new_tensor = Tensor::zeros({256, 256}, Device::CUDA, DataType::Float32);
     const Tensor exp_result = new_tensor.exp();
 
-    cudaDeviceSynchronize();
-    err = cudaGetLastError();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaDeviceSynchronize();
+    err = musaGetLastError();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
-    cudaFree(ptr);
+    musaFree(ptr);
 }
 
 TEST_F(TensorReductionAlignmentTest, SumDim1_KernelBoundaries) {
@@ -203,9 +203,9 @@ TEST_F(TensorReductionAlignmentTest, SumDim1_KernelBoundaries) {
                              .cuda();
         const Tensor result = t.sum(1);
 
-        cudaDeviceSynchronize();
-        const cudaError_t err = cudaGetLastError();
-        ASSERT_EQ(err, cudaSuccess) << "cols=" << cols << ": " << cudaGetErrorString(err);
+        musaDeviceSynchronize();
+        const musaError_t err = musaGetLastError();
+        ASSERT_EQ(err, musaSuccess) << "cols=" << cols << ": " << musaGetErrorString(err);
 
         const Tensor result_cpu = result.cpu();
         const float* const result_ptr = result_cpu.ptr<float>();
@@ -229,9 +229,9 @@ TEST_F(TensorReductionAlignmentTest, SumDim1_VariousRowCounts) {
                              .cuda();
         const Tensor result = t.sum(1);
 
-        cudaDeviceSynchronize();
-        const cudaError_t err = cudaGetLastError();
-        ASSERT_EQ(err, cudaSuccess) << "rows=" << rows << ": " << cudaGetErrorString(err);
+        musaDeviceSynchronize();
+        const musaError_t err = musaGetLastError();
+        ASSERT_EQ(err, musaSuccess) << "rows=" << rows << ": " << musaGetErrorString(err);
 
         const Tensor result_cpu = result.cpu();
         const float* const result_ptr = result_cpu.ptr<float>();

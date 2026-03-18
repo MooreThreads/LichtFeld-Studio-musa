@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <torch/torch.h>

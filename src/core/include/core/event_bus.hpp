@@ -10,7 +10,7 @@
 #include <iomanip>
 #include <memory>
 #include <mutex>
-#include <print>
+#include <fmt/format.h>
 #include "core/source_location_compat.hpp"
 #include <sstream>
 #include <typeindex>
@@ -84,7 +84,7 @@ namespace lfs::core::event {
                 }
 
                 if (debug_.enabled && debug_.log_unhandled && handlers_copy.empty()) {
-                    std::println("[Event::Bus] WARNING: No handlers for event: {}",
+                    fmt::print("[Event::Bus] WARNING: No handlers for event: {}",
                                  demangle(typeid(E).name()));
                 }
 
@@ -94,7 +94,7 @@ namespace lfs::core::event {
 
                 emit_count_++;
             } else if (debug_.enabled && debug_.log_unhandled) {
-                std::println("[Event::Bus] WARNING: No channel for event: {}",
+                fmt::print("[Event::Bus] WARNING: No channel for event: {}",
                              demangle(typeid(E).name()));
             }
         }
@@ -127,7 +127,7 @@ namespace lfs::core::event {
                     channel.handlers.end());
 
                 if (debug_.enabled && before != channel.handlers.size()) {
-                    std::println("[Event::Bus] Unsubscribed handler {} from {}",
+                    fmt::print("[Event::Bus] Unsubscribed handler {} from {}",
                                  id, demangle(typeid(E).name()));
                 }
             }
@@ -143,7 +143,7 @@ namespace lfs::core::event {
                 channel.handlers.clear();
 
                 if (debug_.enabled && count > 0) {
-                    std::println("[Event::Bus] Cleared {} handlers for {}",
+                    fmt::print("[Event::Bus] Cleared {} handlers for {}",
                                  count, demangle(typeid(E).name()));
                 }
             }
@@ -157,7 +157,7 @@ namespace lfs::core::event {
                 for (const auto& [type, channel] : channels_) {
                     total += channel->handler_count();
                 }
-                std::println("[Event::Bus] Clearing {} handlers across {} event types",
+                fmt::print("[Event::Bus] Clearing {} handlers across {} event types",
                              total, channels_.size());
             }
             channels_.clear();
@@ -185,13 +185,13 @@ namespace lfs::core::event {
 
         void print_stats() const {
             std::lock_guard lock(mutex_);
-            std::println("[Event::Bus] Statistics:");
-            std::println("  Total emits: {}", emit_count_.load());
-            std::println("  Active channels: {}", channels_.size());
-            std::println("  Registered events:");
+            fmt::print("[Event::Bus] Statistics:");
+            fmt::print("  Total emits: {}", emit_count_.load());
+            fmt::print("  Active channels: {}", channels_.size());
+            fmt::print("  Registered events:");
 
             for (const auto& [type, channel] : channels_) {
-                std::println("    {} - {} handlers",
+                fmt::print("    {} - {} handlers",
                              demangle(type.name()),
                              channel->handler_count());
             }
@@ -209,10 +209,10 @@ namespace lfs::core::event {
 
         template <Event E>
         void log_emit_event(const std::source_location& loc) {
-            std::string msg = std::format("[Event::Bus] EMIT: {}", demangle(typeid(E).name()));
+            std::string msg = fmt::format("[Event::Bus] EMIT: {}", demangle(typeid(E).name()));
 
             if (debug_.show_location) {
-                msg += std::format(" @ {}:{}", loc.file_name(), loc.line());
+                msg += fmt::format(" @ {}:{}", loc.file_name(), loc.line());
             }
 
             if (debug_.show_timestamp) {
@@ -225,22 +225,22 @@ namespace lfs::core::event {
                 // Use put_time for formatting
                 std::stringstream time_str;
                 time_str << std::put_time(std::localtime(&time_t), "%H:%M:%S");
-                msg = std::format("[{}.{:03d}] {}", time_str.str(), ms.count(), msg);
+                msg = fmt::format("[{}.{:03d}] {}", time_str.str(), ms.count(), msg);
             }
 
-            std::println("{}", msg);
+            fmt::print("{}\n", msg);
         }
 
         template <Event E>
         void log_subscribe_event(HandlerId id, const std::source_location& loc) {
-            std::string msg = std::format("[Event::Bus] SUBSCRIBE: {} (id={})",
+            std::string msg = fmt::format("[Event::Bus] SUBSCRIBE: {} (id={})",
                                           demangle(typeid(E).name()), id);
 
             if (debug_.show_location) {
-                msg += std::format(" @ {}:{}", loc.file_name(), loc.line());
+                msg += fmt::format(" @ {}:{}", loc.file_name(), loc.line());
             }
 
-            std::println("{}", msg);
+            fmt::print("{}\n", msg);
         }
 
         // Simple demangler (platform-specific implementation needed)

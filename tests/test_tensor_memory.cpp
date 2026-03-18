@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "core/tensor.hpp"
-#include <c10/cuda/CUDACachingAllocator.h>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <memory>
 #include <torch/torch.h>
@@ -55,7 +55,7 @@ protected:
         ASSERT_TRUE(torch::cuda::is_available()) << "CUDA is not available for testing";
 
         // Record initial CUDA memory
-        cudaMemGetInfo(&initial_free_mem, &total_mem);
+        musaMemGetInfo(&initial_free_mem, &total_mem);
 
         torch::manual_seed(42);
         Tensor::manual_seed(42);
@@ -63,14 +63,14 @@ protected:
 
     void TearDown() override {
         // Force PyTorch to empty its CUDA cache
-        c10::cuda::CUDACachingAllocator::emptyCache();
+        musaDeviceSynchronize();
 
         // Force synchronization
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         // Check for memory leaks
         size_t current_free_mem, current_total;
-        cudaMemGetInfo(&current_free_mem, &current_total);
+        musaMemGetInfo(&current_free_mem, &current_total);
 
         // PyTorch uses a caching allocator - need much larger tolerance
         // Also, CUDA driver may cache memory for performance
@@ -105,8 +105,8 @@ TEST_F(TensorMemoryTest, MemoryOwnership) {
 
     // Test non-owning view
     float* cuda_data;
-    cudaMalloc(&cuda_data, 100 * sizeof(float));
-    cudaMemset(cuda_data, 0, 100 * sizeof(float));
+    musaMalloc(&cuda_data, 100 * sizeof(float));
+    musaMemset(cuda_data, 0, 100 * sizeof(float));
 
     {
         auto custom_t = Tensor::from_blob(cuda_data, {10, 10}, Device::CUDA, DataType::Float32);
@@ -120,7 +120,7 @@ TEST_F(TensorMemoryTest, MemoryOwnership) {
         compare_tensors(custom_t, torch_t, 1e-6f, 1e-7f, "NonOwningBlob");
     }
     // Memory should NOT be freed after scope
-    cudaFree(cuda_data);
+    musaFree(cuda_data);
 }
 
 TEST_F(TensorMemoryTest, MoveSemantics) {
@@ -325,7 +325,7 @@ TEST_F(TensorMemoryTest, VeryLargeTensor) {
     const size_t size = 25 * 1024 * 1024; // 25M floats = 100MB
 
     size_t free_mem, total;
-    cudaMemGetInfo(&free_mem, &total);
+    musaMemGetInfo(&free_mem, &total);
 
     if (free_mem < size * sizeof(float) * 2) {
         GTEST_SKIP() << "Not enough memory for very large tensor test";

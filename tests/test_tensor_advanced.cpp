@@ -4,7 +4,7 @@
 #include "core/logger.hpp"
 #include "core/tensor.hpp"
 #include <chrono>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <random>
 #include <thread>

@@ -756,7 +756,7 @@ TEST_F(TensorRandomTest, RandomGenerationSpeed) {
 
     auto start = std::chrono::high_resolution_clock::now();
     auto tensor = Tensor::randn({n}, Device::CUDA);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto duration = std::chrono::high_resolution_clock::now() - start;
 
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
@@ -773,7 +773,7 @@ TEST_F(TensorRandomTest, CompareGenerationSpeed) {
     Tensor::manual_seed(42);
     auto start_custom = std::chrono::high_resolution_clock::now();
     auto custom_t = Tensor::randn({n}, Device::CUDA);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto duration_custom = std::chrono::high_resolution_clock::now() - start_custom;
     auto ms_custom = std::chrono::duration_cast<std::chrono::milliseconds>(duration_custom).count();
 
@@ -781,7 +781,7 @@ TEST_F(TensorRandomTest, CompareGenerationSpeed) {
     torch::manual_seed(42);
     auto start_torch = std::chrono::high_resolution_clock::now();
     auto torch_t = torch::randn({n}, torch::TensorOptions().device(torch::kCUDA));
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto duration_torch = std::chrono::high_resolution_clock::now() - start_torch;
     auto ms_torch = std::chrono::duration_cast<std::chrono::milliseconds>(duration_torch).count();
 

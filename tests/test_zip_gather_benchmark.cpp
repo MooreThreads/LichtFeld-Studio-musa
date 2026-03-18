@@ -36,7 +36,7 @@ protected:
         for (int i = 0; i < 5; ++i) {
             auto r1 = data1.take(indices);
             auto r2 = data2.take(indices);
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Benchmark separate gather (2 kernel launches)
@@ -46,7 +46,7 @@ protected:
             result1_sep = data1.take(indices);
             result2_sep = data2.take(indices);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_separate = high_resolution_clock::now();
         double separate_ms = duration_cast<microseconds>(end_separate - start_separate).count() / 1000.0 / num_iterations;
 
@@ -67,7 +67,7 @@ protected:
                 1, 1, // strides
                 nullptr);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_zipped = high_resolution_clock::now();
         double zipped_ms = duration_cast<microseconds>(end_zipped - start_zipped).count() / 1000.0 / num_iterations;
 
@@ -95,7 +95,7 @@ protected:
             auto r1 = data1.take(indices);
             auto r2 = data2.take(indices);
             auto r3 = data3.take(indices);
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Benchmark separate gather (3 kernel launches)
@@ -106,7 +106,7 @@ protected:
             result2_sep = data2.take(indices);
             result3_sep = data3.take(indices);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_separate = high_resolution_clock::now();
         double separate_ms = duration_cast<microseconds>(end_separate - start_separate).count() / 1000.0 / num_iterations;
 
@@ -128,7 +128,7 @@ protected:
                 1, 1, 1, // strides
                 nullptr);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_zipped = high_resolution_clock::now();
         double zipped_ms = duration_cast<microseconds>(end_zipped - start_zipped).count() / 1000.0 / num_iterations;
 

@@ -6,7 +6,7 @@
  * @brief Tests for zero-dimension tensor handling (sh-degree 0 bug)
  *
  * Tests tensors with zero-element dimensions like shape [N, 0, 3].
- * Original bug: index_put_ crashed with cudaErrorInvalidDevice.
+ * Original bug: index_put_ crashed with musaErrorInvalidDevice.
  */
 
 #include "core/tensor.hpp"

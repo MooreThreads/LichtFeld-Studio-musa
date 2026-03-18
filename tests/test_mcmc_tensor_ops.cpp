@@ -9,7 +9,7 @@
  *
  * BUG #1: nonzero() stream synchronization
  *   - Symptom: Uninitialized memory reads, garbage indices
- *   - Root cause: Missing cudaStreamSynchronize() in nonzero() implementation
+ *   - Root cause: Missing musaStreamSynchronize() in nonzero() implementation
  *   - Fix: Added stream sync in tensor_masking_ops.cpp
  *
  * BUG #2: multinomial() int32/int64 mismatch

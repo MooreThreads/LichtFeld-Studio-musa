@@ -288,11 +288,8 @@ endforeach()
 # Create test executable
 add_executable(lichtfeld_tests ${TEST_SOURCES})
 
-# Set CUDA architectures
+# Set target properties
 set_target_properties(lichtfeld_tests PROPERTIES
-
-
- CUDA_RESOLVE_DEVICE_SYMBOLS ON
  CXX_STANDARD 23
  CXX_STANDARD_REQUIRED ON
 )
@@ -345,16 +342,15 @@ target_link_libraries(lichtfeld_tests PRIVATE
  OpenMeshCore
  assimp::assimp
 
- # CUDA libraries
+ # MUSA libraries
  MUSA::musart
  MUSA::murand
- CUDA::cupti
 
  # System libraries
  spdlog::spdlog
 )
 
-# Compiler options for CUDA debugging
+# Compiler options
 target_compile_options(lichtfeld_tests PRIVATE
  $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>>: >
  $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Debug>>:-O0 -g -fno-omit-frame-pointer>
@@ -367,9 +363,6 @@ target_compile_options(lichtfeld_tests PRIVATE
 add_executable(lichtfeld_benchmarks ${BENCHMARK_SOURCES})
 
 set_target_properties(lichtfeld_benchmarks PROPERTIES
-
-
- CUDA_RESOLVE_DEVICE_SYMBOLS ON
  CXX_STANDARD 23
  CXX_STANDARD_REQUIRED ON
 )
@@ -408,7 +401,6 @@ target_link_libraries(lichtfeld_benchmarks PRIVATE
  OpenImageIO::OpenImageIO
  MUSA::musart
  MUSA::murand
- CUDA::cupti
  spdlog::spdlog
 )
 

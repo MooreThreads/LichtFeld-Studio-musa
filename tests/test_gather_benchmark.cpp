@@ -34,7 +34,7 @@ protected:
         // Warm-up
         for (int i = 0; i < 5; ++i) {
             auto eager_result = data.take(indices);
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Benchmark eager gather
@@ -43,7 +43,7 @@ protected:
         for (int i = 0; i < num_iterations; ++i) {
             eager_result = data.take(indices);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_eager = high_resolution_clock::now();
         double eager_ms = duration_cast<microseconds>(end_eager - start_eager).count() / 1000.0 / num_iterations;
 
@@ -53,7 +53,7 @@ protected:
         for (int i = 0; i < num_iterations; ++i) {
             lazy_result = data.gather_lazy(indices).eval();
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_lazy = high_resolution_clock::now();
         double lazy_ms = duration_cast<microseconds>(end_lazy - start_lazy).count() / 1000.0 / num_iterations;
 
@@ -82,7 +82,7 @@ protected:
         // Warm-up
         for (int i = 0; i < 5; ++i) {
             auto eager_result = data.take(indices).abs();
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Benchmark eager: gather + abs (materialize after each)
@@ -91,7 +91,7 @@ protected:
         for (int i = 0; i < num_iterations; ++i) {
             eager_result = data.take(indices).abs();
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_eager = high_resolution_clock::now();
         double eager_ms = duration_cast<microseconds>(end_eager - start_eager).count() / 1000.0 / num_iterations;
 
@@ -101,7 +101,7 @@ protected:
         for (int i = 0; i < num_iterations; ++i) {
             lazy_result = data.gather_lazy(indices).map(ops::abs_op{}).eval();
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_lazy = high_resolution_clock::now();
         double lazy_ms = duration_cast<microseconds>(end_lazy - start_lazy).count() / 1000.0 / num_iterations;
 

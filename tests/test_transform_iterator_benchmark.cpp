@@ -32,7 +32,7 @@ protected:
         // Warm-up
         for (int i = 0; i < 5; ++i) {
             auto result = (data * scalar).sigmoid();
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Benchmark eager evaluation (current default - materialize intermediates)
@@ -42,7 +42,7 @@ protected:
             auto temp = data * scalar;     // Allocate intermediate
             result_eager = temp.sigmoid(); // Allocate result
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_eager = high_resolution_clock::now();
         double eager_ms = duration_cast<microseconds>(end_eager - start_eager).count() / 1000.0 / num_iterations;
 
@@ -53,7 +53,7 @@ protected:
         for (int i = 0; i < num_iterations; ++i) {
             result_lazy = (data * scalar).sigmoid(); // Should compose operations
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_lazy = high_resolution_clock::now();
         double lazy_ms = duration_cast<microseconds>(end_lazy - start_lazy).count() / 1000.0 / num_iterations;
 
@@ -74,7 +74,7 @@ protected:
         // Warm-up
         for (int i = 0; i < 5; ++i) {
             auto result = (data - mean) / std;
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Benchmark eager evaluation
@@ -84,7 +84,7 @@ protected:
             auto temp = data - mean;   // Intermediate 1
             result_eager = temp / std; // Result
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_eager = high_resolution_clock::now();
         double eager_ms = duration_cast<microseconds>(end_eager - start_eager).count() / 1000.0 / num_iterations;
 
@@ -94,7 +94,7 @@ protected:
         for (int i = 0; i < num_iterations; ++i) {
             result_lazy = (data - mean) / std;
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_lazy = high_resolution_clock::now();
         double lazy_ms = duration_cast<microseconds>(end_lazy - start_lazy).count() / 1000.0 / num_iterations;
 
@@ -115,7 +115,7 @@ protected:
         // Warm-up
         for (int i = 0; i < 5; ++i) {
             auto result = (data * w + b).relu();
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Benchmark eager evaluation
@@ -126,7 +126,7 @@ protected:
             auto temp2 = temp1 + b;      // Intermediate 2
             result_eager = temp2.relu(); // Result
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_eager = high_resolution_clock::now();
         double eager_ms = duration_cast<microseconds>(end_eager - start_eager).count() / 1000.0 / num_iterations;
 
@@ -136,7 +136,7 @@ protected:
         for (int i = 0; i < num_iterations; ++i) {
             result_lazy = (data * w + b).relu();
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_lazy = high_resolution_clock::now();
         double lazy_ms = duration_cast<microseconds>(end_lazy - start_lazy).count() / 1000.0 / num_iterations;
 
@@ -155,7 +155,7 @@ protected:
         // Warm-up
         for (int i = 0; i < 5; ++i) {
             auto result = data.abs().sqrt();
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Benchmark eager evaluation
@@ -165,7 +165,7 @@ protected:
             auto temp = data.abs();     // Intermediate
             result_eager = temp.sqrt(); // Result
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_eager = high_resolution_clock::now();
         double eager_ms = duration_cast<microseconds>(end_eager - start_eager).count() / 1000.0 / num_iterations;
 
@@ -175,7 +175,7 @@ protected:
         for (int i = 0; i < num_iterations; ++i) {
             result_lazy = data.abs().sqrt();
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_lazy = high_resolution_clock::now();
         double lazy_ms = duration_cast<microseconds>(end_lazy - start_lazy).count() / 1000.0 / num_iterations;
 

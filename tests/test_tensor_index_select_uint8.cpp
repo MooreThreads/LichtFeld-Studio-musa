@@ -190,7 +190,7 @@ TEST_F(TensorIndexSelectUInt8Test, VsTorch_2D_RowSelect) {
 
     auto lfs_data = Tensor::zeros({N, 3}, Device::CUDA, DataType::UInt8);
     auto t_cpu = t_data.cpu().contiguous();
-    cudaMemcpy(lfs_data.data_ptr(), t_cpu.data_ptr<uint8_t>(), N * 3, cudaMemcpyHostToDevice);
+    musaMemcpy(lfs_data.data_ptr(), t_cpu.data_ptr<uint8_t>(), N * 3, musaMemcpyHostToDevice);
 
     // Random indices
     std::vector<int> idx_vec = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 99};
@@ -210,7 +210,7 @@ TEST_F(TensorIndexSelectUInt8Test, VsTorch_LargeScale) {
 
     auto lfs_data = Tensor::zeros({N, 3}, Device::CUDA, DataType::UInt8);
     auto t_cpu = t_data.cpu().contiguous();
-    cudaMemcpy(lfs_data.data_ptr(), t_cpu.data_ptr<uint8_t>(), N * 3, cudaMemcpyHostToDevice);
+    musaMemcpy(lfs_data.data_ptr(), t_cpu.data_ptr<uint8_t>(), N * 3, musaMemcpyHostToDevice);
 
     // Select every 10th point
     std::vector<int> idx_vec;
@@ -326,8 +326,8 @@ TEST_F(TensorIndexSelectUInt8Test, PointCloudCroppingPipeline_VsTorch) {
 
     auto t_means_cpu = t_means.cpu().contiguous();
     auto t_colors_cpu = t_colors.cpu().contiguous();
-    cudaMemcpy(lfs_means.data_ptr(), t_means_cpu.data_ptr<float>(), N * 3 * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(lfs_colors.data_ptr(), t_colors_cpu.data_ptr<uint8_t>(), N * 3, cudaMemcpyHostToDevice);
+    musaMemcpy(lfs_means.data_ptr(), t_means_cpu.data_ptr<float>(), N * 3 * sizeof(float), musaMemcpyHostToDevice);
+    musaMemcpy(lfs_colors.data_ptr(), t_colors_cpu.data_ptr<uint8_t>(), N * 3, musaMemcpyHostToDevice);
 
     // Create mask: x > 0
     auto t_x = t_means.select(1, 0);

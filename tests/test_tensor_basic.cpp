@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <random>
 #include <torch/torch.h>
@@ -169,14 +169,14 @@ TEST_F(TensorBasicTest, FromBlobCreation) {
     // Create data on device
     size_t num_elements = 12;
     float* cuda_data;
-    cudaMalloc(&cuda_data, num_elements * sizeof(float));
+    musaMalloc(&cuda_data, num_elements * sizeof(float));
 
     // Fill with test data
     std::vector<float> host_data(num_elements);
     for (size_t i = 0; i < num_elements; ++i) {
         host_data[i] = static_cast<float>(i);
     }
-    cudaMemcpy(cuda_data, host_data.data(), num_elements * sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(cuda_data, host_data.data(), num_elements * sizeof(float), musaMemcpyHostToDevice);
 
     // Create tensor from blob
     auto tensor_custom = Tensor::from_blob(cuda_data, {3, 4}, Device::CUDA, DataType::Float32);
@@ -188,7 +188,7 @@ TEST_F(TensorBasicTest, FromBlobCreation) {
     EXPECT_FALSE(tensor_custom.owns_memory()); // Should not own the memory
 
     // Cleanup
-    cudaFree(cuda_data);
+    musaFree(cuda_data);
 }
 
 // ============= Device Transfer Tests =============
@@ -671,10 +671,10 @@ TEST_F(TensorBasicTest, ComprehensiveWorkflow) {
     }
 
     // Copy same data to both tensors
-    cudaMemcpy(tensor_custom.ptr<float>(), random_data.data(),
-               random_data.size() * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(tensor_torch.data_ptr<float>(), random_data.data(),
-               random_data.size() * sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(tensor_custom.ptr<float>(), random_data.data(),
+               random_data.size() * sizeof(float), musaMemcpyHostToDevice);
+    musaMemcpy(tensor_torch.data_ptr<float>(), random_data.data(),
+               random_data.size() * sizeof(float), musaMemcpyHostToDevice);
 
     // Clone
     auto cloned_custom = tensor_custom.clone();

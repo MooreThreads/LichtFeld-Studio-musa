@@ -40,7 +40,7 @@ protected:
 
     void TearDown() override {
         // Clean up CUDA memory
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
     // Helper to verify capacity is preserved after an operation

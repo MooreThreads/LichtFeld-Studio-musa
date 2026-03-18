@@ -13,7 +13,7 @@ using namespace lfs::core::param;
 
 class BackgroundImageTest : public ::testing::Test {
 protected:
-    void SetUp() override { cudaSetDevice(0); }
+    void SetUp() override { musaSetDevice(0); }
     void TearDown() override { GlobalArenaManager::instance().get_arena().full_reset(); }
 
     static Tensor createTestImage(const int c, const int h, const int w, const float value) {
@@ -43,7 +43,7 @@ TEST_F(BackgroundImageTest, BilinearResize_IdentityWhenSameSize) {
 
     lfs::training::kernels::launch_bilinear_resize_chw(
         src.ptr<float>(), dst.ptr<float>(), C, H, W, H, W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     const float diff = (src - dst).abs().max().item<float>();
     EXPECT_LT(diff, 1e-5f);
@@ -56,7 +56,7 @@ TEST_F(BackgroundImageTest, BilinearResize_Upscale2x) {
 
     lfs::training::kernels::launch_bilinear_resize_chw(
         src.ptr<float>(), dst.ptr<float>(), C, SRC_H, SRC_W, DST_H, DST_W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_NEAR(dst.mean().item<float>(), 0.7f, 0.01f);
 }
@@ -68,7 +68,7 @@ TEST_F(BackgroundImageTest, BilinearResize_Downscale2x) {
 
     lfs::training::kernels::launch_bilinear_resize_chw(
         src.ptr<float>(), dst.ptr<float>(), C, SRC_H, SRC_W, DST_H, DST_W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_NEAR(dst.mean().item<float>(), 0.3f, 0.01f);
 }
@@ -80,7 +80,7 @@ TEST_F(BackgroundImageTest, BilinearResize_NonSquareAspectRatio) {
 
     lfs::training::kernels::launch_bilinear_resize_chw(
         src.ptr<float>(), dst.ptr<float>(), C, SRC_H, SRC_W, DST_H, DST_W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_EQ(dst.shape()[0], C);
     EXPECT_EQ(dst.shape()[1], DST_H);
@@ -95,7 +95,7 @@ TEST_F(BackgroundImageTest, BilinearResize_PreservesValueRange) {
 
     lfs::training::kernels::launch_bilinear_resize_chw(
         src.ptr<float>(), dst.ptr<float>(), C, SRC_H, SRC_W, DST_H, DST_W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_GE(dst.min().item<float>(), -0.01f);
     EXPECT_LE(dst.max().item<float>(), 1.01f);
@@ -108,7 +108,7 @@ TEST_F(BackgroundImageTest, BilinearResize_LargeImage) {
 
     lfs::training::kernels::launch_bilinear_resize_chw(
         src.ptr<float>(), dst.ptr<float>(), C, SRC_H, SRC_W, DST_H, DST_W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_EQ(dst.shape()[1], DST_H);
     EXPECT_EQ(dst.shape()[2], DST_W);
@@ -124,7 +124,7 @@ TEST_F(BackgroundImageTest, BackgroundBlendWithImage_FullyOpaque) {
     lfs::training::kernels::launch_fused_background_blend_with_image(
         image.ptr<float>(), alpha.ptr<float>(), bg_image.ptr<float>(),
         output.ptr<float>(), H, W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_LT((output - image).abs().max().item<float>(), 1e-5f);
 }
@@ -139,7 +139,7 @@ TEST_F(BackgroundImageTest, BackgroundBlendWithImage_FullyTransparent) {
     lfs::training::kernels::launch_fused_background_blend_with_image(
         image.ptr<float>(), alpha.ptr<float>(), bg_image.ptr<float>(),
         output.ptr<float>(), H, W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_LT((output - bg_image).abs().max().item<float>(), 1e-5f);
 }
@@ -154,7 +154,7 @@ TEST_F(BackgroundImageTest, BackgroundBlendWithImage_HalfTransparent) {
     lfs::training::kernels::launch_fused_background_blend_with_image(
         image.ptr<float>(), alpha.ptr<float>(), bg_image.ptr<float>(),
         output.ptr<float>(), H, W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // image + (1-0.5) * bg = 0.4 + 0.5 * 0.8 = 0.8
     EXPECT_NEAR(output.mean().item<float>(), 0.8f, 0.01f);
@@ -175,7 +175,7 @@ TEST_F(BackgroundImageTest, BackgroundBlendWithImage_MatchesSolidColorUniform) {
     lfs::training::kernels::launch_fused_background_blend(
         image.ptr<float>(), alpha.ptr<float>(), bg_color.ptr<float>(),
         output_color.ptr<float>(), H, W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_LT((output_image - output_color).abs().max().item<float>(), 1e-5f);
 }
@@ -189,7 +189,7 @@ TEST_F(BackgroundImageTest, GradAlphaWithImage_ZeroGradImage) {
     lfs::training::kernels::launch_fused_grad_alpha_with_image(
         grad_image.ptr<float>(), bg_image.ptr<float>(),
         grad_alpha.ptr<float>(), H, W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_LT(grad_alpha.abs().max().item<float>(), 1e-6f);
 }
@@ -208,7 +208,7 @@ TEST_F(BackgroundImageTest, GradAlphaWithImage_UniformBgMatchesSolid) {
     lfs::training::kernels::launch_fused_grad_alpha(
         grad_image.ptr<float>(), bg_color.ptr<float>(),
         grad_alpha_color.ptr<float>(), H, W, true, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_LT((grad_alpha_image - grad_alpha_color).abs().max().item<float>(), 1e-5f);
 }
@@ -232,7 +232,7 @@ TEST_F(BackgroundImageTest, GradAlphaWithImage_CorrectFormula) {
     lfs::training::kernels::launch_fused_grad_alpha_with_image(
         grad_image.ptr<float>(), bg_image.ptr<float>(),
         grad_alpha.ptr<float>(), H, W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // grad_alpha = -sum_c(grad_image[c] * bg_image[c]) = -(0.1 + 0.2 + 0.3) = -0.6
     const auto grad_alpha_cpu = grad_alpha.to(Device::CPU);
@@ -343,7 +343,7 @@ TEST_F(BackgroundImageTest, BilinearResize_SinglePixel) {
 
     lfs::training::kernels::launch_bilinear_resize_chw(
         src.ptr<float>(), dst.ptr<float>(), C, 1, 1, 1, 1, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_NEAR(dst.slice(0, 0, 1).slice(1, 0, 1).slice(2, 0, 1).item<float>(), 0.42f, 1e-5f);
 }
@@ -355,7 +355,7 @@ TEST_F(BackgroundImageTest, BilinearResize_UpscaleToSingleRow) {
 
     lfs::training::kernels::launch_bilinear_resize_chw(
         src.ptr<float>(), dst.ptr<float>(), C, SRC_H, SRC_W, DST_H, DST_W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_EQ(dst.shape()[1], 1);
     EXPECT_EQ(dst.shape()[2], 16);
@@ -379,7 +379,7 @@ TEST_F(BackgroundImageTest, BackgroundBlendWithImage_VaryingAlpha) {
     lfs::training::kernels::launch_fused_background_blend_with_image(
         image.ptr<float>(), alpha.ptr<float>(), bg_image.ptr<float>(),
         output.ptr<float>(), H, W, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     const auto output_cpu = output.to(Device::CPU);
     const float* o = output_cpu.ptr<float>();
@@ -397,9 +397,9 @@ TEST_F(BackgroundImageTest, Performance_BilinearResizeDoesNotTimeout) {
         lfs::training::kernels::launch_bilinear_resize_chw(
             src.ptr<float>(), dst.ptr<float>(), C, SRC_H, SRC_W, DST_H, DST_W, nullptr);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
-    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+    EXPECT_EQ(musaGetLastError(), musaSuccess);
 }
 
 TEST_F(BackgroundImageTest, Performance_BlendKernelDoesNotTimeout) {
@@ -414,9 +414,9 @@ TEST_F(BackgroundImageTest, Performance_BlendKernelDoesNotTimeout) {
             image.ptr<float>(), alpha.ptr<float>(), bg_image.ptr<float>(),
             output.ptr<float>(), H, W, nullptr);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
-    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+    EXPECT_EQ(musaGetLastError(), musaSuccess);
 }
 
 TEST_F(BackgroundImageTest, MultiSize_ResizeToMultipleDifferentSizes) {
@@ -437,13 +437,13 @@ TEST_F(BackgroundImageTest, MultiSize_ResizeToMultipleDifferentSizes) {
         lfs::training::kernels::launch_bilinear_resize_chw(
             base_image.ptr<float>(), resized.ptr<float>(),
             BASE_C, BASE_H, BASE_W, h, w, nullptr);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         EXPECT_EQ(resized.shape()[0], BASE_C);
         EXPECT_EQ(resized.shape()[1], h);
         EXPECT_EQ(resized.shape()[2], w);
         EXPECT_NEAR(resized.mean().item<float>(), 0.5f, 0.02f);
-        EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+        EXPECT_EQ(musaGetLastError(), musaSuccess);
     }
 }
 
@@ -471,7 +471,7 @@ TEST_F(BackgroundImageTest, MultiSize_BlendWithDifferentSizes) {
         lfs::training::kernels::launch_fused_background_blend_with_image(
             render.ptr<float>(), alpha.ptr<float>(), bg.ptr<float>(),
             output.ptr<float>(), tc.h, tc.w, nullptr);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         const float expected = tc.render_val + (1.0f - tc.alpha_val) * tc.bg_val;
         EXPECT_NEAR(output.mean().item<float>(), expected, 0.01f);
@@ -509,11 +509,11 @@ TEST_F(BackgroundImageTest, MultiSize_InterleavedSizeChanges) {
         lfs::training::kernels::launch_fused_background_blend_with_image(
             render.ptr<float>(), alpha.ptr<float>(), bg_resized.ptr<float>(),
             output.ptr<float>(), h, w, nullptr);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         constexpr float EXPECTED = 0.3f + 0.4f * 0.42f;
         EXPECT_NEAR(output.mean().item<float>(), EXPECTED, 0.02f);
-        EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+        EXPECT_EQ(musaGetLastError(), musaSuccess);
     }
 }
 
@@ -529,7 +529,7 @@ TEST_F(BackgroundImageTest, MultiSize_GradientWithDifferentSizes) {
         lfs::training::kernels::launch_fused_grad_alpha_with_image(
             grad_image.ptr<float>(), bg_image.ptr<float>(),
             grad_alpha.ptr<float>(), h, w, nullptr);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         constexpr float EXPECTED = -3.0f * 0.2f * 0.5f;
         EXPECT_NEAR(grad_alpha.mean().item<float>(), EXPECTED, 0.01f);

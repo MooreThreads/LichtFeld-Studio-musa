@@ -35,7 +35,7 @@ namespace {
         if (t.device() == Device::CPU) {
             std::memcpy(result.data_ptr(), t.data_ptr(), t.bytes());
         } else {
-            cudaMemcpy(result.data_ptr(), t.data_ptr(), t.bytes(), cudaMemcpyDeviceToDevice);
+            musaMemcpy(result.data_ptr(), t.data_ptr(), t.bytes(), musaMemcpyDeviceToDevice);
         }
 
         return result;
@@ -66,9 +66,9 @@ namespace {
             std::memcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes());
         } else {
             if (t_cont.is_cpu()) {
-                cudaMemcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes(), cudaMemcpyHostToDevice);
+                musaMemcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes(), musaMemcpyHostToDevice);
             } else {
-                cudaMemcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes(), cudaMemcpyDeviceToDevice);
+                musaMemcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes(), musaMemcpyDeviceToDevice);
             }
         }
 

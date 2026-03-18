@@ -506,14 +506,14 @@ TEST_F(NaNInfGPUCheckTest, Performance_LFS_vs_Torch) {
         torch_has_nan(torch_t);
         lfs_t.has_nan();
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark Torch
     auto torch_start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < bench_iters; ++i) {
         torch_has_nan(torch_t);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto torch_end = std::chrono::high_resolution_clock::now();
     auto torch_us = std::chrono::duration_cast<std::chrono::microseconds>(torch_end - torch_start).count();
 
@@ -522,7 +522,7 @@ TEST_F(NaNInfGPUCheckTest, Performance_LFS_vs_Torch) {
     for (int i = 0; i < bench_iters; ++i) {
         lfs_t.has_nan();
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto lfs_end = std::chrono::high_resolution_clock::now();
     auto lfs_us = std::chrono::duration_cast<std::chrono::microseconds>(lfs_end - lfs_start).count();
 

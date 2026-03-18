@@ -1633,12 +1633,12 @@ TEST_F(TensorMaskingTest, MaskingPerformance) {
     // Create mask
     auto start = std::chrono::high_resolution_clock::now();
     auto mask_custom = tensor_custom.gt(0.0f);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto custom_time = std::chrono::high_resolution_clock::now() - start;
 
     start = std::chrono::high_resolution_clock::now();
     auto mask_torch = tensor_torch.gt(0.0f);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto torch_time = std::chrono::high_resolution_clock::now() - start;
 
     std::cout << "Mask creation for " << size << " elements:\n";

@@ -6,7 +6,7 @@
 #include "core/tensor/internal/lazy_ir.hpp"
 #include <chrono>
 #include <cstdio>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <torch/torch.h>
 #include <vector>
@@ -107,11 +107,11 @@ namespace {
             torch_shape.push_back(static_cast<int64_t>(shape[i]));
         auto torch_input = torch::rand(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(torch_input.data_ptr<float>()),
+        musaMemcpy(const_cast<float*>(torch_input.data_ptr<float>()),
                    lfs_input.ptr<float>(),
                    lfs_input.numel() * sizeof(float),
-                   cudaMemcpyDeviceToDevice);
-        cudaDeviceSynchronize();
+                   musaMemcpyDeviceToDevice);
+        musaDeviceSynchronize();
 
         Tensor fused_out, eager_out;
         torch::Tensor torch_out;
@@ -123,13 +123,13 @@ namespace {
 
             for (int i = 0; i < kWarmup; ++i) {
                 auto y = lfs_fn(lfs_input).contiguous();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             const auto start = std::chrono::steady_clock::now();
             for (int i = 0; i < kIters; ++i) {
                 fused_out = lfs_fn(lfs_input).contiguous();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
             const auto end = std::chrono::steady_clock::now();
             result.lfs_fused_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / static_cast<double>(kIters);
@@ -141,13 +141,13 @@ namespace {
 
             for (int i = 0; i < kWarmup; ++i) {
                 auto y = lfs_fn(lfs_input).contiguous();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             const auto start = std::chrono::steady_clock::now();
             for (int i = 0; i < kIters; ++i) {
                 eager_out = lfs_fn(lfs_input).contiguous();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
             const auto end = std::chrono::steady_clock::now();
             result.lfs_eager_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / static_cast<double>(kIters);
@@ -157,13 +157,13 @@ namespace {
         {
             for (int i = 0; i < kWarmup; ++i) {
                 auto y = torch_fn(torch_input);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             const auto start = std::chrono::steady_clock::now();
             for (int i = 0; i < kIters; ++i) {
                 torch_out = torch_fn(torch_input);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
             const auto end = std::chrono::steady_clock::now();
             result.torch_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / static_cast<double>(kIters);
@@ -190,11 +190,11 @@ namespace {
         auto torch_a = torch::rand(torch_shape, torch::kCUDA);
         auto torch_b = torch::rand(torch_shape, torch::kCUDA);
 
-        cudaMemcpy(const_cast<float*>(torch_a.data_ptr<float>()), lfs_a.ptr<float>(),
-                   lfs_a.numel() * sizeof(float), cudaMemcpyDeviceToDevice);
-        cudaMemcpy(const_cast<float*>(torch_b.data_ptr<float>()), lfs_b.ptr<float>(),
-                   lfs_b.numel() * sizeof(float), cudaMemcpyDeviceToDevice);
-        cudaDeviceSynchronize();
+        musaMemcpy(const_cast<float*>(torch_a.data_ptr<float>()), lfs_a.ptr<float>(),
+                   lfs_a.numel() * sizeof(float), musaMemcpyDeviceToDevice);
+        musaMemcpy(const_cast<float*>(torch_b.data_ptr<float>()), lfs_b.ptr<float>(),
+                   lfs_b.numel() * sizeof(float), musaMemcpyDeviceToDevice);
+        musaDeviceSynchronize();
 
         Tensor fused_out, eager_out;
         torch::Tensor torch_out;
@@ -205,13 +205,13 @@ namespace {
 
             for (int i = 0; i < kWarmup; ++i) {
                 auto y = lfs_fn(lfs_a, lfs_b).contiguous();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             const auto start = std::chrono::steady_clock::now();
             for (int i = 0; i < kIters; ++i) {
                 fused_out = lfs_fn(lfs_a, lfs_b).contiguous();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
             const auto end = std::chrono::steady_clock::now();
             result.lfs_fused_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / static_cast<double>(kIters);
@@ -221,13 +221,13 @@ namespace {
             LazyTestGuard guard;
             for (int i = 0; i < kWarmup; ++i) {
                 auto y = lfs_fn(lfs_a, lfs_b).contiguous();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             const auto start = std::chrono::steady_clock::now();
             for (int i = 0; i < kIters; ++i) {
                 eager_out = lfs_fn(lfs_a, lfs_b).contiguous();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
             const auto end = std::chrono::steady_clock::now();
             result.lfs_eager_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / static_cast<double>(kIters);
@@ -236,13 +236,13 @@ namespace {
         {
             for (int i = 0; i < kWarmup; ++i) {
                 auto y = torch_fn(torch_a, torch_b);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             const auto start = std::chrono::steady_clock::now();
             for (int i = 0; i < kIters; ++i) {
                 torch_out = torch_fn(torch_a, torch_b);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
             const auto end = std::chrono::steady_clock::now();
             result.torch_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / static_cast<double>(kIters);
@@ -303,11 +303,11 @@ TEST(TensorFusionPerformanceTest, BroadcastChain) {
     const TensorShape shape = {2048, 1024};
     const Tensor lfs_bias = Tensor::rand({1, 1024}, Device::CUDA, DataType::Float32);
     auto torch_bias = torch::zeros({1, 1024}, torch::kCUDA);
-    cudaMemcpy(torch_bias.data_ptr<float>(),
+    musaMemcpy(torch_bias.data_ptr<float>(),
                lfs_bias.ptr<float>(),
                lfs_bias.numel() * sizeof(float),
-               cudaMemcpyDeviceToDevice);
-    cudaDeviceSynchronize();
+               musaMemcpyDeviceToDevice);
+    musaDeviceSynchronize();
 
     auto lfs_fn = [lfs_bias](const Tensor& x) {
         return x.add(lfs_bias).mul(1.25f).sub(0.5f).sigmoid();

@@ -38,7 +38,7 @@ protected:
                 result = data.max();
             else if (op_name == "min")
                 result = data.min();
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Benchmark custom implementation (CUB-based) - time 1
@@ -54,7 +54,7 @@ protected:
             else if (op_name == "min")
                 result_custom = data.min();
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_custom = high_resolution_clock::now();
         double custom_ms = duration_cast<microseconds>(end_custom - start_custom).count() / 1000.0 / num_iterations;
 
@@ -71,7 +71,7 @@ protected:
             else if (op_name == "min")
                 result_verify = data.min();
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end_verify = high_resolution_clock::now();
         double verify_ms = duration_cast<microseconds>(end_verify - start_verify).count() / 1000.0 / num_iterations;
 

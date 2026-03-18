@@ -5,7 +5,7 @@
 #include "core/tensor/internal/lazy_config.hpp"
 #include "core/tensor/internal/lazy_executor.hpp"
 #include "core/tensor/internal/lazy_ir.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <optional>
 #include <span>
@@ -45,8 +45,8 @@ namespace {
 
     bool has_cuda_device() {
         int device_count = 0;
-        const auto status = cudaGetDeviceCount(&device_count);
-        return status == cudaSuccess && device_count > 0;
+        const auto status = musaGetDeviceCount(&device_count);
+        return status == musaSuccess && device_count > 0;
     }
 
 } // namespace

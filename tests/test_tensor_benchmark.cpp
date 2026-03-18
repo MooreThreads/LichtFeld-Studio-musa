@@ -148,7 +148,7 @@ protected:
         // Warmup GPU
         auto warmup = Tensor::rand({100, 100}, Device::CUDA);
         auto warmup_torch = torch::rand({100, 100}, torch::kCUDA);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
     void print_separator(const std::string& title = "") {
@@ -196,7 +196,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
                 auto alpha = Tensor::ones({static_cast<size_t>(H), static_cast<size_t>(W), 1},
                                           Device::CUDA, DataType::Float32);
                 result_custom = Tensor::cat({img_custom, alpha}, 2);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -205,7 +205,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
                 Timer timer;
                 auto alpha_torch = torch::ones({H, W, 1}, torch::kCUDA);
                 result_torch = torch::cat({img_torch, alpha_torch}, 2);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -241,7 +241,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
             {
                 Timer timer;
                 result_custom = rgba_custom.clamp(0.0f, 1.0f);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -249,7 +249,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
             {
                 Timer timer;
                 result_torch = torch::clamp(rgba_torch, 0.0f, 1.0f);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -288,7 +288,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
             {
                 Timer timer;
                 result_custom = rgba_custom * 255.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -296,7 +296,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
             {
                 Timer timer;
                 result_torch = rgba_torch * 255.0f;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -337,7 +337,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
             {
                 Timer timer;
                 result_custom = scaled_custom.to(DataType::UInt8);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -345,7 +345,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
             {
                 Timer timer;
                 result_torch = scaled_torch.to(torch::kUInt8);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -378,7 +378,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
                                           Device::CUDA);
                 auto rgba = Tensor::cat({img_custom, alpha}, 2);
                 result_custom = (rgba.clamp(0.0f, 1.0f) * 255.0f).to(DataType::UInt8);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -388,7 +388,7 @@ TEST_F(TensorBenchmarkTest, ImageUploadBottleneck) {
                 auto alpha = torch::ones({H, W, 1}, torch::kCUDA);
                 auto rgba = torch::cat({img_torch, alpha}, 2);
                 result_torch = (torch::clamp(rgba, 0.0f, 1.0f) * 255.0f).to(torch::kUInt8);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -452,7 +452,7 @@ TEST_F(TensorBenchmarkTest, CatLastDimBenchmark) {
                 auto alpha_custom = Tensor::ones({static_cast<size_t>(h), static_cast<size_t>(w), 1},
                                                  Device::CUDA);
                 result_custom = Tensor::cat({img_custom, alpha_custom}, 2);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -461,7 +461,7 @@ TEST_F(TensorBenchmarkTest, CatLastDimBenchmark) {
                 Timer timer;
                 auto alpha_torch = torch::ones({h, w, 1}, torch::kCUDA);
                 result_torch = torch::cat({img_torch, alpha_torch}, 2);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -506,7 +506,7 @@ TEST_F(TensorBenchmarkTest, ClampBenchmark) {
             {
                 Timer timer;
                 result_custom = data_custom.clamp(0.0f, 1.0f);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -514,7 +514,7 @@ TEST_F(TensorBenchmarkTest, ClampBenchmark) {
             {
                 Timer timer;
                 result_torch = torch::clamp(data_torch, 0.0f, 1.0f);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -553,7 +553,7 @@ TEST_F(TensorBenchmarkTest, TypeConversionBenchmark) {
         {
             Timer timer;
             result_custom = data_custom.to(DataType::UInt8);
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_custom += timer.elapsed_ms();
         }
 
@@ -561,7 +561,7 @@ TEST_F(TensorBenchmarkTest, TypeConversionBenchmark) {
         {
             Timer timer;
             result_torch = data_torch.to(torch::kUInt8);
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_torch += timer.elapsed_ms();
         }
     }
@@ -596,7 +596,7 @@ TEST_F(TensorBenchmarkTest, ScalarMultiplyBenchmark) {
         {
             Timer timer;
             result_custom = data_custom * 255.0f;
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_custom += timer.elapsed_ms();
         }
 
@@ -604,7 +604,7 @@ TEST_F(TensorBenchmarkTest, ScalarMultiplyBenchmark) {
         {
             Timer timer;
             result_torch = data_torch * 255.0f;
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_torch += timer.elapsed_ms();
         }
     }
@@ -630,7 +630,7 @@ TEST_F(TensorBenchmarkTest, SummaryReport) {
     std::cout << "  2. Clamp [0,1]:        Target < 0.2ms" << std::endl;
     std::cout << "  3. Multiply by 255:    Target < 0.2ms" << std::endl;
     std::cout << "  4. Float32->UInt8:     Target < 0.2ms" << std::endl;
-    std::cout << "  5. cudaMemcpy2DArray:  ~0.1ms (OpenGL interop)" << std::endl;
+    std::cout << "  5. musaMemcpy2DArray:  ~0.1ms (OpenGL interop)" << std::endl;
     std::cout << "\n✅ Run individual benchmarks above to see detailed performance" << std::endl;
     std::cout << std::string(100, '=') << std::endl;
 }

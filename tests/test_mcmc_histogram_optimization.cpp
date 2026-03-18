@@ -6,7 +6,7 @@
 #include "training/kernels/mcmc_kernels.hpp"
 #include <algorithm>
 #include <chrono>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <numeric>
 #include <unordered_map>
@@ -19,7 +19,7 @@ protected:
     void SetUp() override {
         // Ensure CUDA is available
         int device_count;
-        cudaGetDeviceCount(&device_count);
+        musaGetDeviceCount(&device_count);
         ASSERT_GT(device_count, 0) << "No CUDA devices available";
     }
 
@@ -61,14 +61,14 @@ protected:
         for (int i = 0; i < warmup_iters; i++) {
             func();
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         // Measure
         auto start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < measure_iters; i++) {
             func();
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end = std::chrono::high_resolution_clock::now();
 
         double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -271,7 +271,7 @@ TEST_F(MCMCHistogramTest, StressTest_10MSamples) {
         output_counts.ptr<int32_t>(),
         n_samples,
         nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     auto end = std::chrono::high_resolution_clock::now();
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -332,7 +332,7 @@ TEST_F(MCMCHistogramTest, Integration_MCMCDensificationPattern) {
     // Clamp to [1, 51] (as in real code)
     ratios = ratios.clamp(1, 51);
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
 

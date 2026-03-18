@@ -606,7 +606,7 @@ TEST_F(CUDAKernelGradientTest, SHDegree0_CUDA_vs_Autograd) {
         nullptr  // stream
     );
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Compare results
     EXPECT_TRUE(tensors_close(grad_sh_autograd, v_coeffs_cuda, REL_TOL, ABS_TOL))
@@ -676,7 +676,7 @@ TEST_F(CUDAKernelGradientTest, SHDegree1_CUDA_vs_Autograd) {
 
     // Verify with raw pointers that memory is zeroed
     float test_before[3];
-    cudaMemcpy(test_before, v_dirs_cuda.data_ptr<float>(), 3 * sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(test_before, v_dirs_cuda.data_ptr<float>(), 3 * sizeof(float), musaMemcpyDeviceToHost);
     std::cout << "Before kernel: v_dirs_cuda[0,1,2] = "
               << test_before[0] << ", " << test_before[1] << ", " << test_before[2] << std::endl;
 
@@ -694,11 +694,11 @@ TEST_F(CUDAKernelGradientTest, SHDegree1_CUDA_vs_Autograd) {
         nullptr // stream
     );
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Check raw values after kernel
     float test_after[3];
-    cudaMemcpy(test_after, v_dirs_cuda.data_ptr<float>(), 3 * sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(test_after, v_dirs_cuda.data_ptr<float>(), 3 * sizeof(float), musaMemcpyDeviceToHost);
     std::cout << "After kernel: v_dirs_cuda[0,1,2] = "
               << test_after[0] << ", " << test_after[1] << ", " << test_after[2] << std::endl;
 
@@ -799,7 +799,7 @@ TEST_F(CUDAKernelGradientTest, SHDegree2_CUDA_vs_Autograd) {
         v_dirs_cuda.data_ptr<float>(),
         nullptr);
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_TRUE(tensors_close(grad_sh_autograd, v_coeffs_cuda, REL_TOL, ABS_TOL))
         << "SH Degree 2 coeffs CUDA kernel gradient mismatch: max_rel_err = "
@@ -910,7 +910,7 @@ TEST_F(CUDAKernelGradientTest, SHDegree3_CUDA_vs_Autograd) {
         v_dirs_cuda.data_ptr<float>(),
         nullptr);
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_TRUE(tensors_close(grad_sh_autograd, v_coeffs_cuda, REL_TOL, ABS_TOL))
         << "SH Degree 3 coeffs CUDA kernel gradient mismatch: max_rel_err = "
@@ -951,7 +951,7 @@ TEST_F(CUDAKernelGradientTest, SH_ForwardBackward_RoundTrip) {
         colors_cuda.data_ptr<float>(),
         nullptr);
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Forward pass with LibTorch (matching CUDA implementation)
     auto x = dirs.select(1, 0);
@@ -1017,7 +1017,7 @@ TEST_F(CUDAKernelGradientTest, SH_ForwardBackward_RoundTrip) {
         v_dirs_cuda.data_ptr<float>(),
         nullptr);
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Verify gradients are reasonable (non-zero, finite)
     EXPECT_FALSE(v_coeffs_cuda.isnan().any().item<bool>()) << "Backward produced NaN in v_coeffs";

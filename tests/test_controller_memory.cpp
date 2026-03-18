@@ -3,7 +3,7 @@
 
 #include "training/components/ppisp.hpp"
 #include "training/components/ppisp_controller.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 
 using namespace lfs::core;
@@ -13,7 +13,7 @@ namespace {
 
     size_t get_used_vram() {
         size_t free_bytes, total_bytes;
-        cudaMemGetInfo(&free_bytes, &total_bytes);
+        musaMemGetInfo(&free_bytes, &total_bytes);
         return total_bytes - free_bytes;
     }
 
@@ -60,7 +60,7 @@ TEST(PPISPControllerMemoryTest, DistillationLoopNoLeak) {
         int cam_idx = i % NUM_CAMERAS;
         run_photometric_distillation_step(*controllers[cam_idx], ppisp, rendered, gt, cam_idx);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     const size_t baseline_vram = get_used_vram();
     std::cout << "Baseline VRAM: " << baseline_vram / (1024 * 1024) << " MB" << std::endl;
@@ -70,7 +70,7 @@ TEST(PPISPControllerMemoryTest, DistillationLoopNoLeak) {
         run_photometric_distillation_step(*controllers[cam_idx], ppisp, rendered, gt, cam_idx);
 
         if ((iter + 1) % 100 == 0) {
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             size_t current_vram = get_used_vram();
             size_t delta = current_vram > baseline_vram ? current_vram - baseline_vram : 0;
             std::cout << "Iter " << (iter + 1) << ": VRAM=" << current_vram / (1024 * 1024) << " MB, delta="
@@ -78,7 +78,7 @@ TEST(PPISPControllerMemoryTest, DistillationLoopNoLeak) {
         }
     }
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     const size_t final_vram = get_used_vram();
     const size_t leak = final_vram > baseline_vram ? final_vram - baseline_vram : 0;
     std::cout << "Final VRAM: " << final_vram / (1024 * 1024) << " MB" << std::endl;
@@ -108,7 +108,7 @@ TEST(PPISPControllerMemoryTest, VaryingImageSizesNoLeak) {
         auto gt = Tensor::uniform({3, static_cast<size_t>(h), static_cast<size_t>(w)}, 0.0f, 1.0f, Device::CUDA);
         run_photometric_distillation_step(controller, ppisp, rendered, gt, 0);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     const size_t baseline_vram = get_used_vram();
     std::cout << "Baseline VRAM (varying sizes): " << baseline_vram / (1024 * 1024) << " MB" << std::endl;
@@ -120,7 +120,7 @@ TEST(PPISPControllerMemoryTest, VaryingImageSizesNoLeak) {
         run_photometric_distillation_step(controller, ppisp, rendered, gt, 0);
     }
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     const size_t final_vram = get_used_vram();
     const size_t leak = final_vram > baseline_vram ? final_vram - baseline_vram : 0;
     std::cout << "Memory growth (varying sizes): " << leak / (1024 * 1024) << " MB" << std::endl;

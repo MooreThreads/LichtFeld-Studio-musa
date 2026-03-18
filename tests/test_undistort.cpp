@@ -5,7 +5,7 @@
 #include "core/cuda/undistort/undistort.hpp"
 #include "core/image_io.hpp"
 #include "io/formats/colmap.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 
 using namespace lfs::core;
@@ -36,7 +36,7 @@ namespace {
             Device::CUDA);
 
         auto dst = undistort_image(src, params, nullptr);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         ASSERT_EQ(dst.ndim(), 3u);
         EXPECT_EQ(static_cast<int>(dst.shape()[0]), 3);
@@ -50,7 +50,7 @@ namespace {
             Device::CUDA);
 
         auto dst = undistort_mask(src, params, nullptr);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         ASSERT_EQ(dst.ndim(), 2u);
         EXPECT_EQ(static_cast<int>(dst.shape()[0]), params.dst_height);
@@ -356,7 +356,7 @@ TEST(UndistortConsistency, MaskAndImageSameDimensions) {
 
     auto img_dst = undistort_image(img_src, params, nullptr);
     auto mask_dst = undistort_mask(mask_src, params, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     EXPECT_EQ(img_dst.shape()[1], mask_dst.shape()[0]);
     EXPECT_EQ(img_dst.shape()[2], mask_dst.shape()[1]);
@@ -381,7 +381,7 @@ TEST(UndistortCenter, CenterPixelPreserved) {
     src = src_cpu.to(Device::CUDA);
 
     auto dst = undistort_image(src, params, nullptr);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // The brightest pixel in the output should be near the destination principal point
     auto dst_cpu = dst.cpu();

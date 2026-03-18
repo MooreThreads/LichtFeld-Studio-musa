@@ -8,9 +8,9 @@
  *   Linear(128→128) + ReLU → Linear(128→9)
  */
 
-#include <c10/cuda/CUDACachingAllocator.h>
+#include <musa_runtime.h>
 #include <chrono>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <torch/torch.h>
@@ -83,7 +83,7 @@ namespace {
         void SetUp() override {
             // Warmup GPU
             auto warmup = torch::randn({1, 3, 256, 256}, torch::kCUDA);
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
     };
 
@@ -119,14 +119,14 @@ namespace {
             for (int i = 0; i < NUM_WARMUP; ++i) {
                 auto out = torch_model->forward(torch_input, torch_exposure);
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
         }
 
         // Warmup our implementation
         for (int i = 0; i < NUM_WARMUP; ++i) {
             auto out = our_model.predict(our_input, 1.0f);
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         // Benchmark LibTorch
         double torch_total_ms = 0.0;
@@ -136,7 +136,7 @@ namespace {
             for (int i = 0; i < NUM_ITERATIONS; ++i) {
                 auto out = torch_model->forward(torch_input, torch_exposure);
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             auto end = std::chrono::high_resolution_clock::now();
             torch_total_ms = std::chrono::duration<double, std::milli>(end - start).count();
         }
@@ -148,7 +148,7 @@ namespace {
             for (int i = 0; i < NUM_ITERATIONS; ++i) {
                 auto out = our_model.predict(our_input, 1.0f);
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             auto end = std::chrono::high_resolution_clock::now();
             our_total_ms = std::chrono::duration<double, std::milli>(end - start).count();
         }
@@ -207,7 +207,7 @@ namespace {
                     torch_model->forward(torch_input, torch_exposure);
                     our_model.predict(our_input, 1.0f);
                 }
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
             }
 
             // Benchmark
@@ -218,7 +218,7 @@ namespace {
                 for (int i = 0; i < NUM_ITERATIONS; ++i) {
                     torch_model->forward(torch_input, torch_exposure);
                 }
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 auto end = std::chrono::high_resolution_clock::now();
                 torch_ms = std::chrono::duration<double, std::milli>(end - start).count() / NUM_ITERATIONS;
             }
@@ -227,7 +227,7 @@ namespace {
                 for (int i = 0; i < NUM_ITERATIONS; ++i) {
                     our_model.predict(our_input, 1.0f);
                 }
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 auto end = std::chrono::high_resolution_clock::now();
                 our_ms = std::chrono::duration<double, std::milli>(end - start).count() / NUM_ITERATIONS;
             }
@@ -241,29 +241,29 @@ namespace {
         std::cout << "\n=== Memory Usage Comparison ===" << std::endl;
 
         size_t free_before, total;
-        cudaMemGetInfo(&free_before, &total);
+        musaMemGetInfo(&free_before, &total);
 
         // Create LibTorch model
         auto torch_model = std::make_shared<LibTorchController>();
         torch_model->to(torch::kCUDA);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         size_t free_after_torch;
-        cudaMemGetInfo(&free_after_torch, &total);
+        musaMemGetInfo(&free_after_torch, &total);
         size_t torch_mem = free_before - free_after_torch;
 
         // Reset
         torch_model.reset();
-        c10::cuda::CUDACachingAllocator::emptyCache();
-        cudaDeviceSynchronize();
-        cudaMemGetInfo(&free_before, &total);
+        musaDeviceSynchronize();
+        musaDeviceSynchronize();
+        musaMemGetInfo(&free_before, &total);
 
         // Create our model
         lfs::training::PPISPController our_model(30000);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         size_t free_after_ours;
-        cudaMemGetInfo(&free_after_ours, &total);
+        musaMemGetInfo(&free_after_ours, &total);
         size_t our_mem = free_before - free_after_ours;
 
         std::cout << "LibTorch model memory: " << (torch_mem / 1024.0 / 1024.0) << " MB" << std::endl;

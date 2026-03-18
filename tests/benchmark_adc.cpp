@@ -60,7 +60,7 @@ double time_operation(Func&& func, int warmup_runs = 3, int timed_runs = 10) {
     }
 
     // Synchronize before timing
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -69,7 +69,7 @@ double time_operation(Func&& func, int warmup_runs = 3, int timed_runs = 10) {
     }
 
     // Synchronize after timing
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end - start;
@@ -212,7 +212,7 @@ TEST(ADCBenchmark, FullTrainingLoop_100Iterations) {
         strategy.step(iter);
     }
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end - start;
@@ -318,7 +318,7 @@ TEST(ADCBenchmark, MemoryEfficiency) {
     // Verify model has correct number of Gaussians
     EXPECT_EQ(strategy.get_model().size(), n_gaussians);
 
-    // Note: cudaMemGetInfo is unreliable due to CUDA memory allocator caching
+    // Note: musaMemGetInfo is unreliable due to CUDA memory allocator caching
     // So we just document the theoretical memory usage here
     SUCCEED();
 }

@@ -6,7 +6,7 @@
 #include <chrono>
 #include <gtest/gtest.h>
 #include <numeric>
-#include <print>
+#include <fmt/format.h>
 #include <random>
 #include <torch/torch.h>
 
@@ -568,12 +568,12 @@ TEST_F(TensorTorchCompatTest, PerformanceComparison) {
     // Time-intensive operation sequence
     auto start_custom = std::chrono::high_resolution_clock::now();
     auto custom_result = custom_large.sigmoid().relu().add(1.0f).mul(2.0f).sqrt();
-    cudaDeviceSynchronize(); // Ensure completion
+    musaDeviceSynchronize(); // Ensure completion
     auto end_custom = std::chrono::high_resolution_clock::now();
 
     auto start_torch = std::chrono::high_resolution_clock::now();
     auto torch_result = torch::sqrt(torch::relu(torch::sigmoid(torch_large)).add(1.0f).mul(2.0f));
-    cudaDeviceSynchronize(); // Ensure completion
+    musaDeviceSynchronize(); // Ensure completion
     auto end_torch = std::chrono::high_resolution_clock::now();
 
     compare_tensors(custom_result, torch_result, 1e-4f, 1e-5f, "Performance");
@@ -729,12 +729,12 @@ TEST_F(TensorTorchCompatTest, Cat3D_Dim1_CRITICAL) {
     auto torch_flat = torch_cpu.flatten();
     auto torch_acc = torch_flat.accessor<float, 1>();
 
-    std::println("\n=== Cat3D_Dim1_CRITICAL Debug ===");
-    std::println("Expected layout: [point0_coeff0_ch0, point0_coeff0_ch1, point0_coeff0_ch2,");
-    std::println("                  point0_coeff1_ch0, point0_coeff1_ch1, point0_coeff1_ch2, ...]");
-    std::println("\nFirst 27 values (point 0, all 9 coeffs, 3 channels each):");
+    fmt::print("\n=== Cat3D_Dim1_CRITICAL Debug ===");
+    fmt::print("Expected layout: [point0_coeff0_ch0, point0_coeff0_ch1, point0_coeff0_ch2,");
+    fmt::print("                  point0_coeff1_ch0, point0_coeff1_ch1, point0_coeff1_ch2, ...]");
+    fmt::print("\nFirst 27 values (point 0, all 9 coeffs, 3 channels each):");
     for (size_t i = 0; i < std::min(size_t(27), custom_vec.size()); ++i) {
-        std::println("  [{}] custom={:.6f}, torch={:.6f}, diff={:.6f}",
+        fmt::print("  [{}] custom={:.6f}, torch={:.6f}, diff={:.6f}",
                      i, custom_vec[i], torch_acc[i], std::abs(custom_vec[i] - torch_acc[i]));
     }
 
@@ -840,13 +840,13 @@ TEST_F(TensorTorchCompatTest, Cat_SplatDataScenario) {
     auto torch_flat = torch_cpu.flatten();
     auto torch_acc = torch_flat.accessor<float, 1>();
 
-    std::println("\n=== Cat_SplatDataScenario Debug ===");
-    std::println("For point 0, the layout should be:");
-    std::println("  [0-2]:   DC values for RGB (from sh0)");
-    std::println("  [3-26]:  Zeros for higher-order coeffs (from shN)");
-    std::println("\nActual values for point 0:");
+    fmt::print("\n=== Cat_SplatDataScenario Debug ===");
+    fmt::print("For point 0, the layout should be:");
+    fmt::print("  [0-2]:   DC values for RGB (from sh0)");
+    fmt::print("  [3-26]:  Zeros for higher-order coeffs (from shN)");
+    fmt::print("\nActual values for point 0:");
     for (size_t i = 0; i < 27; ++i) { // 9 coeffs * 3 channels
-        std::println("  [{}] custom={:.6f}, torch={:.6f}", i, custom_vec[i], torch_acc[i]);
+        fmt::print("  [{}] custom={:.6f}, torch={:.6f}", i, custom_vec[i], torch_acc[i]);
     }
 
     // Check specific values

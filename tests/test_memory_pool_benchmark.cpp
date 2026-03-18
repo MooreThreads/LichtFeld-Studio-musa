@@ -63,7 +63,7 @@ protected:
         // Warmup GPU and memory pool
         auto warmup = Tensor::empty({100, 100}, Device::CUDA);
         auto warmup_torch = torch::empty({100, 100}, torch::kCUDA);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
     void print_separator(const std::string& title = "") {
@@ -110,7 +110,7 @@ TEST_F(MemoryPoolBenchmarkTest, RepeatedAllocationDeallocation) {
                 auto t = Tensor::empty({num_elements}, Device::CUDA, DataType::Float32);
                 // Tensor destructor will deallocate back to pool
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_custom = timer.elapsed_ms();
         }
 
@@ -121,7 +121,7 @@ TEST_F(MemoryPoolBenchmarkTest, RepeatedAllocationDeallocation) {
                 auto t = torch::empty({static_cast<int64_t>(num_elements)}, torch::kCUDA);
                 // PyTorch destructor will handle deallocation
             }
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_torch = timer.elapsed_ms();
         }
 
@@ -189,7 +189,7 @@ TEST_F(MemoryPoolBenchmarkTest, ImageUploadAllocationPattern) {
 
             // All destructors fire here - deallocations happen
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         total_custom = timer.elapsed_ms();
     }
 
@@ -211,7 +211,7 @@ TEST_F(MemoryPoolBenchmarkTest, ImageUploadAllocationPattern) {
 
             // All destructors fire here
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         total_torch = timer.elapsed_ms();
     }
 
@@ -267,7 +267,7 @@ TEST_F(MemoryPoolBenchmarkTest, ChurnTest) {
                 auto t = Tensor::empty({size}, Device::CUDA);
             }
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         total_custom = timer.elapsed_ms();
     }
 
@@ -279,7 +279,7 @@ TEST_F(MemoryPoolBenchmarkTest, ChurnTest) {
                 auto t = torch::empty({static_cast<int64_t>(size)}, torch::kCUDA);
             }
         }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         total_torch = timer.elapsed_ms();
     }
 
@@ -319,14 +319,14 @@ TEST_F(MemoryPoolBenchmarkTest, MemoryPoolStats) {
 TEST_F(MemoryPoolBenchmarkTest, SummaryReport) {
     print_separator("📊 MEMORY POOL PERFORMANCE SUMMARY");
 
-    std::cout << "\n🎯 OPTIMIZATION GOAL: Eliminate cudaMalloc overhead" << std::endl;
+    std::cout << "\n🎯 OPTIMIZATION GOAL: Eliminate musaMalloc overhead" << std::endl;
     std::cout << "\n📝 IMPLEMENTATION:" << std::endl;
-    std::cout << "  - CUDA 12.8+ cudaMallocAsync with memory pools" << std::endl;
+    std::cout << "  - CUDA 12.8+ musaMallocAsync with memory pools" << std::endl;
     std::cout << "  - Stream-ordered allocation for near-instant reuse" << std::endl;
     std::cout << "  - Infinite cache threshold (memory stays in pool)" << std::endl;
 
     std::cout << "\n📊 EXPECTED IMPROVEMENTS:" << std::endl;
-    std::cout << "  - Traditional cudaMalloc: ~0.15-0.6 ms per allocation" << std::endl;
+    std::cout << "  - Traditional musaMalloc: ~0.15-0.6 ms per allocation" << std::endl;
     std::cout << "  - Memory pool allocation: ~0.001-0.01 ms (50-600× faster)" << std::endl;
     std::cout << "  - End-to-end tensor operations: 2-10× speedup" << std::endl;
 

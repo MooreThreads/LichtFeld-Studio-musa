@@ -4,7 +4,7 @@
 // Test to check if LibTorch changes CUDA device state
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <torch/torch.h>
@@ -13,11 +13,11 @@ using namespace lfs::core;
 
 void print_cuda_device_state() {
     int device;
-    cudaGetDevice(&device);
+    musaGetDevice(&device);
     std::cout << "  Current CUDA device: " << device << std::endl;
 
     int count;
-    cudaGetDeviceCount(&count);
+    musaGetDeviceCount(&count);
     std::cout << "  Total CUDA devices: " << count << std::endl;
 }
 
@@ -98,8 +98,8 @@ TEST(CUDADeviceState, ResetDeviceBeforeLFS) {
     print_cuda_device_state();
 
     // EXPLICITLY RESET TO DEVICE 0
-    cudaSetDevice(0);
-    std::cout << "CUDA state after cudaSetDevice(0):" << std::endl;
+    musaSetDevice(0);
+    std::cout << "CUDA state after musaSetDevice(0):" << std::endl;
     print_cuda_device_state();
 
     // Now run LFS operation
@@ -111,9 +111,9 @@ TEST(CUDADeviceState, ResetDeviceBeforeLFS) {
         auto idx_lfs = Tensor::from_vector(idx_data_lfs, TensorShape({50000}), Device::CUDA);
         auto result_lfs = t_lfs.index_select(0, idx_lfs);
 
-        std::cout << "LFS op SUCCESS after cudaSetDevice(0)" << std::endl;
+        std::cout << "LFS op SUCCESS after musaSetDevice(0)" << std::endl;
     } catch (const std::exception& e) {
-        std::cout << "LFS op STILL FAILED even after cudaSetDevice(0): " << e.what() << std::endl;
-        FAIL() << "LFS operation failed even after cudaSetDevice(0): " << e.what();
+        std::cout << "LFS op STILL FAILED even after musaSetDevice(0): " << e.what() << std::endl;
+        FAIL() << "LFS operation failed even after musaSetDevice(0): " << e.what();
     }
 }

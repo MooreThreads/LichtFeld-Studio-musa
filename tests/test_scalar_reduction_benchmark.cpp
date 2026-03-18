@@ -63,7 +63,7 @@ protected:
         // Warmup GPU
         auto warmup = Tensor::rand({100, 100}, Device::CUDA);
         auto warmup_torch = torch::rand({100, 100}, torch::kCUDA);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
     void print_separator(const std::string& title = "") {
@@ -115,7 +115,7 @@ TEST_F(ScalarReductionBenchmarkTest, SumScalarReduction) {
             {
                 Timer timer;
                 float result = tensor_custom.sum_scalar();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -123,7 +123,7 @@ TEST_F(ScalarReductionBenchmarkTest, SumScalarReduction) {
             {
                 Timer timer;
                 auto result = tensor_torch.sum().item<float>();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -166,14 +166,14 @@ TEST_F(ScalarReductionBenchmarkTest, MeanScalarReduction) {
             {
                 Timer timer;
                 float result = tensor_custom.mean_scalar();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 auto result = tensor_torch.mean().item<float>();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -218,14 +218,14 @@ TEST_F(ScalarReductionBenchmarkTest, MinMaxScalarReduction) {
             {
                 Timer timer;
                 float result = tensor_custom.min_scalar();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom_min += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 auto result = tensor_torch.min().item<float>();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch_min += timer.elapsed_ms();
             }
 
@@ -233,14 +233,14 @@ TEST_F(ScalarReductionBenchmarkTest, MinMaxScalarReduction) {
             {
                 Timer timer;
                 float result = tensor_custom.max_scalar();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom_max += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 auto result = tensor_torch.max().item<float>();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch_max += timer.elapsed_ms();
             }
         }
@@ -290,14 +290,14 @@ TEST_F(ScalarReductionBenchmarkTest, CountNonzeroReduction) {
             {
                 Timer timer;
                 size_t result = tensor_custom.count_nonzero();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 auto result = tensor_torch.count_nonzero().item<int64_t>();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -342,14 +342,14 @@ TEST_F(ScalarReductionBenchmarkTest, NormReduction) {
             {
                 Timer timer;
                 float result = tensor_custom.norm(1.0f);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom_l1 += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 auto result = tensor_torch.norm(1.0).item<float>();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch_l1 += timer.elapsed_ms();
             }
 
@@ -357,14 +357,14 @@ TEST_F(ScalarReductionBenchmarkTest, NormReduction) {
             {
                 Timer timer;
                 float result = tensor_custom.norm(2.0f);
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom_l2 += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 auto result = tensor_torch.norm(2.0).item<float>();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch_l2 += timer.elapsed_ms();
             }
         }
@@ -414,14 +414,14 @@ TEST_F(ScalarReductionBenchmarkTest, DotProductReduction) {
                 Timer timer;
                 auto result_tensor = vec1_custom.dot(vec2_custom);
                 float result = result_tensor.item();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 auto result = vec1_torch.dot(vec2_torch).item<float>();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -467,7 +467,7 @@ TEST_F(ScalarReductionBenchmarkTest, TrainingLossComputation) {
             float l2_reg = (predictions * predictions).sum_scalar() * 0.01f;
             float grad_norm = gradients.norm(2.0f);
             float total_loss = mse + l2_reg;
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_custom += timer.elapsed_ms();
         }
 
@@ -479,7 +479,7 @@ TEST_F(ScalarReductionBenchmarkTest, TrainingLossComputation) {
             float l2_reg = (pred_torch * pred_torch).sum().item<float>() * 0.01f;
             float grad_norm = grad_torch.norm(2.0).item<float>();
             float total_loss = mse + l2_reg;
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_torch += timer.elapsed_ms();
         }
     }

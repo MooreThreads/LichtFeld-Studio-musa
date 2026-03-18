@@ -13,7 +13,7 @@
 #include "selection/selection_service.hpp"
 
 #include <chrono>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <iostream>
@@ -31,45 +31,45 @@ namespace {
     double benchmark_us(Fn&& fn, const int warmup_iters = 10, const int bench_iters = 50) {
         for (int i = 0; i < warmup_iters; ++i) {
             fn();
-            if (const auto err = cudaDeviceSynchronize(); err != cudaSuccess) {
-                ADD_FAILURE() << "cudaDeviceSynchronize failed during warmup: " << cudaGetErrorString(err);
+            if (const auto err = musaDeviceSynchronize(); err != musaSuccess) {
+                ADD_FAILURE() << "musaDeviceSynchronize failed during warmup: " << musaGetErrorString(err);
                 return 0.0;
             }
         }
 
-        cudaEvent_t start = nullptr;
-        cudaEvent_t stop = nullptr;
-        if (cudaEventCreate(&start) != cudaSuccess || cudaEventCreate(&stop) != cudaSuccess) {
+        musaEvent_t start = nullptr;
+        musaEvent_t stop = nullptr;
+        if (musaEventCreate(&start) != musaSuccess || musaEventCreate(&stop) != musaSuccess) {
             ADD_FAILURE() << "Failed to create CUDA benchmark events";
             if (start)
-                cudaEventDestroy(start);
+                musaEventDestroy(start);
             if (stop)
-                cudaEventDestroy(stop);
+                musaEventDestroy(stop);
             return 0.0;
         }
 
-        cudaEventRecord(start);
+        musaEventRecord(start);
         for (int i = 0; i < bench_iters; ++i) {
             fn();
         }
-        cudaEventRecord(stop);
-        if (const auto err = cudaEventSynchronize(stop); err != cudaSuccess) {
-            ADD_FAILURE() << "cudaEventSynchronize failed during benchmark: " << cudaGetErrorString(err);
-            cudaEventDestroy(start);
-            cudaEventDestroy(stop);
+        musaEventRecord(stop);
+        if (const auto err = musaEventSynchronize(stop); err != musaSuccess) {
+            ADD_FAILURE() << "musaEventSynchronize failed during benchmark: " << musaGetErrorString(err);
+            musaEventDestroy(start);
+            musaEventDestroy(stop);
             return 0.0;
         }
 
         float elapsed_ms = 0.0f;
-        if (const auto err = cudaEventElapsedTime(&elapsed_ms, start, stop); err != cudaSuccess) {
-            ADD_FAILURE() << "cudaEventElapsedTime failed during benchmark: " << cudaGetErrorString(err);
-            cudaEventDestroy(start);
-            cudaEventDestroy(stop);
+        if (const auto err = musaEventElapsedTime(&elapsed_ms, start, stop); err != musaSuccess) {
+            ADD_FAILURE() << "musaEventElapsedTime failed during benchmark: " << musaGetErrorString(err);
+            musaEventDestroy(start);
+            musaEventDestroy(stop);
             return 0.0;
         }
 
-        cudaEventDestroy(start);
-        cudaEventDestroy(stop);
+        musaEventDestroy(start);
+        musaEventDestroy(stop);
         return static_cast<double>(elapsed_ms * 1000.0f) / static_cast<double>(bench_iters);
     }
 
@@ -77,8 +77,8 @@ namespace {
     double benchmark_wall_us(Fn&& fn, const int warmup_iters = 3, const int bench_iters = 10) {
         for (int i = 0; i < warmup_iters; ++i) {
             fn();
-            if (const auto err = cudaDeviceSynchronize(); err != cudaSuccess) {
-                ADD_FAILURE() << "cudaDeviceSynchronize failed during warmup: " << cudaGetErrorString(err);
+            if (const auto err = musaDeviceSynchronize(); err != musaSuccess) {
+                ADD_FAILURE() << "musaDeviceSynchronize failed during warmup: " << musaGetErrorString(err);
                 return 0.0;
             }
         }
@@ -86,8 +86,8 @@ namespace {
         const auto start = std::chrono::steady_clock::now();
         for (int i = 0; i < bench_iters; ++i) {
             fn();
-            if (const auto err = cudaDeviceSynchronize(); err != cudaSuccess) {
-                ADD_FAILURE() << "cudaDeviceSynchronize failed during benchmark: " << cudaGetErrorString(err);
+            if (const auto err = musaDeviceSynchronize(); err != musaSuccess) {
+                ADD_FAILURE() << "musaDeviceSynchronize failed during benchmark: " << musaGetErrorString(err);
                 return 0.0;
             }
         }

@@ -37,7 +37,7 @@ namespace {
         if (t.device() == Device::CPU) {
             std::memcpy(result.data_ptr(), t.data_ptr(), t.bytes());
         } else {
-            cudaMemcpy(result.data_ptr(), t.data_ptr(), t.bytes(), cudaMemcpyDeviceToDevice);
+            musaMemcpy(result.data_ptr(), t.data_ptr(), t.bytes(), musaMemcpyDeviceToDevice);
         }
 
         return result;
@@ -68,9 +68,9 @@ namespace {
             std::memcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes());
         } else {
             if (t_cont.is_cpu()) {
-                cudaMemcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes(), cudaMemcpyHostToDevice);
+                musaMemcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes(), musaMemcpyHostToDevice);
             } else {
-                cudaMemcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes(), cudaMemcpyDeviceToDevice);
+                musaMemcpy(result.data_ptr(), t_cont.data_ptr(), result.bytes(), musaMemcpyDeviceToDevice);
             }
         }
 
@@ -134,28 +134,28 @@ namespace {
     // Helper to check CUDA availability
     bool is_cuda_available() {
         int device_count = 0;
-        cudaError_t err = cudaGetDeviceCount(&device_count);
-        if (err != cudaSuccess || device_count == 0) {
+        musaError_t err = musaGetDeviceCount(&device_count);
+        if (err != musaSuccess || device_count == 0) {
             return false;
         }
 
         // Try to initialize device 0
-        err = cudaSetDevice(0);
-        if (err != cudaSuccess) {
+        err = musaSetDevice(0);
+        if (err != musaSuccess) {
             return false;
         }
 
         // Try to allocate and free memory to verify device works
         void* test_ptr = nullptr;
-        err = cudaMalloc(&test_ptr, 1024);
-        if (err != cudaSuccess) {
+        err = musaMalloc(&test_ptr, 1024);
+        if (err != musaSuccess) {
             return false;
         }
-        cudaFree(test_ptr);
+        musaFree(test_ptr);
 
         // Synchronize to catch any lingering errors
-        err = cudaDeviceSynchronize();
-        if (err != cudaSuccess) {
+        err = musaDeviceSynchronize();
+        if (err != musaSuccess) {
             return false;
         }
 
@@ -167,7 +167,7 @@ class TensorClampTest : public ::testing::Test {
 protected:
     void SetUp() override {
         // Clear any previous CUDA errors
-        cudaGetLastError();
+        musaGetLastError();
 
         Tensor::manual_seed(42);
         torch::manual_seed(42);
@@ -175,7 +175,7 @@ protected:
         // Initialize CUDA device if available
         if (torch::cuda::is_available()) {
             // Use the correct PyTorch API
-            cudaSetDevice(0);
+            musaSetDevice(0);
         }
     }
 };

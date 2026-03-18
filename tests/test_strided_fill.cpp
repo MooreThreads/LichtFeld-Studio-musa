@@ -2,29 +2,29 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 
 using namespace lfs::core;
 
 // Helper: sync GPU and return any pending CUDA error
-static cudaError_t sync_and_check() {
-    cudaError_t err = cudaDeviceSynchronize();
-    if (err != cudaSuccess)
+static musaError_t sync_and_check() {
+    musaError_t err = musaDeviceSynchronize();
+    if (err != musaSuccess)
         return err;
-    return cudaGetLastError();
+    return musaGetLastError();
 }
 
 class StridedFillTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        cudaGetLastError(); // clear stale errors
+        musaGetLastError(); // clear stale errors
     }
 
     void TearDown() override {
-        cudaError_t err = sync_and_check();
-        EXPECT_EQ(err, cudaSuccess)
-            << "Residual CUDA error: " << cudaGetErrorString(err);
+        musaError_t err = sync_and_check();
+        EXPECT_EQ(err, musaSuccess)
+            << "Residual CUDA error: " << musaGetErrorString(err);
     }
 };
 
@@ -40,8 +40,8 @@ TEST_F(StridedFillTest, Slice3D_AlphaChannel_256x256) {
     ASSERT_FALSE(alpha.is_contiguous());
 
     alpha.fill_(1.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << "fill_ on 3D slice failed: " << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << "fill_ on 3D slice failed: " << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -57,8 +57,8 @@ TEST_F(StridedFillTest, Slice3D_AlphaChannel_256x256) {
 TEST_F(StridedFillTest, Slice3D_AlphaChannel_512x512) {
     auto t = Tensor::zeros({512, 512, 4}, Device::CUDA);
     t.slice(2, 3, 4).fill_(1.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -77,8 +77,8 @@ TEST_F(StridedFillTest, Slice3D_RGBChannels) {
     t.slice(2, 2, 3).fill_(0.75f); // B
     t.slice(2, 3, 4).fill_(1.00f); // A
 
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -99,8 +99,8 @@ TEST_F(StridedFillTest, Slice3D_CopyToRGBChannels) {
     rgba.slice(2, 0, 3).copy_(rgb);
     rgba.slice(2, 3, 4).fill_(1.0f);
 
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = rgba.cpu();
     auto* p = cpu.ptr<float>();
@@ -117,8 +117,8 @@ TEST_F(StridedFillTest, Slice3D_CopyToRGBChannels) {
 TEST_F(StridedFillTest, Slice2D_ColumnFill) {
     auto t = Tensor::zeros({100, 4}, Device::CUDA);
     t.slice(1, 3, 4).fill_(7.0f); // Last column
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -135,8 +135,8 @@ TEST_F(StridedFillTest, Slice2D_ColumnFill) {
 TEST_F(StridedFillTest, Slice1D_RowFill) {
     auto t = Tensor::zeros({4, 256}, Device::CUDA);
     t.slice(0, 2, 3).fill_(3.0f); // 3rd row -> [1, 256] which squeezes to [256]
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -153,8 +153,8 @@ TEST_F(StridedFillTest, Slice1D_RowFill) {
 TEST_F(StridedFillTest, Slice4D_BatchChannelFill) {
     auto t = Tensor::zeros({2, 3, 8, 8}, Device::CUDA);
     t.slice(1, 2, 3).fill_(5.0f); // channel 2 for all batches
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -177,8 +177,8 @@ TEST_F(StridedFillTest, Slice4D_BatchChannelFill) {
 TEST_F(StridedFillTest, Fill_SingleElement3D) {
     auto t = Tensor::zeros({1, 1, 4}, Device::CUDA);
     t.slice(2, 3, 4).fill_(1.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -191,8 +191,8 @@ TEST_F(StridedFillTest, Fill_SingleElement3D) {
 TEST_F(StridedFillTest, Fill_LargeTensor3D) {
     auto t = Tensor::zeros({1024, 1024, 4}, Device::CUDA);
     t.slice(2, 3, 4).fill_(1.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     // Spot-check a few pixels
     auto cpu = t.cpu();
@@ -211,8 +211,8 @@ TEST_F(StridedFillTest, ExpandedView_Fill) {
     // Note: filling an expanded tensor writes to the same memory multiple times
     // This should NOT crash, even if semantically odd
     expanded.fill_(2.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 }
 
 // ===== Repeated fill (DynamicTexture updates every frame) =====
@@ -223,8 +223,8 @@ TEST_F(StridedFillTest, RepeatedFill_NoErrorAccumulation) {
         t.slice(2, 0, 3).fill_(0.5f);
         t.slice(2, 3, 4).fill_(1.0f);
     }
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -239,8 +239,8 @@ TEST_F(StridedFillTest, RepeatedFill_NoErrorAccumulation) {
 TEST_F(StridedFillTest, Int32_Slice3D_Fill) {
     auto t = Tensor::zeros({64, 64, 4}, Device::CUDA, DataType::Int32);
     t.slice(2, 2, 3).fill_(42.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<int>();
@@ -254,8 +254,8 @@ TEST_F(StridedFillTest, Int32_Slice3D_Fill) {
 TEST_F(StridedFillTest, Bool_Slice3D_Fill) {
     auto t = Tensor::zeros({32, 32, 4}, Device::CUDA, DataType::Bool);
     t.slice(2, 1, 2).fill_(1.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<unsigned char>();
@@ -274,8 +274,8 @@ TEST_F(StridedFillTest, Slice2D_GeneralNonContiguous) {
     auto sub = t.slice(0, 10, 50).slice(1, 10, 50); // [40, 40] non-contiguous
     ASSERT_FALSE(sub.is_contiguous());
     sub.fill_(9.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -293,8 +293,8 @@ TEST_F(StridedFillTest, Contiguous3D_Fill) {
     auto t = Tensor::empty({256, 256, 3}, Device::CUDA);
     ASSERT_TRUE(t.is_contiguous());
     t.fill_(0.42f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -308,8 +308,8 @@ TEST_F(StridedFillTest, LargeGrid_3D_Fill) {
     // Forces 2D grid path: 2048*2048*1 = 4M elements / 256 = 16384 blocks
     auto t = Tensor::zeros({2048, 2048, 4}, Device::CUDA);
     t.slice(2, 0, 1).fill_(1.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();
@@ -321,8 +321,8 @@ TEST_F(StridedFillTest, VeryLargeGrid_3D_Fill) {
     // Forces 2D grid path: 4096*4096*1 = 16M elements / 256 = 65536 blocks (exactly at boundary)
     auto t = Tensor::zeros({4096, 4096, 4}, Device::CUDA);
     t.slice(2, 3, 4).fill_(1.0f);
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << musaGetErrorString(err);
 
     auto cpu = t.cpu();
     auto* p = cpu.ptr<float>();

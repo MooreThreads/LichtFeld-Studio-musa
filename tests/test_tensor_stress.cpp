@@ -5,9 +5,9 @@
 // This allows us to properly release cached memory when testing for leaks
 #include "core/tensor.hpp"
 #include <algorithm>
-#include <c10/cuda/CUDACachingAllocator.h>
+#include <musa_runtime.h>
 #include <chrono>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <random>
 #include <thread>
@@ -61,11 +61,11 @@ protected:
 
         // Warm up allocator (slab init is lazy, ~288MB)
         { auto _ = Tensor::empty({1}, Device::CUDA); }
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         Tensor::trim_memory_pool();
 
         // Record initial memory after warmup
-        cudaMemGetInfo(&initial_free_mem_, &total_mem_);
+        musaMemGetInfo(&initial_free_mem_, &total_mem_);
         gen_.seed(42);
 
         torch::manual_seed(42);
@@ -74,11 +74,11 @@ protected:
 
     void TearDown() override {
         // Force synchronization
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
 
         // Clear PyTorch CUDA cache
         if (torch::cuda::is_available()) {
-            c10::cuda::CUDACachingAllocator::emptyCache();
+            musaDeviceSynchronize();
         }
 
         // Clear tensor library's memory pool cache
@@ -89,7 +89,7 @@ protected:
 
         // Check for memory leaks with reasonable tolerance
         size_t current_free_mem, current_total;
-        cudaMemGetInfo(&current_free_mem, &current_total);
+        musaMemGetInfo(&current_free_mem, &current_total);
 
         // Allow 100MB tolerance for CUDA internal allocations and caching
         // Both our allocator and PyTorch's allocator cache freed memory
@@ -123,7 +123,7 @@ TEST_F(TensorStressTest, MaxMemoryAllocation) {
     for (int i = 0; i < 50; ++i) { // Max 50 tensors (2GB) to avoid hanging
         // Check available memory before allocating
         size_t free_mem, total;
-        cudaMemGetInfo(&free_mem, &total);
+        musaMemGetInfo(&free_mem, &total);
         if (free_mem < chunk_size * sizeof(float) * 3) {
             // Stop before we run too low
             break;
@@ -141,18 +141,18 @@ TEST_F(TensorStressTest, MaxMemoryAllocation) {
 
     // Clear tensors to free memory
     tensors.clear();
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Clear PyTorch cache to actually release memory
-    c10::cuda::CUDACachingAllocator::emptyCache();
+    musaDeviceSynchronize();
 
     // Clear tensor library's memory pool cache
     Tensor::trim_memory_pool();
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Memory should be freed
     size_t free_after, total_after;
-    cudaMemGetInfo(&free_after, &total_after);
+    musaMemGetInfo(&free_after, &total_after);
     EXPECT_GT(free_after, initial_free_mem_ - 100 * 1024 * 1024)
         << "Memory not properly freed after clearing tensors";
 }
@@ -168,18 +168,18 @@ TEST_F(TensorStressTest, RapidAllocationDeallocation) {
         // Tensor destroyed here
     }
 
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Clear PyTorch cache to verify no leaks (caching is expected, leaks are not)
-    c10::cuda::CUDACachingAllocator::emptyCache();
+    musaDeviceSynchronize();
 
     // Clear tensor library's memory pool cache
     Tensor::trim_memory_pool();
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Check memory is stable
     size_t free_after, total_after;
-    cudaMemGetInfo(&free_after, &total_after);
+    musaMemGetInfo(&free_after, &total_after);
     EXPECT_NEAR(static_cast<long long>(free_after),
                 static_cast<long long>(initial_free_mem_),
                 50 * 1024 * 1024)

@@ -4,7 +4,7 @@
 // Standalone timing test - compile with our build system
 #include "core/tensor.hpp"
 #include <chrono>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <torch/torch.h>
@@ -17,26 +17,26 @@ TEST(IsolationTest, ReductionAfterTorchInit) {
 
     // Create a PyTorch tensor first (this initializes PyTorch's CUDA context)
     auto torch_tensor = torch::rand({1024, 1024}, torch::kCUDA);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     const int iterations = 100;
 
     // Now create and test our tensor
     auto tensor = Tensor::rand({1024, 1024}, Device::CUDA);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Warmup
     for (int i = 0; i < 20; i++) {
         auto result = tensor.sum({1}, false);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark with sync per iteration
     double total_us = 0.0;
     for (int i = 0; i < iterations; i++) {
         auto start = std::chrono::high_resolution_clock::now();
         auto result = tensor.sum({1}, false);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end = std::chrono::high_resolution_clock::now();
         total_us += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     }
@@ -50,20 +50,20 @@ TEST(IsolationTest, BothTensorsAlive) {
     // Create BOTH tensors first (like ReductionBenchmarkTest does)
     auto tensor_custom = Tensor::rand({1024, 1024}, Device::CUDA);
     auto tensor_torch = torch::rand({1024, 1024}, torch::kCUDA);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Warmup
     for (int i = 0; i < 20; i++) {
         auto result = tensor_custom.sum({1}, false);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark with sync per iteration
     double total_us = 0.0;
     for (int i = 0; i < iterations; i++) {
         auto start = std::chrono::high_resolution_clock::now();
         auto result = tensor_custom.sum({1}, false);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end = std::chrono::high_resolution_clock::now();
         total_us += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     }
@@ -75,20 +75,20 @@ TEST(IsolationTest, ReductionDim0Timing) {
 
     // Create test tensor
     auto tensor = Tensor::rand({1024, 1024}, Device::CUDA);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Warmup
     for (int i = 0; i < 20; i++) {
         auto result = tensor.sum({0}, false); // Reduce along dim 0
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark with sync per iteration
     double total_us = 0.0;
     for (int i = 0; i < iterations; i++) {
         auto start = std::chrono::high_resolution_clock::now();
         auto result = tensor.sum({0}, false); // Reduce along dim 0
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end = std::chrono::high_resolution_clock::now();
         total_us += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     }
@@ -128,7 +128,7 @@ TEST(IsolationTest, Dim0CorrectnessCheck) {
 TEST(IsolationTest, PermuteContiguousDebug) {
     // Manually trace the steps to find where doubling occurs
     auto t = Tensor::ones({100, 100, 10}, Device::CUDA);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::cout << "\n=== Step 1: Original tensor ===" << std::endl;
     std::cout << "Shape: [" << t.shape()[0] << ", " << t.shape()[1] << ", " << t.shape()[2] << "]" << std::endl;
@@ -142,7 +142,7 @@ TEST(IsolationTest, PermuteContiguousDebug) {
     // Step 2: Permute (zero-copy view)
     std::vector<int> perm = {1, 2, 0};
     auto permuted = t.permute(perm);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::cout << "\n=== Step 2: After permute({1,2,0}) ===" << std::endl;
     std::cout << "Shape: [" << permuted.shape()[0] << ", " << permuted.shape()[1] << ", " << permuted.shape()[2] << "]" << std::endl;
@@ -156,7 +156,7 @@ TEST(IsolationTest, PermuteContiguousDebug) {
 
     // Step 3: Contiguous (actual data copy)
     auto contig = permuted.contiguous();
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::cout << "\n=== Step 3: After contiguous() ===" << std::endl;
     std::cout << "Shape: [" << contig.shape()[0] << ", " << contig.shape()[1] << ", " << contig.shape()[2] << "]" << std::endl;
@@ -171,7 +171,7 @@ TEST(IsolationTest, PermuteContiguousDebug) {
 
     // Step 4: Sum along last dimension
     auto reduced = contig.sum({2}, false);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     std::cout << "\n=== Step 4: After sum({2}) ===" << std::endl;
     std::cout << "Shape: [" << reduced.shape()[0] << ", " << reduced.shape()[1] << "]" << std::endl;
@@ -194,49 +194,49 @@ TEST(IsolationTest, ReductionTiming) {
 
     // Create test tensor
     auto tensor = Tensor::rand({1024, 1024}, Device::CUDA);
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Warmup
     for (int i = 0; i < 20; i++) {
         auto result = tensor.sum({1}, false);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark with sync per iteration
     double total_us = 0.0;
     for (int i = 0; i < iterations; i++) {
         auto start = std::chrono::high_resolution_clock::now();
         auto result = tensor.sum({1}, false);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         auto end = std::chrono::high_resolution_clock::now();
         total_us += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     }
     std::cout << "\nSum dim=1 (1024x1024, sync each): " << (total_us / iterations) << " us/iter" << std::endl;
 
     // Benchmark batched
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < iterations; i++) {
         auto result = tensor.sum({1}, false);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
     total_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     std::cout << "Sum dim=1 (1024x1024, batched): " << (total_us / iterations) << " us/iter" << std::endl;
 
     // GPU timing
-    cudaEvent_t start_event, stop_event;
-    cudaEventCreate(&start_event);
-    cudaEventCreate(&stop_event);
+    musaEvent_t start_event, stop_event;
+    musaEventCreate(&start_event);
+    musaEventCreate(&stop_event);
 
-    cudaEventRecord(start_event);
+    musaEventRecord(start_event);
     for (int i = 0; i < iterations; i++) {
         auto result = tensor.sum({1}, false);
     }
-    cudaEventRecord(stop_event);
-    cudaEventSynchronize(stop_event);
+    musaEventRecord(stop_event);
+    musaEventSynchronize(stop_event);
 
     float ms;
-    cudaEventElapsedTime(&ms, start_event, stop_event);
+    musaEventElapsedTime(&ms, start_event, stop_event);
     std::cout << "Sum dim=1 (1024x1024, GPU time): " << (ms / iterations * 1000) << " us/iter" << std::endl;
 }

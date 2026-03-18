@@ -4,7 +4,7 @@
 
 #include "core/logger.hpp"
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 
 using namespace lfs::core;
@@ -14,16 +14,16 @@ namespace {
     // Get current GPU memory usage in MB
     std::pair<size_t, size_t> getGPUMemoryMB() {
         size_t free_bytes, total_bytes;
-        cudaMemGetInfo(&free_bytes, &total_bytes);
+        musaMemGetInfo(&free_bytes, &total_bytes);
         size_t used_bytes = total_bytes - free_bytes;
         return {used_bytes / (1024 * 1024), total_bytes / (1024 * 1024)};
     }
 
     // Force CUDA memory cleanup via the shared library's pool instance
     void forceMemoryCleanup() {
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         Tensor::trim_memory_pool();
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
 } // namespace

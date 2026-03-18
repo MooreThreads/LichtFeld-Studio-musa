@@ -107,7 +107,7 @@ TEST_F(TensorUInt8MaskingTest, MaskedSelectUInt8_VsTorch_CUDA) {
 
     auto lfs_data = Tensor::zeros({static_cast<size_t>(N)}, Device::CUDA);
     auto t_cpu = t_data.cpu().contiguous();
-    cudaMemcpy(lfs_data.data_ptr(), t_cpu.data_ptr<float>(), N * sizeof(float), cudaMemcpyHostToDevice);
+    musaMemcpy(lfs_data.data_ptr(), t_cpu.data_ptr<float>(), N * sizeof(float), musaMemcpyHostToDevice);
 
     std::vector<uint8_t> mask_vals(N);
     for (int64_t i = 0; i < N; ++i)

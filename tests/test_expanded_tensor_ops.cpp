@@ -2,29 +2,29 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 
 using namespace lfs::core;
 
-static cudaError_t sync_and_check() {
-    cudaError_t err = cudaDeviceSynchronize();
-    if (err != cudaSuccess)
+static musaError_t sync_and_check() {
+    musaError_t err = musaDeviceSynchronize();
+    if (err != musaSuccess)
         return err;
-    return cudaGetLastError();
+    return musaGetLastError();
 }
 
 static void assert_cuda_ok(const char* step) {
-    cudaError_t err = sync_and_check();
-    ASSERT_EQ(err, cudaSuccess) << step << ": " << cudaGetErrorString(err);
+    musaError_t err = sync_and_check();
+    ASSERT_EQ(err, musaSuccess) << step << ": " << musaGetErrorString(err);
 }
 
 class ExpandedTensorOpsTest : public ::testing::Test {
 protected:
-    void SetUp() override { cudaGetLastError(); }
+    void SetUp() override { musaGetLastError(); }
     void TearDown() override {
-        cudaError_t err = sync_and_check();
-        EXPECT_EQ(err, cudaSuccess) << "Residual: " << cudaGetErrorString(err);
+        musaError_t err = sync_and_check();
+        EXPECT_EQ(err, musaSuccess) << "Residual: " << musaGetErrorString(err);
     }
 };
 

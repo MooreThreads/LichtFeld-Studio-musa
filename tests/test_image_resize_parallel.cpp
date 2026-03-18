@@ -1,9 +1,9 @@
-/* Test to isolate cudaErrorInvalidDevice with resized images in parallel operations */
+/* Test to isolate musaErrorInvalidDevice with resized images in parallel operations */
 
 #include "core/logger.hpp"
 #include "core/tensor.hpp"
 #include "io/cache_image_loader.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <thread>
 #include <vector>
@@ -56,8 +56,8 @@ TEST(ImageResizeParallelTest, LoadImagesWithResize) {
     LOG_INFO("All images loaded successfully");
 
     // Check for CUDA errors after loading
-    cudaError_t err = cudaGetLastError();
-    ASSERT_EQ(err, cudaSuccess) << "CUDA error after loading: " << cudaGetErrorString(err);
+    musaError_t err = musaGetLastError();
+    ASSERT_EQ(err, musaSuccess) << "CUDA error after loading: " << musaGetErrorString(err);
 
     // Simulate what training does - parallel operations on loaded images
     const int NUM_THREADS = 4;
@@ -66,7 +66,7 @@ TEST(ImageResizeParallelTest, LoadImagesWithResize) {
 
     auto worker = [&](int thread_id, int start_idx, int end_idx) {
         // Set device for this thread
-        cudaSetDevice(0);
+        musaSetDevice(0);
 
         for (int i = start_idx; i < end_idx && i < loaded_images.size(); ++i) {
             try {
@@ -78,10 +78,10 @@ TEST(ImageResizeParallelTest, LoadImagesWithResize) {
                 auto reshaped = normalized.view({-1}); // Reshape
 
                 // Check for CUDA errors
-                cudaError_t err = cudaGetLastError();
-                if (err != cudaSuccess) {
+                musaError_t err = musaGetLastError();
+                if (err != musaSuccess) {
                     LOG_ERROR("Thread {} CUDA error at image {}: {}",
-                              thread_id, i, cudaGetErrorString(err));
+                              thread_id, i, musaGetErrorString(err));
                     error_count++;
                 }
             } catch (const std::exception& e) {
@@ -109,12 +109,12 @@ TEST(ImageResizeParallelTest, LoadImagesWithResize) {
 
     // Check device context after operations
     int current_device;
-    cudaGetDevice(&current_device);
+    musaGetDevice(&current_device);
     LOG_INFO("Current CUDA device: {}", current_device);
     ASSERT_EQ(current_device, 0);
 
-    err = cudaGetLastError();
-    ASSERT_EQ(err, cudaSuccess) << "CUDA error after operations: " << cudaGetErrorString(err);
+    err = musaGetLastError();
+    ASSERT_EQ(err, musaSuccess) << "CUDA error after operations: " << musaGetErrorString(err);
 }
 
 TEST(ImageResizeParallelTest, CompareWithNoResize) {
@@ -146,8 +146,8 @@ TEST(ImageResizeParallelTest, CompareWithNoResize) {
             auto normalized = tensor * 2.0f - 1.0f;
             auto mean = normalized.mean();
 
-            cudaError_t err = cudaGetLastError();
-            ASSERT_EQ(err, cudaSuccess) << "CUDA error: " << cudaGetErrorString(err);
+            musaError_t err = musaGetLastError();
+            ASSERT_EQ(err, musaSuccess) << "CUDA error: " << musaGetErrorString(err);
         }
         LOG_INFO("No-resize case works correctly");
     }

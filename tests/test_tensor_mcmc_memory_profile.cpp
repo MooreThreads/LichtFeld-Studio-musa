@@ -1,7 +1,7 @@
 /* Test MCMC-style memory usage with large tensors and profiling */
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 
 using namespace lfs::core;
@@ -19,7 +19,7 @@ namespace {
 
     MemoryInfo get_memory_info() {
         MemoryInfo info;
-        cudaMemGetInfo(&info.free_bytes, &info.total_bytes);
+        musaMemGetInfo(&info.free_bytes, &info.total_bytes);
         return info;
     }
 

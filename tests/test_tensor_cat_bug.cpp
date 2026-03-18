@@ -1,7 +1,7 @@
 /* Test to verify tensor cat operation works correctly */
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <iostream>
@@ -13,14 +13,14 @@ TEST(TensorCatBugTest, SimpleConcatenation) {
     auto t1 = Tensor::zeros({2, 3}, Device::CUDA);
     {
         float data[6] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-        cudaMemcpy(t1.ptr<float>(), data, 6 * sizeof(float), cudaMemcpyHostToDevice);
+        musaMemcpy(t1.ptr<float>(), data, 6 * sizeof(float), musaMemcpyHostToDevice);
     }
 
     // Create second tensor [1, 3] with values 7.0, 8.0, 9.0
     auto t2 = Tensor::zeros({1, 3}, Device::CUDA);
     {
         float data[3] = {7.0f, 8.0f, 9.0f};
-        cudaMemcpy(t2.ptr<float>(), data, 3 * sizeof(float), cudaMemcpyHostToDevice);
+        musaMemcpy(t2.ptr<float>(), data, 3 * sizeof(float), musaMemcpyHostToDevice);
     }
 
     // Concatenate along dimension 0 -> should get [3, 3]
@@ -34,7 +34,7 @@ TEST(TensorCatBugTest, SimpleConcatenation) {
 
     // Verify values
     float result_data[9];
-    cudaMemcpy(result_data, result.ptr<float>(), 9 * sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(result_data, result.ptr<float>(), 9 * sizeof(float), musaMemcpyDeviceToHost);
 
     float expected[9] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
 
@@ -70,7 +70,7 @@ TEST(TensorCatBugTest, TrimmedTensorConcatenation) {
             10.0f, 11.0f, 12.0f, // row 3 - UNUSED
             13.0f, 14.0f, 15.0f  // row 4 - UNUSED
         };
-        cudaMemcpy(old_tensor.ptr<float>(), data, 15 * sizeof(float), cudaMemcpyHostToDevice);
+        musaMemcpy(old_tensor.ptr<float>(), data, 15 * sizeof(float), musaMemcpyHostToDevice);
     }
 
     // Simulate: state.size = 3, but tensor has shape [5, 3]
@@ -80,7 +80,7 @@ TEST(TensorCatBugTest, TrimmedTensorConcatenation) {
     // Create trimmed tensor (copy first 3 rows only)
     auto trimmed = Tensor::zeros({state_size, 3}, Device::CUDA);
     size_t bytes_to_copy = state_size * 3 * sizeof(float);
-    cudaMemcpy(trimmed.ptr<float>(), old_tensor.ptr<float>(), bytes_to_copy, cudaMemcpyDeviceToDevice);
+    musaMemcpy(trimmed.ptr<float>(), old_tensor.ptr<float>(), bytes_to_copy, musaMemcpyDeviceToDevice);
 
     // Create new zeros
     auto new_zeros = Tensor::zeros({n_new, 3}, Device::CUDA);
@@ -95,7 +95,7 @@ TEST(TensorCatBugTest, TrimmedTensorConcatenation) {
 
     // Verify first 3 rows match trimmed data
     float result_data[15];
-    cudaMemcpy(result_data, result.ptr<float>(), 15 * sizeof(float), cudaMemcpyDeviceToHost);
+    musaMemcpy(result_data, result.ptr<float>(), 15 * sizeof(float), musaMemcpyDeviceToHost);
 
     std::cout << "\nTrimmed tensor concatenation:" << std::endl;
     for (size_t i = 0; i < 5; i++) {
@@ -126,7 +126,7 @@ TEST(TensorCatBugTest, RepeatedConcatenations) {
     auto state = Tensor::zeros({2, 3}, Device::CUDA);
     {
         float data[6] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
-        cudaMemcpy(state.ptr<float>(), data, 6 * sizeof(float), cudaMemcpyHostToDevice);
+        musaMemcpy(state.ptr<float>(), data, 6 * sizeof(float), musaMemcpyHostToDevice);
     }
 
     std::cout << "\nRepeated concatenations test:" << std::endl;
@@ -138,7 +138,7 @@ TEST(TensorCatBugTest, RepeatedConcatenations) {
         state = Tensor::cat(parts, 0);
 
         float data[9];
-        cudaMemcpy(data, state.ptr<float>(), 9 * sizeof(float), cudaMemcpyDeviceToHost);
+        musaMemcpy(data, state.ptr<float>(), 9 * sizeof(float), musaMemcpyDeviceToHost);
         std::cout << "After 1st cat [3,3]: ";
         for (int i = 0; i < 9; i++)
             std::cout << data[i] << " ";
@@ -160,7 +160,7 @@ TEST(TensorCatBugTest, RepeatedConcatenations) {
         state = Tensor::cat(parts, 0);
 
         float data[15];
-        cudaMemcpy(data, state.ptr<float>(), 15 * sizeof(float), cudaMemcpyDeviceToHost);
+        musaMemcpy(data, state.ptr<float>(), 15 * sizeof(float), musaMemcpyDeviceToHost);
         std::cout << "After 2nd cat [5,3]: ";
         for (int i = 0; i < 15; i++)
             std::cout << data[i] << " ";

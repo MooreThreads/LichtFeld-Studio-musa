@@ -9,7 +9,7 @@
  */
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <torch/torch.h>
 
@@ -17,15 +17,15 @@ using namespace lfs::core;
 
 // Helper to clear CUDA errors
 inline void clear_cuda_errors() {
-    cudaDeviceSynchronize();
-    cudaGetLastError();
+    musaDeviceSynchronize();
+    musaGetLastError();
 }
 
 // Helper to check for pending CUDA errors
 inline bool has_cuda_error() {
-    cudaDeviceSynchronize();
-    cudaError_t err = cudaGetLastError();
-    return err != cudaSuccess;
+    musaDeviceSynchronize();
+    musaError_t err = musaGetLastError();
+    return err != musaSuccess;
 }
 
 // ============================================================================
@@ -331,10 +331,10 @@ TEST_F(CUDAErrorPropagationTest, SynchronizeDetectsErrors) {
     // Operation that may generate error
     auto sum = bool_t.sum();
 
-    // cudaDeviceSynchronize should detect the error
-    cudaError_t err = cudaDeviceSynchronize();
-    if (err != cudaSuccess) {
-        std::cerr << "cudaDeviceSynchronize detected error: " << cudaGetErrorString(err) << std::endl;
+    // musaDeviceSynchronize should detect the error
+    musaError_t err = musaDeviceSynchronize();
+    if (err != musaSuccess) {
+        std::cerr << "musaDeviceSynchronize detected error: " << musaGetErrorString(err) << std::endl;
         clear_cuda_errors();
     }
 }

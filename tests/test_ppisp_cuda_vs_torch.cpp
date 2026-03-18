@@ -5,7 +5,7 @@
 #include <random>
 #include <torch/torch.h>
 
-#include "lfs/kernels/ppisp.cuh"
+#include "lfs/kernels/ppisp.muh"
 
 namespace {
 
@@ -199,7 +199,7 @@ const torch::Tensor COLOR_PINV_BLOCK_DIAG = torch::tensor({
             p.exposure.data_ptr<float>(), p.vignetting.data_ptr<float>(), p.color.data_ptr<float>(),
             p.crf.data_ptr<float>(), rgb_in.data_ptr<float>(), rgb_out.data_ptr<float>(), height, width,
             static_cast<int>(p.vignetting.size(0)), static_cast<int>(p.exposure.size(0)), camera_idx, frame_idx, nullptr);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         return rgb_out;
     }
 
@@ -227,7 +227,7 @@ const torch::Tensor COLOR_PINV_BLOCK_DIAG = torch::tensor({
             g.vignetting.data_ptr<float>(), g.color.data_ptr<float>(), g.crf.data_ptr<float>(), g.rgb_in.data_ptr<float>(),
             height, width, static_cast<int>(p.vignetting.size(0)), static_cast<int>(p.exposure.size(0)), camera_idx,
             frame_idx, nullptr);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
         return g;
     }
 

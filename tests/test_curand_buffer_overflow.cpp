@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later */
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 
 using namespace lfs::core;
@@ -23,7 +23,7 @@ protected:
     void SetUp() override {
         // Ensure CUDA is available
         int device_count = 0;
-        cudaGetDeviceCount(&device_count);
+        musaGetDeviceCount(&device_count);
         if (device_count == 0) {
             GTEST_SKIP() << "No CUDA devices available";
         }
@@ -234,7 +234,7 @@ TEST_F(CurandBufferOverflowTest, CorruptsCUDAErrorState) {
     ASSERT_TRUE(is_odd_size(N));
 
     // Clear any previous CUDA errors
-    cudaGetLastError();
+    musaGetLastError();
 
     Tensor t = Tensor::zeros({N}, Device::CUDA);
     t.normal_(0.0f, 1.0f); // May cause buffer overflow
@@ -244,12 +244,12 @@ TEST_F(CurandBufferOverflowTest, CorruptsCUDAErrorState) {
 
     // Check CUDA error state
     // If buffer overflow occurred, CUDA may be in error state
-    cudaError_t err = cudaGetLastError();
+    musaError_t err = musaGetLastError();
 
-    // Note: Without compute-sanitizer, this may still be cudaSuccess
+    // Note: Without compute-sanitizer, this may still be musaSuccess
     // because the corruption is silent
-    if (err != cudaSuccess) {
-        ADD_FAILURE() << "CUDA entered error state: " << cudaGetErrorString(err);
+    if (err != musaSuccess) {
+        ADD_FAILURE() << "CUDA entered error state: " << musaGetErrorString(err);
     }
 }
 
@@ -259,7 +259,7 @@ TEST_F(CurandBufferOverflowTest, CorruptsCUDAErrorState) {
  */
 TEST_F(CurandBufferOverflowTest, NoMemoryLeakAfterCorruption) {
     size_t free_before, total;
-    cudaMemGetInfo(&free_before, &total);
+    musaMemGetInfo(&free_before, &total);
 
     {
         const size_t N = 10001; // ODD
@@ -270,10 +270,10 @@ TEST_F(CurandBufferOverflowTest, NoMemoryLeakAfterCorruption) {
     }
 
     // Force cleanup
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     size_t free_after;
-    cudaMemGetInfo(&free_after, &total);
+    musaMemGetInfo(&free_after, &total);
 
     // Memory should be recovered (within tolerance)
     const size_t tolerance = 1 << 20; // 1MB

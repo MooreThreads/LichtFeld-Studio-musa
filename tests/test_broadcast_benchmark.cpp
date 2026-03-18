@@ -62,7 +62,7 @@ protected:
         // Warmup GPU
         auto warmup = Tensor::rand({100, 100}, Device::CUDA);
         auto warmup_torch = torch::rand({100, 100}, torch::kCUDA);
-        cudaDeviceSynchronize();
+        musaDeviceSynchronize();
     }
 
     void print_separator(const std::string& title = "") {
@@ -120,7 +120,7 @@ TEST_F(BroadcastBenchmarkTest, BroadcastAddition) {
                 Timer timer;
                 Tensor result = a_custom + b_custom;
                 result.data_ptr();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
@@ -128,7 +128,7 @@ TEST_F(BroadcastBenchmarkTest, BroadcastAddition) {
             {
                 Timer timer;
                 auto result = a_torch + b_torch;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -172,14 +172,14 @@ TEST_F(BroadcastBenchmarkTest, BroadcastMultiplication) {
                 Timer timer;
                 auto result = a_custom * b_custom;
                 result.data_ptr();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 auto result = a_torch * b_torch;
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -226,7 +226,7 @@ TEST_F(BroadcastBenchmarkTest, ChainedBroadcastOperations) {
             auto scaled = normalized * scale_custom;
             auto result = scaled.clamp(0.0f, 255.0f);
             result.data_ptr();
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_custom += timer.elapsed_ms();
         }
 
@@ -236,7 +236,7 @@ TEST_F(BroadcastBenchmarkTest, ChainedBroadcastOperations) {
             auto normalized = (img_torch - mean_torch) / (std_torch + 1e-8f);
             auto scaled = normalized * scale_torch;
             auto result = torch::clamp(scaled, 0.0f, 255.0f);
-            cudaDeviceSynchronize();
+            musaDeviceSynchronize();
             total_torch += timer.elapsed_ms();
         }
     }
@@ -296,14 +296,14 @@ TEST_F(BroadcastBenchmarkTest, ComparisonOperations) {
                 Timer timer;
                 auto result = custom_op();
                 result.data_ptr();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_custom += timer.elapsed_ms();
             }
 
             {
                 Timer timer;
                 auto result = torch_op();
-                cudaDeviceSynchronize();
+                musaDeviceSynchronize();
                 total_torch += timer.elapsed_ms();
             }
         }
@@ -323,7 +323,7 @@ TEST_F(BroadcastBenchmarkTest, SummaryReport) {
     std::cout << "\n🎯 OPTIMIZATION: Binary broadcast operations use memory pool" << std::endl;
 
     std::cout << "\n📝 WHAT CHANGED:" << std::endl;
-    std::cout << "  - Before: 3× cudaMalloc + 3× cudaFree per operation (~0.9ms overhead)" << std::endl;
+    std::cout << "  - Before: 3× musaMalloc + 3× musaFree per operation (~0.9ms overhead)" << std::endl;
     std::cout << "  - After:  3× pool allocate + 3× pool deallocate (~0.006ms overhead)" << std::endl;
     std::cout << "  - Theoretical speedup: 150× for allocation overhead" << std::endl;
 

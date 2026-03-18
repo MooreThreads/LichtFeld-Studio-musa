@@ -25,14 +25,14 @@ protected:
         // CHW layout - create LibTorch tensor, then copy to LFS for exact match
         grad_image_chw_torch = torch::randn({3, H, W}, torch::TensorOptions().device(torch::kCUDA));
         grad_image_chw_lfs = Tensor::empty({3, H, W}, Device::CUDA);
-        cudaMemcpy(grad_image_chw_lfs.ptr<float>(), grad_image_chw_torch.data_ptr<float>(),
-                   3 * H * W * sizeof(float), cudaMemcpyDeviceToDevice);
+        musaMemcpy(grad_image_chw_lfs.ptr<float>(), grad_image_chw_torch.data_ptr<float>(),
+                   3 * H * W * sizeof(float), musaMemcpyDeviceToDevice);
 
         // HWC layout - create LibTorch tensor, then copy to LFS for exact match
         grad_image_hwc_torch = torch::randn({H, W, 3}, torch::TensorOptions().device(torch::kCUDA));
         grad_image_hwc_lfs = Tensor::empty({H, W, 3}, Device::CUDA);
-        cudaMemcpy(grad_image_hwc_lfs.ptr<float>(), grad_image_hwc_torch.data_ptr<float>(),
-                   H * W * 3 * sizeof(float), cudaMemcpyDeviceToDevice);
+        musaMemcpy(grad_image_hwc_lfs.ptr<float>(), grad_image_hwc_torch.data_ptr<float>(),
+                   H * W * 3 * sizeof(float), musaMemcpyDeviceToDevice);
     }
 
     Tensor bg_color_lfs;
@@ -113,14 +113,14 @@ TEST_F(GradAlphaLayoutBenchmark, CHW_Layout_LFS_Old) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_grad_alpha_lfs_old(grad_image_chw_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_grad_alpha_lfs_old(grad_image_chw_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -135,14 +135,14 @@ TEST_F(GradAlphaLayoutBenchmark, CHW_Layout_LFS_Fused) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_grad_alpha_lfs_fused(grad_image_chw_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_grad_alpha_lfs_fused(grad_image_chw_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -158,14 +158,14 @@ TEST_F(GradAlphaLayoutBenchmark, CHW_Layout_Torch) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_grad_alpha_torch(grad_image_chw_torch, bg_color_torch);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_grad_alpha_torch(grad_image_chw_torch, bg_color_torch);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -180,14 +180,14 @@ TEST_F(GradAlphaLayoutBenchmark, HWC_Layout_LFS_Old) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_grad_alpha_lfs_old(grad_image_hwc_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_grad_alpha_lfs_old(grad_image_hwc_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -202,14 +202,14 @@ TEST_F(GradAlphaLayoutBenchmark, HWC_Layout_LFS_Fused) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_grad_alpha_lfs_fused(grad_image_hwc_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_grad_alpha_lfs_fused(grad_image_hwc_lfs, bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -224,14 +224,14 @@ TEST_F(GradAlphaLayoutBenchmark, HWC_Layout_Torch) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_grad_alpha_torch(grad_image_hwc_torch, bg_color_torch);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_grad_alpha_torch(grad_image_hwc_torch, bg_color_torch);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
@@ -315,14 +315,14 @@ TEST_F(GradAlphaLayoutBenchmark, RuntimeBranchOverhead) {
     for (int i = 0; i < WARMUP; ++i) {
         auto result = compute_grad_alpha_lfs_fused(images[i % 2], bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
 
     // Benchmark with alternating layouts (worst case for branch prediction)
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITERS; ++i) {
         auto result = compute_grad_alpha_lfs_fused(images[i % 2], bg_color_lfs);
     }
-    cudaDeviceSynchronize();
+    musaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();

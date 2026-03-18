@@ -12,7 +12,7 @@
  */
 
 #include "core/tensor.hpp"
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <vector>
@@ -25,7 +25,7 @@ using namespace lfs::core;
 
 size_t get_gpu_memory_usage() {
     size_t free_mem, total_mem;
-    cudaMemGetInfo(&free_mem, &total_mem);
+    musaMemGetInfo(&free_mem, &total_mem);
     return total_mem - free_mem;
 }
 

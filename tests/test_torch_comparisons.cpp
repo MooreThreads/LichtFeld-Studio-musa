@@ -1,44 +1,23 @@
 /* Test to prove whether LibTorch explodes with naive split implementation */
-#include <c10/cuda/CUDACachingAllocator.h>
-#include <cuda_runtime.h>
+#include <musa_runtime.h>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <torch/torch.h>
 
 void print_memory_usage(const std::string& label) {
-    // Get CUDA device memory info
+    // Get GPU device memory info
     size_t free_mem = 0, total_mem = 0;
-    cudaMemGetInfo(&free_mem, &total_mem);
-    float cuda_used_gb = (total_mem - free_mem) / (1024.0f * 1024.0f * 1024.0f);
-    float cuda_free_gb = free_mem / (1024.0f * 1024.0f * 1024.0f);
-    float cuda_total_gb = total_mem / (1024.0f * 1024.0f * 1024.0f);
+    musaMemGetInfo(&free_mem, &total_mem);
+    float gpu_used_gb = (total_mem - free_mem) / (1024.0f * 1024.0f * 1024.0f);
+    float gpu_free_gb = free_mem / (1024.0f * 1024.0f * 1024.0f);
+    float gpu_total_gb = total_mem / (1024.0f * 1024.0f * 1024.0f);
 
     printf("[%s]\n", label.c_str());
-    printf("  CUDA: used=%.2f GB, free=%.2f GB, total=%.2f GB\n",
-           cuda_used_gb, cuda_free_gb, cuda_total_gb);
+    printf("  GPU: used=%.2f GB, free=%.2f GB, total=%.2f GB\n",
+           gpu_used_gb, gpu_free_gb, gpu_total_gb);
 
-    // Get PyTorch caching allocator memory stats
-    // Note: These show PyTorch's internal memory management
-    try {
-        auto stats = c10::cuda::CUDACachingAllocator::getDeviceStats(0);
-
-        // StatArray is std::array<Stat, 3> with indices: AGGREGATE=0, SMALL_POOL=1, LARGE_POOL=2
-        // Stat has: int64_t current, peak, allocated, freed
-        float allocated_current = stats.allocated_bytes[0].current / (1024.0f * 1024.0f * 1024.0f);
-        float allocated_peak = stats.allocated_bytes[0].peak / (1024.0f * 1024.0f * 1024.0f);
-        float reserved_current = stats.reserved_bytes[0].current / (1024.0f * 1024.0f * 1024.0f);
-        float reserved_peak = stats.reserved_bytes[0].peak / (1024.0f * 1024.0f * 1024.0f);
-        float cached = (stats.reserved_bytes[0].current - stats.allocated_bytes[0].current) / (1024.0f * 1024.0f * 1024.0f);
-
-        printf("  PyTorch Allocator:\n");
-        printf("    - Allocated (current): %.2f GB (tensor data PyTorch thinks is in use)\n", allocated_current);
-        printf("    - Allocated (peak):    %.2f GB\n", allocated_peak);
-        printf("    - Reserved (current):  %.2f GB (memory PyTorch requested from CUDA)\n", reserved_current);
-        printf("    - Reserved (peak):     %.2f GB\n", reserved_peak);
-        printf("    - Cached (available):  %.2f GB (reserved - allocated = REUSABLE)\n", cached);
-    } catch (...) {
-        printf("  PyTorch Allocator: (not initialized yet)\n");
-    }
+    // Note: c10::cuda::CUDACachingAllocator not available on MUSA
+    printf("  PyTorch Allocator: (stats not available on MUSA)\n");
 }
 
 TEST(LibTorchNaiveSplit, ExplodesLikeCustomTensor) {
@@ -231,7 +210,7 @@ using namespace lfs::training::kernels;
 class SplitKernelVsTorchTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        cudaSetDevice(0);
+        musaSetDevice(0);
     }
 
     // Helper: Compare Tensor with torch::Tensor
@@ -462,8 +441,8 @@ TEST_F(SplitKernelVsTorchTest, DISABLED_BasicSplit_CompareWithTorch) {
         N, num_split, num_keep, sh_dim, false, nullptr
     );
 
-    cudaDeviceSynchronize();
-    ASSERT_EQ(cudaGetLastError(), cudaSuccess);
+    musaDeviceSynchronize();
+    ASSERT_EQ(musaGetLastError(), musaSuccess);
 
     // Run LibTorch reference
     auto torch_result = torch_split_gaussians(
@@ -537,8 +516,8 @@ TEST_F(SplitKernelVsTorchTest, DISABLED_RevisedOpacity_CompareWithTorch) {
         N, num_split, num_keep, sh_dim, true, nullptr  // revised_opacity = true
     );
 
-    cudaDeviceSynchronize();
-    ASSERT_EQ(cudaGetLastError(), cudaSuccess);
+    musaDeviceSynchronize();
+    ASSERT_EQ(musaGetLastError(), musaSuccess);
 
     auto torch_result = torch_split_gaussians(
         torch_positions, torch_rotations, torch_scales, torch_sh, torch_opacities,
@@ -562,7 +541,7 @@ using namespace lfs::core;
 class TensorFillVsTorchTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        cudaSetDevice(0);
+        musaSetDevice(0);
     }
 
     // Helper: Compare our Tensor with torch::Tensor
